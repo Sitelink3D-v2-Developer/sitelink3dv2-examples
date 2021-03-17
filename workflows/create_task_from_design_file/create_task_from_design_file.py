@@ -48,10 +48,14 @@ def query_rdm_view(a_server_config, a_domain, a_site_id, a_view, a_headers, a_li
 
 def create_design_set(a_server_config, a_site_id, a_design_set_id, a_design_objects, a_headers):
 
+    if len(a_design_objects) > 64:
+        logging.warning("Design Object list truncated to maximum Design Set size of 64.")
+        del a_design_objects[64:] 
+    
     at = int(round(time.time() * 1000))
 
     data_payload = { "color" : "#077fdd",
-        "designObjects" : design_objects_for_design_set,
+        "designObjects" : a_design_objects,
         "name":"%d API design set" % (at),
         "_rev":str(uuid.uuid4()),
         "_type":"sl::designObjectSet",
@@ -107,7 +111,6 @@ arg_parser.add_argument("--log_level", default=logging.INFO)
 # server parameters:
 arg_parser.add_argument("--dc", default="us", required=True)
 arg_parser.add_argument("--env", default="", help="deploy environment (which determines server location)")
-arg_parser.add_argument("--jwt", default="", help="jwt")
 arg_parser.add_argument("--oauth_id", default="", help="oauth_id")
 arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
 arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
@@ -125,29 +128,8 @@ session = requests.Session()
 
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-
-header_json = {'content-type': 'application/json', 'X-Topcon-Auth': args.jwt}
-if len(args.oauth_id) > 0 and len(args.oauth_secret) > 0 and len(args.oauth_scope) > 0:
-    token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-    header_json = to_bearer_token_content_header(token["access_token"])
-else:
-    # ------------------------------------------------------------------------------
-    logging.debug ("\nTesting token has not expired...")
-    # ------------------------------------------------------------------------------
-    try:
-        # token is HEADER_B64.PAYLOAD_B64.SIGNATURE where HEADER_B64, PAYLOAD_B64 are base64-encoded json.
-        # PAYLOAD['exp'] is the expiry time in seconds since epoch and we check it's in the future.
-        payload_b64 = args.jwt.split(".")[1]              # fetch the second field
-        payload_b64 += "=" * (-len(payload_b64) % 4)   # make sure it ends with enough padding chars
-        payload_json = json.loads(base64.b64decode(payload_b64)) # cvt to json
-        token_expiry = datetime.fromtimestamp(int(payload_json["exp"])) # get exp as a datetime
-        time_now = datetime.now().replace(microsecond=0)                # get now as a datetime
-        if token_expiry <= time_now:  raise ValueError("Token expired at %s (%s ago)" % (token_expiry.isoformat(' '), str(time_now-token_expiry)))
-        if token_expiry.date() == time_now.date(): print (".. warning: token expires at {0} (in {1})".format(token_expiry.isoformat(' '), str(token_expiry-time_now)))
-        else: print (".. ok: token expires at {0} (in {1})".format(token_expiry.isoformat(' '), str(token_expiry-time_now)))
-    except Exception as e:
-        print (".. ERROR: Token is invalid:", e)
-        sys.exit(1)    
+token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+header_json = to_bearer_token_content_header(token["access_token"])
 
 # << Server settings
 
