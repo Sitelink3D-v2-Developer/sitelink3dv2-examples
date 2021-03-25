@@ -86,7 +86,6 @@ def main():
     # server parameters:
     arg_parser.add_argument("--dc", default="", required=True)
     arg_parser.add_argument("--env", default="", help="deploy environment (which determines server location)")
-    arg_parser.add_argument("--jwt", default="", help="jwt")
     arg_parser.add_argument("--oauth_id", default="", help="oauth_id")
     arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
     arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
