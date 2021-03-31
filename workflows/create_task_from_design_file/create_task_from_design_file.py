@@ -133,9 +133,6 @@ header_json = to_bearer_token_content_header(token["access_token"])
 
 # << Server settings
 
-
-server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-
 logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 
 
