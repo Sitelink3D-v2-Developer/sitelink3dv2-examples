@@ -4,12 +4,12 @@
 ## Settings for the site
 env="qa"
 dc="us"
-site_id="fdc59e465e0476fbf5bebc1314bf73c23b7ee0c1a095716b57a7440e1db4cd33"
+site_id=""
 
 ## Authentication
-oauth_id="2dc51e38-8b90-479d-a45a-6be25284e465"
-oauth_secret="d481ab84-056c-454d-9615-f871a5f8558a"
-oauth_scope="9f2337a2400adf146ff7629c0a391079"
+oauth_id=""
+oauth_secret=""
+oauth_scope=""
 
 ## Settings for the reports:
 report_iso_date_time_start="2020-12-31 09:21:00"

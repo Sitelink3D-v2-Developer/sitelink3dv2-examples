@@ -40,6 +40,9 @@ def to_bearer_token_header(a_access_token, a_content_type=""):
     print(ret)
     return ret
 
+def to_jwt_token_header(a_jwt_token):
+    return {'content-type':'application/json', 'X-Topcon-Auth' : a_jwt_token}
+
 def main():
     # >> Arguments
     arg_parser = argparse.ArgumentParser(description="Exchange OAuth credentials for an API token")
