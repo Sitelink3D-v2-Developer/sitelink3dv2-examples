@@ -61,7 +61,7 @@ payload_json = {
     "region": "medium"
 }
 
-response = session.post(create_site_url, headers=header_json, data=json.dumps(payload_json), verify=False)
+response = session.post(create_site_url, headers=header_json, data=json.dumps(payload_json))
 site_details_json = response.json()
 site_id = site_details_json["identifier"]
 time.sleep(1)

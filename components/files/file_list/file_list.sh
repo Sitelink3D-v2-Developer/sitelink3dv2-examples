@@ -6,7 +6,7 @@ env="qa"
 dc="us"
 site_id=""
 
-page_limit="200"
+page_limit="100"
 # start id uuid
 start=""
 

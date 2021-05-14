@@ -7,7 +7,6 @@ import requests
 import json
 import uuid
 import getpass
-import re
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
@@ -33,7 +32,7 @@ def poll_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
 def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
     response = session.get(a_report_url, headers=a_headers, allow_redirects=False)
     if response.status_code in [301,302]:
-        response = requests.get(response.headers['Location'], verify=True)
+        response = requests.get(response.headers['Location'])
     response.raise_for_status()
     if not os.path.exists(a_target_dir):
         os.mkdir(a_target_dir)

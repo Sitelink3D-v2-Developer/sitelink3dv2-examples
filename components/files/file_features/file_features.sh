@@ -7,7 +7,7 @@ dc="us"
 site_id=""
 
 file_uuid=""
-file_name=".tp3"
+file_name=""
 
 ## Authentication
 jwt=""

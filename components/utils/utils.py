@@ -1,14 +1,9 @@
 #!/usr/bin/python
-import base64
-import requests
 import uuid
 import datetime
 import dateutil.parser
 import pytz
 import time
-import os
-import json
-from dateutil.tz import gettz
 
 # >> Server URL:
 def shp(env):

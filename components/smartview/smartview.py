@@ -19,7 +19,7 @@ class SmartView(object):
         start_b64 = b64(start) if start is not None else ""
         url = "{}/start/{}?push_interval={}".format(self.url, start_b64, keep_alive)
         logging.info("subscribing to {}".format(url))
-        response = requests.get(url, stream=True, headers=self.headers, params=args, verify=False)
+        response = requests.get(url, stream=True, headers=self.headers, params=args)
         response.raise_for_status()
         for text_line in response.iter_lines():
             yield text_line.strip().decode("utf-8")
