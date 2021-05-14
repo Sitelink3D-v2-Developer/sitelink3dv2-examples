@@ -2,7 +2,7 @@
 rem # Batch file to list all metadata views and all data provided by those views at all domains at a sitelink site
 
 rem ## Settings for the site:
-set env="prod"
+set env="qa"
 set dc="us"
 set site_id=""
 
