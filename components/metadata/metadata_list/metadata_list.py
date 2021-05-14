@@ -92,9 +92,7 @@ def main():
                 obj = Metadata.traits_factory(fi["value"])
                 if obj is not None:
                     logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))
-                #logging.info(fi["value"]["name"])
-                #logging.info(fi["value"]["icon"])
-            
+           
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ class GenericNamedMetadataTraits(MetadataTraitsBase):
         MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
 
     def object_details(self):
-        return "\'{}\'.".format(self.object_name().encode("utf8"))
+        return "\'{}\'.".format(self.object_name())
 
 class SmartViewWidgetMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value):
@@ -33,7 +33,7 @@ class SmartViewWidgetMetadataTraits(MetadataTraitsBase):
         return ""
 
     def object_details(self):
-        return "\'{}\' ({}).".format(self.object_name().encode("utf8"), self.smartview_instance_type_details())
+        return "\'{}\' ({}).".format(self.object_name(), self.smartview_instance_type_details())
 
 class TaskMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value):
@@ -56,7 +56,7 @@ class TaskMetadataTraits(MetadataTraitsBase):
         except KeyError as err:  
             pass     
 
-        return "\'{}\' with {} and {}.".format(self.object_name().encode("utf8"), designObjectStatus, materialStatus)
+        return "\'{}\' with {} and {}.".format(self.object_name(), designObjectStatus, materialStatus)
         
 class SiteMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value):
@@ -94,7 +94,7 @@ class RegionMetadataTraits(MetadataTraitsBase):
         except KeyError as err:  
             pass    
 
-        return "\'{}\' with {} vertices and {}.".format(self.object_name().encode("utf8"), verticiesLen, siteDiscoveryStatus)
+        return "\'{}\' with {} vertices and {}.".format(self.object_name(), verticiesLen, siteDiscoveryStatus)
 
 
 class OperatorMetadataTraits():
@@ -140,7 +140,7 @@ class DesignObjectSetMetadataTraits(MetadataTraitsBase):
         except KeyError as err:  
             pass    
 
-        return "\'{}\' with {} Design Object(s).".format(self.object_name().encode("utf8"), designObjectLen)
+        return "\'{}\' with {} Design Object(s).".format(self.object_name(), designObjectLen)
 
 class ListMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value):
@@ -173,7 +173,7 @@ class AuthCodeMetadataTraits(MetadataTraitsBase):
         except KeyError as err:  
             pass    
 
-        return "\'{}\' with validity of {} day(s).".format(self.object_name().encode("utf8"), validDays)
+        return "\'{}\' with validity of {} day(s).".format(self.object_name(), validDays)
 
 class AssetMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value):
@@ -186,49 +186,56 @@ class AssetMetadataTraits(MetadataTraitsBase):
         except KeyError as err:  
             pass    
 
-        return "\'{}\' ({}).".format(self.object_name().encode("utf8"), assetClass)
+        return "\'{}\' ({}).".format(self.object_name(), assetClass)
 
 class Metadata(object):
 
     def traits_factory(a_object_value):
-        if a_object_value["_type"] == "sl::task":
-            return TaskMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::smartview":
-            return SmartViewWidgetMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::site":
-            return SiteMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::shift_plan":
-            return GenericNamedMetadataTraits(a_object_value, "Shift Plan")
-        if a_object_value["_type"] == "sl::region":
-            return RegionMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::operator":
-            return OperatorMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::material":
-            return MaterialMetadataTraits(a_object_value)    
-        if a_object_value["_type"] == "_type" and a_object_value["_mixin"] == "sl::smartview":
-            return GenericNamedMetadataTraits(a_object_value, "Widget Type")   
-        if a_object_value["_type"] == "sl::designObjectSet":
-            return DesignObjectSetMetadataTraits(a_object_value)      
-        if a_object_value["_type"] == "sl::delay":
-            return GenericNamedMetadataTraits(a_object_value, "Delay")    
-        if a_object_value["_type"] == "sl::list":
-            return ListMetadataTraits(a_object_value)   
-        if a_object_value["_type"] == "sl::auth_code":
-            return AuthCodeMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::asset":
-            return AssetMetadataTraits(a_object_value)
-        if a_object_value["_type"] == "sl::asbuilt_passcount_color_map":
-            return GenericNamedMetadataTraits(a_object_value, "AsBuilt Pass Count Color Map")
-        if a_object_value["_type"] == "sl::asbuilt_cutfill_color_map":
-            return GenericNamedMetadataTraits(a_object_value, "AsBuilt Cut Fill Color Map")
-        if a_object_value["_type"] == "sl::asbuilt_stiffness_color_map":
-            return GenericNamedMetadataTraits(a_object_value, "AsBuilt Stiffness Color Map")
-        if a_object_value["_type"] == "sl::asbuilt_temperature_color_map":
-            return GenericNamedMetadataTraits(a_object_value, "AsBuilt Temperature Color Map")
-        if a_object_value["_type"] == "fs::file":
-            return GenericNamedMetadataTraits(a_object_value, "File")
-        if a_object_value["_type"] == "fs::folder":
-            return GenericNamedMetadataTraits(a_object_value, "Folder")
+        try:
+            if a_object_value["_type"] == "sl::task":
+                return TaskMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::smartview":
+                return SmartViewWidgetMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::site":
+                return SiteMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::shift_plan":
+                return GenericNamedMetadataTraits(a_object_value, "Shift Plan")
+            if a_object_value["_type"] == "sl::region":
+                return RegionMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::operator" or  a_object_value["_type"] == "sl::customer":
+                return OperatorMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::material":
+                return MaterialMetadataTraits(a_object_value)    
+            if a_object_value["_type"] == "_type" and a_object_value["_mixin"] == "sl::smartview":
+                return GenericNamedMetadataTraits(a_object_value, "Widget Type")   
+            if a_object_value["_type"] == "sl::designObjectSet":
+                return DesignObjectSetMetadataTraits(a_object_value)      
+            if a_object_value["_type"] == "sl::delay":
+                return GenericNamedMetadataTraits(a_object_value, "Delay")    
+            if a_object_value["_type"] == "sl::list":
+                return ListMetadataTraits(a_object_value)   
+            if a_object_value["_type"] == "sl::auth_code":
+                return AuthCodeMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::asset":
+                return AssetMetadataTraits(a_object_value)
+            if a_object_value["_type"] == "sl::designObject":
+                return GenericNamedMetadataTraits(a_object_value, "Design Object")
+            if a_object_value["_type"] == "sl::asbuilt_passcount_color_map":
+                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Pass Count Color Map")
+            if a_object_value["_type"] == "sl::asbuilt_cutfill_color_map":
+                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Cut Fill Color Map")
+            if a_object_value["_type"] == "sl::asbuilt_stiffness_color_map":
+                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Stiffness Color Map")
+            if a_object_value["_type"] == "sl::asbuilt_temperature_color_map":
+                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Temperature Color Map")
+            if a_object_value["_type"] == "sl::mapTileset":
+                return GenericNamedMetadataTraits(a_object_value, "Map Tile Set")
+            if a_object_value["_type"] == "fs::file":
+                return GenericNamedMetadataTraits(a_object_value, "File")
+            if a_object_value["_type"] == "fs::folder":
+                return GenericNamedMetadataTraits(a_object_value, "Folder")
+        except TypeError as err:
+            pass
 
         else:
             print(json.dumps(a_object_value, sort_keys=True, indent=4))
