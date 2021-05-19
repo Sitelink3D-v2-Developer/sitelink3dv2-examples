@@ -69,7 +69,7 @@ def main():
     
     token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    logging.info (token)
+    logging.info(token)
 
 
 if __name__ == "__main__":

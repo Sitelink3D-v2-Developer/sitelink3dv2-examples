@@ -11,9 +11,11 @@ import time
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata"))
 
 from get_token import *
 from utils import *
+from metadata_traits import *
 
 
 session = requests.Session()
@@ -36,33 +38,7 @@ class FileUploadBean:
             "upload-file-size" : self.file_size,
         }
 
-class FileRdmBean():
-    def __init__(self, a_file_name, a_id, a_upload_uuid, a_file_size, a_parent_uuid=None):
-        self.name = a_file_name
-        self.file_uuid = a_upload_uuid
-        self.rev = str(uuid.uuid4())
-        self.file_size = a_file_size
-        self.parent_uuid = a_parent_uuid
-        self._id = a_id
-
-    def to_json(self):
-        ret = {
-            "_id": self._id,
-            "name" : self.name,
-            "uuid" : self.file_uuid,
-            "size" : self.file_size,
-            "_rev": self.rev,
-            "_v"   : 0,
-            "_type":"fs::file",
-            "_at":int(round(time.time() * 1000))
-        }
-        if self.parent_uuid:
-            ret["parent"] = str(self.parent_uuid)
-        return ret   
-
-
 def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id, a_headers, a_rdm_headers):
-
 
     with open(a_file_upload_bean.file_location + os.path.sep + a_file_upload_bean.file_name, 'rb') as file_ptr:
         files = { "upload-file" : file_ptr}
@@ -73,8 +49,8 @@ def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id,
         response = session.post(url, headers=a_headers, params=a_file_upload_bean.to_json(), files=files)
         response.raise_for_status()
 
-    data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(a_file_rdm_bean.to_json()).encode('utf-8')).decode('utf-8') }
-    logging.debug("File RDM payload: {}".format(json.dumps(a_file_rdm_bean.to_json(), indent=4)))
+    data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(a_file_rdm_bean).encode('utf-8')).decode('utf-8') }
+    logging.debug("File RDM payload: {}".format(json.dumps(a_file_rdm_bean, indent=4)))
 
     
     url = "{0}/rdm_log/v1/site/{1}/domain/file_system/events".format(a_server_config.to_url(), a_site_id)
@@ -121,8 +97,8 @@ def main():
     token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
-    
-    file_rdm_bean = FileRdmBean(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=args.parent_uuid)
+
+    file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=args.parent_uuid)
 
     upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=to_bearer_token_header(token["access_token"]), a_rdm_headers=to_bearer_token_content_header(token["access_token"]))
    

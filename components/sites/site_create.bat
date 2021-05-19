@@ -1,7 +1,7 @@
 @echo off
 rem # Batch file to create a site.
 
-rem ## Settings for the site:
+rem ## Settings for the site
 set env="qa"
 set dc="us"
 set owner_id=""
@@ -30,7 +30,3 @@ python site_create.py ^
     --site_contact_name %site_contact_name% ^
     --site_contact_email %site_contact_email% ^
     --site_contact_phone %site_contact_phone%
-
-
-
-    
