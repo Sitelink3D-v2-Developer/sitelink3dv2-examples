@@ -1,5 +1,5 @@
 @echo off
-rem # Batch file to run a number of reports, track their status and download the results as files.
+rem # Batch file to stream information about the machines connected to a site.
 
 rem ## Settings for the site:
 set env="prod"

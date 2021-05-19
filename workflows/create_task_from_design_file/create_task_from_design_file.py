@@ -31,6 +31,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_upload"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_features"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_list"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "task_create"))
 
 from get_token      import *
 from utils          import *
@@ -38,6 +39,7 @@ from folder_create  import *
 from file_upload    import *
 from file_features  import *
 from file_list      import *
+from task_create    import *
 from datetime       import datetime
 
 def query_rdm_view(a_server_config, a_domain, a_site_id, a_view, a_headers, a_limit=100):
@@ -74,32 +76,6 @@ def create_design_set(a_server_config, a_site_id, a_design_set_id, a_design_obje
 
     return response.json()    
 
-def create_task(a_server_config, a_site_id, a_design_set_id, a_headers):
-
-    at = int(round(time.time() * 1000))
-
-    data_payload = { "activities":[],
-        "design": { "alignment":{"locked":False},
-                    "designObjectSets":[a_design_set_id],
-                    "surface":{"locked":False}
-                },
-        "materials":{},
-        "name":"%d API Task" % (at),
-        "sequenceTypeClass":"none",
-        "_rev":str(uuid.uuid4()),
-        "_type":"sl::task",
-        "_id": str(uuid.uuid4()),
-        "_at":at
-    }
-
-    logging.debug("Task RDM payload: {}".format(json.dumps(data_payload, indent=4)))
-
-    data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(data_payload).encode('utf-8')).decode('utf-8') }
-    url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(),a_site_id)
-
-    response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
-    response.raise_for_status()        
-    return response.json()
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description="Create a folder, upload a file, extract design data and create a task.")
@@ -205,8 +181,9 @@ logging.debug ("Design Set RDM post returned\n{0}".format(json.dumps(rj,indent=4
 logging.info ("Create a new Task that references the new Design Set:")
 # ------------------------------------------------------------------------------
 
-
-rj = create_task(a_server_config=server, a_site_id=args.site_id, a_design_set_id=design_set_id, a_headers=to_bearer_token_content_header(token["access_token"]))
+a_server_config, a_site_id, a_task_name, a_headers, a_design_set_id=None
+at = int(round(time.time() * 1000))
+rj = create_task(a_server_config=server, a_site_id=args.site_id, a_task_name="%d API Task" % (at), a_headers=to_bearer_token_content_header(token["access_token"]), a_design_set_id=design_set_id)
 
 logging.debug("Task RDM post returned\n{0}".format(json.dumps(rj,indent=4)))
 
