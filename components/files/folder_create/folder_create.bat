@@ -10,7 +10,7 @@ set folder_name=""
 set folder_uuid=""
 set parent_uuid=""
 
-rem ## Authentication
+rem ## Auth
 set oauth_id=""
 set oauth_secret=""
 set oauth_scope=""
@@ -22,7 +22,6 @@ python folder_create.py ^
     --folder_name %folder_name% ^
     --folder_uuid %folder_uuid% ^
     --parent_uuid %parent_uuid% ^
-    --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^
     --oauth_scope %oauth_scope%
