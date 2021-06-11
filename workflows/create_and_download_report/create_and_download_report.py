@@ -68,7 +68,7 @@ report_name = args.name or "Report for Period {} to {} run {}".format(report_sta
 
 
        
-# create a haul, delay and weight reports spanning the configured time range
+# create haul, delay, weight & activity reports spanning the configured time range
 haul_report_traits = HaulReportTraits(a_report_subtype="hauls", a_results_header=header_json)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Haul {}".format(report_name), a_report_traits=haul_report_traits, a_report_term=args.term, a_headers=header_json)
 
@@ -77,3 +77,6 @@ create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_sta
 
 weight_report_traits = WeightReportTraits()
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Weight {}".format(report_name), a_report_traits=weight_report_traits, a_report_term=args.term, a_headers=header_json)
+
+activity_report_traits = ActivityReportTraits()
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Activity {}".format(report_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_headers=header_json)
