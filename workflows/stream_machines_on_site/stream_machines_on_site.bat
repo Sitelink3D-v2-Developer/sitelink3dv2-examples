@@ -11,7 +11,7 @@ set oauth_id=""
 set oauth_secret=""
 set oauth_scope=""
 
-python list_machines_on_site.py ^
+python stream_machines_on_site.py ^
     --dc %dc% ^
     --env %env% ^
     --site_id %site_id% ^
