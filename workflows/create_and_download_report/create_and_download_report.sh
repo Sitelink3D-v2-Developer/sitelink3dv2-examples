@@ -1,5 +1,5 @@
 #!/bin/bash
-# Batch file to run a number of reports, track their status and download the results as files.
+# Shell file to run a number of reports, track their status and download the results as files.
 
 ## Settings for the site
 env="qa"
