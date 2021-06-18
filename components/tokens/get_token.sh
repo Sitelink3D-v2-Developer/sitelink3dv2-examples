@@ -1,18 +1,18 @@
 #!/bin/bash
-# Shell file to exchange oauth client credentials for an API token.
+## Shell file to exchange oauth client credentials for an API token.
 
-## Settings for the site:
+## Settings for the environment.
 env="qa"
 dc="us"
 
-## Authentication
+## Authorization
 oauth_id=""
 oauth_secret=""
 oauth_scope=""
 
 exec python get_token.py \
-    --dc "$dc" \
     --env "$env" \
+    --dc "$dc" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \
     --oauth_scope "$oauth_scope"

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Shell file to create a site.
+## Shell file to create a site.
 
-## Settings for the site:
+## Settings for the environment.
 env="qa"
 dc="us"
 owner_id=""
@@ -15,12 +15,13 @@ site_contact_name=""
 site_contact_email=""
 site_contact_phone=""
 
-## Authentication
+## Authorization.
+# run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 jwt=""
 
-exec python site_create.py ^
-    --dc "$dc" \
+exec python site_create.py \
     --env "$env" \
+    --dc "$dc" \
     --owner_id "$owner_id" \
     --jwt "$jwt" \
     --site_name "$site_name" \
@@ -29,4 +30,5 @@ exec python site_create.py ^
     --site_timezone "$site_timezone" \
     --site_contact_name "$site_contact_name" \
     --site_contact_email "$site_contact_email" \
-    --site_contact_phone "$site_contact_phone"    
+    --site_contact_phone "$site_contact_phone"
+  

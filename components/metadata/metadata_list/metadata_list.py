@@ -14,6 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 from get_token import *
 from utils import *
 from metadata_traits import *
+from args import *
 
 session = requests.Session()
 
@@ -41,13 +42,11 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Metadata Listing")
 
     # script parameters:
-    arg_parser.add_argument("--log-format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    arg_parser.add_argument("--log-level", default=logging.INFO)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     # server parameters:
-    arg_parser.add_argument("--dc", default="", required=True)
-    arg_parser.add_argument("--env", default="", help="deploy env (which determines server location)")
-    arg_parser.add_argument("--jwt", default="", help="jwt")
+    arg_parser = add_arguments_environment(arg_parser)
+    arg_parser = add_arguments_auth(arg_parser)
 
     # request parameters:
     arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
@@ -63,7 +62,7 @@ def main():
 
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 
-    header_jwt_json = to_jwt_token_header(a_jwt_token=args.jwt)
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     rdm_domains = ["sitelink", "file_system", "operator", "reporting"]
 
@@ -72,7 +71,7 @@ def main():
 
         rdm_view_list_url = "{0}/rdm/v1/site/{1}/domain/{2}/view/_view".format(server.to_url(), args.site_id, domain)
 
-        response = session.get(rdm_view_list_url, headers=header_jwt_json, params={"limit":args.page_limit})
+        response = session.get(rdm_view_list_url, headers=headers, params={"limit":args.page_limit})
         rdm_view_list = response.json()
         logging.debug (json.dumps(rdm_view_list, sort_keys=True, indent=4))
         view_list_length = 0
@@ -84,7 +83,7 @@ def main():
         logging.info("Found {} views.".format(view_list_length))
         for rdm_view in rdm_view_list["items"]:
             logging.info("querying view {}".format(rdm_view["id"]))
-            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_headers=header_jwt_json)
+            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_headers=headers)
 
             logging.info ("Found {} items".format(len(metadata_list)))
             for fi in metadata_list:

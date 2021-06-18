@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 from get_token import *
 from utils import *
 from metadata_traits import *
+from args import *
 
 def list_sites(a_server_config, a_owner_id, a_headers):
 
@@ -30,12 +31,10 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Site List.")
 
     # script parameters:
-    arg_parser.add_argument("--log-format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    arg_parser.add_argument("--log-level", default=logging.INFO)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     # server parameters:
-    arg_parser.add_argument("--dc", required=True)
-    arg_parser.add_argument("--env", default="", help="deploy env (which determines server location)")
+    arg_parser = add_arguments_environment(arg_parser)
     arg_parser.add_argument("--jwt", default="", help="jwt")
 
     # request parameters:

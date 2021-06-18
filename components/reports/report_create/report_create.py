@@ -22,12 +22,12 @@ def poll_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
     job = fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers)
     status = job.get("status") or "SUBMITTED"
     while status not in ["CANCELLED", "COMPLETE", "FAILED"]:
-        logging.debug("Job {} status is {} ...".format(a_job_id, status))
+        print("Job {} status is {} ...".format(a_job_id, status))
         time.sleep(5)
         job = fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers)
         status = job.get("status", "SUBMITTED")
     job = fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers)
-    logging.debug("Job {} final status is {}.".format(a_job_id, status))    
+    print("Job {} final status is {}.".format(a_job_id, status))    
 
 def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
     response = session.get(a_report_url, headers=a_headers, allow_redirects=False)
@@ -68,8 +68,11 @@ def create_and_download_report(a_server_config, a_site_id, a_start_unix_time_mil
 
     target = download_url_for_job(a_server_config=a_server_config, a_site_id=a_site_id, a_report_traits=a_report_traits, a_report_term=a_report_term, a_job_id=report_job_id, a_headers=a_headers)
     
-    url, name = target
-    logging.debug(url)
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    output_dir = os.path.join(current_dir, a_site_id)
-    download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=output_dir, a_report_name=name) 
+    if None == target:
+        print("No results.")
+    else:
+        url, name = target
+        logging.debug(url)
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        output_dir = os.path.join(current_dir, a_site_id)
+        download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=output_dir, a_report_name=name) 

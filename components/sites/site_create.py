@@ -14,8 +14,9 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 from get_token import *
 from utils import *
 from metadata_traits import *
+from args import *
 
-def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_longitude, a_phone, a_email, a_name, a_timezone, a_headers):
+def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_longitude, a_phone, a_email, a_name, a_timezone, a_headers, a_rdm_headers):
 
     create_site_url = "{0}/siteowner/v1/owners/{1}/create_site".format(a_server_config.to_url(), a_owner_id)
 
@@ -42,7 +43,7 @@ def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_lo
 
     data_encoded_json = {"data_b64": base64.b64encode(json.dumps(payload_json).encode('utf-8')).decode('utf-8')}
     create_site_rdm_url = "{0}/rdm_log/v1/site/{1}/domain/{2}/events".format(a_server_config.to_url(), site_id, "sitelink")
-    response = session.post(create_site_rdm_url, headers=a_headers, data=json.dumps(data_encoded_json))
+    response = session.post(create_site_rdm_url, headers=a_rdm_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()
     return site_id
 
@@ -51,12 +52,10 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Site Creation.")
 
     # script parameters:
-    arg_parser.add_argument("--log-format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    arg_parser.add_argument("--log-level", default=logging.INFO)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     # server parameters:
-    arg_parser.add_argument("--dc", default="SR_EDGE_DC")
-    arg_parser.add_argument("--env", default="", help="deploy env (which determines server location)")
+    arg_parser = add_arguments_environment(arg_parser)
     arg_parser.add_argument("--jwt", default="", help="jwt")
 
     # request parameters:
@@ -80,11 +79,12 @@ def main():
 
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-    header_json = to_jwt_token_header(a_jwt_token=args.jwt)
+    headers =  to_jwt_token_header(a_jwt_token=args.jwt, a_content_type="")
+    headers_json_content = to_jwt_token_header(a_jwt_token=args.jwt)
 
     logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 
-    site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=header_json)
+    site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers, a_rdm_headers=headers_json_content)
 
     logging.info("Site {0} successfully created \n".format(site_id, indent=4))
 

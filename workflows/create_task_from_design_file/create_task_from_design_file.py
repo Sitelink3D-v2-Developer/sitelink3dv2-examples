@@ -41,6 +41,8 @@ from file_features  import *
 from file_list      import *
 from task_create    import *
 from datetime       import datetime
+from args           import *
+from metadata_traits import *
 
 def query_rdm_view(a_server_config, a_domain, a_site_id, a_view, a_headers, a_limit=100):
     url = "{0}/rdm/v1/site/{1}/domain/{2}/view/{3}?limit={4}".format(a_server_config.to_url(), a_site_id, a_domain, a_view, a_limit)
@@ -81,15 +83,11 @@ def create_design_set(a_server_config, a_site_id, a_design_set_id, a_design_obje
 arg_parser = argparse.ArgumentParser(description="Create a folder, upload a file, extract design data and create a task.")
 
 # script parameters:
-arg_parser.add_argument("--log_format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-arg_parser.add_argument("--log_level", default=logging.INFO)
+arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
 # server parameters:
-arg_parser.add_argument("--dc", default="us", required=True)
-arg_parser.add_argument("--env", default="", help="deploy environment (which determines server location)")
-arg_parser.add_argument("--oauth_id", default="", help="oauth_id")
-arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
-arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
+arg_parser = add_arguments_environment(arg_parser)
+arg_parser = add_arguments_auth(arg_parser)
 
 # request parameters:
 arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
@@ -104,8 +102,8 @@ session = requests.Session()
 
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-header_json = to_bearer_token_content_header(token["access_token"])
+headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server, a_content_type="")
+headers_json_content = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
 # << Server settings
 
@@ -120,7 +118,7 @@ parent = None # Set this to the uuid of an existing folder to create a subfolder
 folder_name = "{}-design-data-folder".format(int(round(time.time() * 1000)))
 folder_bean = FolderBean(a_name=folder_name, a_id=uuid.uuid4(), a_parent_uuid=parent)
 
-make_folder(a_folder_bean=folder_bean, a_server_config=server, a_site_id=args.site_id, a_headers=to_bearer_token_content_header(token["access_token"]))
+make_folder(a_folder_bean=folder_bean, a_server_config=server, a_site_id=args.site_id, a_headers=headers)
 
 logging.info("Uploading files to folder id={0} name={1}".format(folder_bean._id, folder_name))
 
@@ -128,25 +126,24 @@ logging.info("Uploading files to folder id={0} name={1}".format(folder_bean._id,
 logging.info("Uploading file containing design data ...")
 # ------------------------------------------------------------------------------
 
+file_name_to_upload = "tps-bris.tp3"
 
-file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name="tps-bris.tp3")
+file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=file_name_to_upload)
+file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=file_name_to_upload, a_id=str(file_upload_bean.upload_uuid), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
 
-file_rdm_bean = FileRdmBean(a_file_name="tps-bris.tp3", a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
-
-upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=to_bearer_token_header(token["access_token"]), a_rdm_headers=to_bearer_token_content_header(token["access_token"]))
-
+upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_rdm_headers=headers_json_content)
 
 # ------------------------------------------------------------------------------
 logging.info("Posting job to query file features (interrogate file for design objects):")
 # ------------------------------------------------------------------------------
 
-features_to_import = query_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_rdm_bean.name, a_headers=to_bearer_token_content_header(token["access_token"]))
+features_to_import = query_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_name_to_upload, a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Posting job to import the discovered features (design objects) from file:")
 # ------------------------------------------------------------------------------
 
-import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_rdm_bean.name, a_features=features_to_import, a_headers=to_bearer_token_content_header(token["access_token"]))
+import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_name_to_upload, a_features=features_to_import, a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Listing design objects using RDM view:")
@@ -156,7 +153,7 @@ logging.info("Listing design objects using RDM view:")
 time.sleep(0.5)
 
 
-rj = query_rdm_view(a_server_config=server, a_domain="sitelink", a_site_id=args.site_id, a_view="v_sl_designObject_by_path", a_headers=to_bearer_token_content_header(token["access_token"]))
+rj = query_rdm_view(a_server_config=server, a_domain="sitelink", a_site_id=args.site_id, a_view="v_sl_designObject_by_path", a_headers=headers)
 
 logging.debug("RDM view design objects by path of size {}: {}".format(len(rj["items"]), json.dumps(rj, indent=4)))
 
@@ -171,7 +168,7 @@ for i, design_object in enumerate(rj["items"]):
     design_objects_for_design_set.append(design_object["value"]["_id"])
 
 design_set_id = str(uuid.uuid4())
-rj = create_design_set(a_server_config=server, a_site_id=args.site_id, a_design_set_id=design_set_id, a_design_objects=design_objects_for_design_set, a_headers=to_bearer_token_content_header(token["access_token"]))
+rj = create_design_set(a_server_config=server, a_site_id=args.site_id, a_design_set_id=design_set_id, a_design_objects=design_objects_for_design_set, a_headers=headers)
 
 
 logging.debug ("Design Set RDM post returned\n{0}".format(json.dumps(rj,indent=4)))
@@ -181,9 +178,8 @@ logging.debug ("Design Set RDM post returned\n{0}".format(json.dumps(rj,indent=4
 logging.info ("Create a new Task that references the new Design Set:")
 # ------------------------------------------------------------------------------
 
-a_server_config, a_site_id, a_task_name, a_headers, a_design_set_id=None
 at = int(round(time.time() * 1000))
-rj = create_task(a_server_config=server, a_site_id=args.site_id, a_task_name="%d API Task" % (at), a_headers=to_bearer_token_content_header(token["access_token"]), a_design_set_id=design_set_id)
+rj = create_task(a_server_config=server, a_site_id=args.site_id, a_task_name="%d API Task" % (at), a_headers=headers, a_design_set_id=design_set_id)
 
 logging.debug("Task RDM post returned\n{0}".format(json.dumps(rj,indent=4)))
 
