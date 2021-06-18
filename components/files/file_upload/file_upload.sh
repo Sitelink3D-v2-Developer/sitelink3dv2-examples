@@ -1,17 +1,17 @@
 #!/bin/bash
-# Shell file to upload file
+## Shell file to upload file.
 
-## Settings for the site:
+## ## Settings for the environment.
 env="qa"
 dc="us"
 site_id=""
 
-file_name=""
 file_name="file_to_upload.txt"
 file_uuid=""
 parent_uuid=""
 
-## Authentication
+## Authorization. OAuth credentials are used if the JWT string is empty.
+## run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 jwt=""
 # - or -
 oauth_id=""
@@ -19,8 +19,8 @@ oauth_secret=""
 oauth_scope=""
 
 exec python file_upload.py \
-    --dc "$dc" \
     --env "$env" \
+    --dc "$dc" \
     --site_id "$site_id" \
     --file_name "$file_name" \
     --file_uuid "$file_uuid" \

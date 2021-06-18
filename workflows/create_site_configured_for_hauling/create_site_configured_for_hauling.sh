@@ -1,12 +1,13 @@
 #!/bin/bash
-# Shell file to create a site ready to connect hauler clients to.
+## Shell file to create a site ready to connect Topcon Haul App clients to.
 
 ## Settings for the site
 env="qa"
 dc="us"
 
 ## Site creation specifics
-owner_id="" # run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console for this value
+# run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console to obtain the owner / organization identifier.
+owner_id=""
 
 site_name="API Hauling Site"
 site_latitude="-27.979320763437187" 
@@ -24,7 +25,8 @@ region_discovery_file="regions/discovery_region_verticies.txt"
 region_load_file="regions/load_region_verticies.txt"
 region_dump_file="regions/dump_region_verticies.txt"
 
-## Auth
+## Authorization.
+# run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 jwt=""
 
 exec python create_site_configured_for_hauling.py \
@@ -43,3 +45,4 @@ exec python create_site_configured_for_hauling.py \
     --region_discovery_verticies_file "$region_discovery_file" \
     --region_load_verticies_file "$region_load_file" \
     --region_dump_verticies_file "$region_dump_file" 
+    

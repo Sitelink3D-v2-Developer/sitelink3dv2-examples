@@ -40,8 +40,21 @@ def to_bearer_token_header(a_access_token, a_content_type=""):
     print(ret)
     return ret
 
-def to_jwt_token_header(a_jwt_token):
-    return {'content-type':'application/json', 'X-Topcon-Auth' : a_jwt_token}
+def to_jwt_token_header(a_jwt_token, a_content_type="application/json"):
+    ret = {'X-Topcon-Auth' : a_jwt_token}
+    if len(a_content_type) > 0:
+        ret["Content-Type"] = a_content_type
+    print(ret)
+    return ret
+
+def headers_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_server_config, a_content_type="application/json"):
+    headers = {}
+    if len(a_jwt) > 0:
+        headers = to_jwt_token_header(a_jwt_token=a_jwt, a_content_type=a_content_type)
+    else:
+        token = get_token(a_client_id=a_client_id, a_client_secret=a_client_secret, a_scope=a_scope, a_server_config=a_server_config)
+        headers = to_bearer_token_header(token["access_token"], a_content_type)
+    return headers
 
 def main():
     # >> Arguments

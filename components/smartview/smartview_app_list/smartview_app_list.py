@@ -31,8 +31,8 @@ def main():
     # >> Arguments
 
     arg_parser = argparse.ArgumentParser(description="Smartview App Listing")
-    arg_parser = add_environment_arguments(arg_parser)
-    arg_parser = add_logging_arguments(arg_parser, logging.INFO)
+    arg_parser = add_arguments_environment(arg_parser)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     arg_parser.set_defaults()
     args = arg_parser.parse_args()

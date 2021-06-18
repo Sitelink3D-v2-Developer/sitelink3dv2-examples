@@ -15,7 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 
 from get_token import *
 from utils import *
-
+from args import *
 
 session = requests.Session()
 
@@ -50,18 +50,12 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Upload a file.")
 
     # script parameters:
-    arg_parser.add_argument("--log-format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    arg_parser.add_argument("--log-level", default=logging.INFO)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     arg_parser.add_argument("--file_uuid", default=str(uuid.uuid4()), help="UUID of file")
 
-    # server parameters:
-    arg_parser.add_argument("--dc", default="", required=True)
-    arg_parser.add_argument("--env", default="", help="deploy environment (which determines server location)")
-    arg_parser.add_argument("--jwt", default="", help="jwt")
-    arg_parser.add_argument("--oauth_id", default="", help="oauth_id")
-    arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
-    arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
+    arg_parser = add_arguments_environment(arg_parser)
+    arg_parser = add_arguments_auth(arg_parser)
 
     # request parameters:
     arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
@@ -75,12 +69,7 @@ def main():
    
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 
-    headers = {}
-    if len(args.jwt) > 0:
-        headers = to_jwt_token_header(a_jwt_token=args.jwt)
-    else:
-        token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-        headers = to_bearer_token_header(token["access_token"])
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=args.file_uuid, a_headers=headers)
 

@@ -1,12 +1,12 @@
 @echo off
-rem # Batch file to create a site ready to connect hauler clients to.
+rem ## Batch file to create a site ready to connect Topcon Haul App clients to.
 
-rem ## Settings for the site
+rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 
-rem ## Site creation specifics
-rem # run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console for this value
+rem ## Site creation specifics.
+rem # run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console to obtain the owner / organization identifier.
 set owner_id="" 
 
 set site_name="API Hauling Site"
@@ -25,12 +25,13 @@ set region_discovery_file="regions/discovery_region_verticies.txt"
 set region_load_file="regions/load_region_verticies.txt"
 set region_dump_file="regions/dump_region_verticies.txt"
 
-rem ## Auth
+rem ## Authorization.
+rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 set jwt=""
 
 python create_site_configured_for_hauling.py ^
+    --env %env% ^    
     --dc %dc% ^
-    --env %env% ^
     --owner_id %owner_id% ^
     --jwt %jwt% ^
     --site_name %site_name% ^

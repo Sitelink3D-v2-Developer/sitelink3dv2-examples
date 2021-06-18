@@ -1,19 +1,21 @@
 @echo off
-rem # Batch file to list the sites at an organization / owner.
+rem ## Batch file to list the sites at an organization / owner.
 
-rem ## Settings for the site:
+rem ## Settings for the environment.
 set env="qa"
 set dc="us"
-rem # run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console for this value
+
+rem ## Settings specific to this script.
+rem # run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console to obtain the owner / organization identifier.
 set owner_id=""
 
-rem ## Auth
-rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console for this value
+rem ## Authorization
+rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 set jwt=""
 
 python site_list.py ^
-    --dc %dc% ^
     --env %env% ^
+    --dc %dc% ^
     --owner_id %owner_id% ^
-    --jwt %jwt%
+    --jwt %jwt% 
     

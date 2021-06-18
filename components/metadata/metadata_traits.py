@@ -42,7 +42,7 @@ class FileMetadataTraits(MetadataTraitsBase):
             ret["parent"] = str(a_parent_uuid)
         return ret
 
-class DelayMetadataTraits(MetadataTraitsBase):
+class DelayMetadataTraits(GenericNamedMetadataTraits):
     def __init__(self, a_object_value, a_display_name):
         MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
 
