@@ -91,6 +91,7 @@ arg_parser = add_arguments_auth(arg_parser)
 
 # request parameters:
 arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
+arg_parser.add_argument("--design_file_name", default="", required=True)
 
 arg_parser.set_defaults()
 args = arg_parser.parse_args()
@@ -126,10 +127,8 @@ logging.info("Uploading files to folder id={0} name={1}".format(folder_bean._id,
 logging.info("Uploading file containing design data ...")
 # ------------------------------------------------------------------------------
 
-file_name_to_upload = "tps-bris.tp3"
-
-file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=file_name_to_upload)
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=file_name_to_upload, a_id=str(file_upload_bean.upload_uuid), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
+file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=args.design_file_name)
+file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.design_file_name, a_id=str(file_upload_bean.upload_uuid), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
 
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_rdm_headers=headers_json_content)
 
@@ -137,13 +136,13 @@ upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, 
 logging.info("Posting job to query file features (interrogate file for design objects):")
 # ------------------------------------------------------------------------------
 
-features_to_import = query_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_name_to_upload, a_headers=headers)
+features_to_import = query_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=args.design_file_name, a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Posting job to import the discovered features (design objects) from file:")
 # ------------------------------------------------------------------------------
 
-import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=file_name_to_upload, a_features=features_to_import, a_headers=headers)
+import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=args.design_file_name, a_features=features_to_import, a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Listing design objects using RDM view:")
