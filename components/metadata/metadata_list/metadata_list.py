@@ -67,7 +67,7 @@ def main():
     rdm_domains = ["sitelink", "file_system", "operator", "reporting"]
 
     for domain in rdm_domains:
-        logging.info("Queriing RDM {} domain for views.".format(domain))
+        logging.info("Querying RDM {} domain for views.".format(domain))
 
         rdm_view_list_url = "{0}/rdm/v1/site/{1}/domain/{2}/view/_view".format(server.to_url(), args.site_id, domain)
 
