@@ -7,8 +7,8 @@ import time
 
 # >> Server URL:
 def shp(env):
-    if env == "qa":    return "https", "qa-api.code.topcon.com", "443"
-    if env == "prod":  return "https", "api.code.topcon.com", "443"
+    if env == "qa":    return "https", "qa-api.sitelink.topcon.com", "443"
+    if env == "prod":  return "https", "api.sitelink.topcon.com", "443"
     raise ValueError("no idea about env={}".format(env))
 
 class ServerConfig():

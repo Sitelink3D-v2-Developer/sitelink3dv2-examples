@@ -16,9 +16,9 @@ from args import *
 
 session = requests.Session()
 
-def query_files(a_server_config, a_site_id, a_page_limit, a_start, a_headers):
+def query_files(a_server_config, a_site_id, a_page_limit, a_start, a_domain, a_view, a_headers):
 
-    rdm_list_files_url = "{0}/rdm/v1/site/{1}/domain/file_system/view/v_fs_files_by_folder".format(a_server_config.to_url(), a_site_id)
+    rdm_list_files_url = "{0}/rdm/v1/site/{1}/domain/{2}/view/{3}".format(a_server_config.to_url(), a_site_id, a_domain, a_view)
 
     # Listing files
     params = {}
@@ -32,7 +32,7 @@ def query_files(a_server_config, a_site_id, a_page_limit, a_start, a_headers):
     response.raise_for_status()
     file_list = response.json()["items"]
 
-    logging.debug("Files listing result for site {0} \n{1}".format(a_site_id, json.dumps(file_list, indent=4)))
+    logging.debug("Files listing result for site {0}, domain {1}, view {2} \n{3}".format(a_site_id, a_domain, a_view, json.dumps(file_list, indent=4)))
     
     return file_list
 
@@ -64,12 +64,16 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    file_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_headers=headers)
+    filesystem_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers)
+    operator_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="operator", a_view="v_op_files_by_operator", a_headers=headers)
 
-    logging.info ("Found {} files".format(len(file_list)))
-    for fi in file_list:
+    logging.info ("Found {} files in the 'file_system' domain".format(len(filesystem_domain_list)))
+    for fi in filesystem_domain_list:
         logging.info (json.dumps(fi, sort_keys=True, indent=4))
-
+    
+    logging.info ("Found {} files in the 'operator' domain".format(len(operator_domain_list)))
+    for fi in operator_domain_list:
+        logging.info (json.dumps(fi, sort_keys=True, indent=4))
 
 if __name__ == "__main__":
     main()    

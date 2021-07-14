@@ -130,7 +130,7 @@ logging.info("Uploading file containing design data ...")
 file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=args.design_file_name)
 file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.design_file_name, a_id=str(file_upload_bean.upload_uuid), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
 
-upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_rdm_headers=headers_json_content)
+upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers, a_rdm_headers=headers_json_content)
 
 # ------------------------------------------------------------------------------
 logging.info("Posting job to query file features (interrogate file for design objects):")

@@ -39,7 +39,7 @@ class FileUploadBean:
             "upload-file-size" : self.file_size,
         }
 
-def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id, a_headers, a_rdm_headers):
+def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id, a_domain, a_headers, a_rdm_headers):
 
     with open(a_file_upload_bean.file_location + os.path.sep + a_file_upload_bean.file_name, 'rb') as file_ptr:
         files = { "upload-file" : file_ptr}
@@ -54,7 +54,7 @@ def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id,
     logging.debug("File RDM payload: {}".format(json.dumps(a_file_rdm_bean, indent=4)))
 
     
-    url = "{0}/rdm_log/v1/site/{1}/domain/file_system/events".format(a_server_config.to_url(), a_site_id)
+    url = "{0}/rdm_log/v1/site/{1}/domain/{2}/events".format(a_server_config.to_url(), a_site_id, a_domain)
     logging.debug ("Upload RDM to {}".format(url))
     
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
@@ -72,6 +72,7 @@ def main():
     arg_parser.add_argument("--file_name", default="", required=True)
     arg_parser.add_argument("--file_uuid", default=str(uuid.uuid4()), help="UUID of file")
     arg_parser.add_argument("--parent_uuid", default=None, help="UUID of parent")
+    arg_parser.add_argument("--domain", default="file_system", help="The purpose of the file - file_system or operator")
 
     # server parameters:
     arg_parser = add_arguments_environment(arg_parser)
@@ -85,7 +86,6 @@ def main():
     logging.basicConfig(format=args.log_format, level=args.log_level)
     # << Arguments
 
-
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
    
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
@@ -95,11 +95,10 @@ def main():
 
     file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
 
-    file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=args.parent_uuid)
+    file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
 
-    upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_rdm_headers=headers_json_content)
+    upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain=args.domain, a_headers=headers, a_rdm_headers=headers_json_content)
    
 
 if __name__ == "__main__":
     main()    
-
