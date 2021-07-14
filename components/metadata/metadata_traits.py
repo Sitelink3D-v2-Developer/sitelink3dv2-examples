@@ -27,19 +27,25 @@ class FileMetadataTraits(MetadataTraitsBase):
         MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
 
     @staticmethod
-    def post_bean_json(a_file_name, a_id, a_upload_uuid, a_file_size, a_parent_uuid=None):
+    def post_bean_json(a_file_name, a_id, a_upload_uuid, a_file_size, a_domain="file_system", a_parent_uuid=None):
         ret = {
             "_id": a_id,
             "name" : a_file_name,
-            "uuid" : a_upload_uuid,
             "size" : a_file_size,
             "_rev": str(uuid.uuid4()),
             "_v"   : 0,
-            "_type":"fs::file",
             "_at":int(round(time.time() * 1000))
         }
-        if a_parent_uuid:
-            ret["parent"] = str(a_parent_uuid)
+        if a_domain == "file_system":
+            ret["uuid"] = a_upload_uuid
+            ret["_type"] = "fs::file"
+            if a_parent_uuid:
+                ret["parent"] = str(a_parent_uuid)
+        elif a_domain == "operator":
+            ret["sitelink_file_id"] = a_upload_uuid
+            ret["_type"] = "op::file"
+            if a_parent_uuid:
+                ret["operator"] = str(a_parent_uuid)
         return ret
 
 class DelayMetadataTraits(GenericNamedMetadataTraits):
@@ -518,6 +524,8 @@ class Metadata(object):
             if a_object_value["_type"] == "sl::mapTileset":
                 return GenericNamedMetadataTraits(a_object_value, "Map Tile Set")
             if a_object_value["_type"] == "fs::file":
+                return GenericNamedMetadataTraits(a_object_value, "File")
+            if a_object_value["_type"] == "op::file":
                 return GenericNamedMetadataTraits(a_object_value, "File")
             if a_object_value["_type"] == "fs::folder":
                 return GenericNamedMetadataTraits(a_object_value, "Folder")
