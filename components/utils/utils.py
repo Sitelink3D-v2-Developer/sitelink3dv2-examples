@@ -6,14 +6,14 @@ import pytz
 import time
 
 # >> Server URL:
-def shp(env):
-    if env == "qa":    return "https", "qa-api.sitelink.topcon.com", "443"
-    if env == "prod":  return "https", "api.sitelink.topcon.com", "443"
+def shp(env, a_scheme):
+    if env == "qa":    return a_scheme, "qa-api.sitelink.topcon.com", "443"
+    if env == "prod":  return a_scheme, "api.sitelink.topcon.com", "443"
     raise ValueError("no idea about env={}".format(env))
 
 class ServerConfig():
-    def __init__(self, a_environment, a_data_center):
-        self._scheme, self._host, self._port = shp(a_environment)
+    def __init__(self, a_environment, a_data_center, a_scheme="https"):
+        self._scheme, self._host, self._port = shp(a_environment, a_scheme)
         self._data_center = a_data_center        
 
     def to_url(self):

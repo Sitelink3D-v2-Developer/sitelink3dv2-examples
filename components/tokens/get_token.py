@@ -47,6 +47,10 @@ def to_jwt_token_header(a_jwt_token, a_content_type="application/json"):
     print(ret)
     return ret
 
+def token_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_server_config):
+    token = a_jwt if len(a_jwt) > 0 else get_token(a_client_id=a_client_id, a_client_secret=a_client_secret, a_scope=a_scope, a_server_config=a_server_config)
+    return token
+
 def headers_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_server_config, a_content_type="application/json"):
     headers = {}
     if len(a_jwt) > 0:

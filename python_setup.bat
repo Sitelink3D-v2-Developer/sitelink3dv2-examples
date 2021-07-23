@@ -3,4 +3,7 @@ pip install ^
   requests ^
   tqdm ^
   python-dateutil ^
-  pytz
+  pytz ^
+  websockets ^
+  websocket-client ^
+  numpy
