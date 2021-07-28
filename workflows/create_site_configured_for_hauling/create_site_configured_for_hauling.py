@@ -69,15 +69,14 @@ session = requests.Session()
 
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-headers = to_jwt_token_header(a_jwt_token=args.jwt)
-headers_json_content = to_jwt_token_header(a_jwt_token=args.jwt)
+headers = to_bearer_token_header(a_access_token=args.jwt)
 
 logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 
 
 ###### First create a site
 logging.info("creating site")
-site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers, a_rdm_headers=headers_json_content)
+site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
 logging.info("Site {0} successfully created.".format(site_id, indent=4))
 
 ###### Create some materials that we can reference as haul mixins when we later create regions. One basic material and another with some additional optional configuration.
