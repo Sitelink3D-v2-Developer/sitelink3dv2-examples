@@ -103,8 +103,7 @@ session = requests.Session()
 
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server, a_content_type="")
-headers_json_content = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
 # << Server settings
 
@@ -130,7 +129,7 @@ logging.info("Uploading file containing design data ...")
 file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=args.design_file_name)
 file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.design_file_name, a_id=str(file_upload_bean.upload_uuid), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
 
-upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers, a_rdm_headers=headers_json_content)
+upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Posting job to query file features (interrogate file for design objects):")

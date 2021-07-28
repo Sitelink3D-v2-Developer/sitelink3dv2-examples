@@ -39,7 +39,7 @@ class FileUploadBean:
             "upload-file-size" : self.file_size,
         }
 
-def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id, a_domain, a_headers, a_rdm_headers):
+def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id, a_domain, a_headers):
 
     with open(a_file_upload_bean.file_location + os.path.sep + a_file_upload_bean.file_name, 'rb') as file_ptr:
         files = { "upload-file" : file_ptr}
@@ -90,14 +90,13 @@ def main():
    
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 
-    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server, a_content_type="")
-    headers_json_content = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
 
     file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
 
-    upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain=args.domain, a_headers=headers, a_rdm_headers=headers_json_content)
+    upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain=args.domain, a_headers=headers)
    
 
 if __name__ == "__main__":

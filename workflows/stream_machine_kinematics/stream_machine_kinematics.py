@@ -35,13 +35,14 @@ logging.basicConfig(format=args.log_format, level=args.log_level)
 # >> Server settings
 session = requests.Session()
 
-server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="wss")
+server_wss = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="wss")
+server_https = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
 
-logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server_wss.to_url(), args.dc, args.site_id))
 
-token = token_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+token = token_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server_https)
 
-mfk_live_url = "{0}/mfk_live/v1/subscribe/{1}?access_token={2}".format(server.to_url(), args.site_id, token)
+mfk_live_url = "{0}/mfk_live/v1/subscribe/{1}?access_token={2}".format(server_wss.to_url(), args.site_id, token)
 logging.info("connecting to web socket at {0}".format(mfk_live_url))
 ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
 ws.connect(mfk_live_url)

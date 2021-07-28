@@ -51,11 +51,11 @@ def main():
 
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-    header_json = to_jwt_token_header(a_jwt_token=args.jwt)
+    headers = to_bearer_token_header(a_access_token=args.jwt)
 
     logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 
-    sites = list_sites(a_server_config=server, a_owner_id=args.owner_id, a_headers=header_json)
+    sites = list_sites(a_server_config=server, a_owner_id=args.owner_id, a_headers=headers)
 
     logging.info("Found {} sites.".format(len(sites["items"])))
 
