@@ -2,11 +2,10 @@
 import re
 
 class ReportTraitsBase():
-    def __init__(self, a_results_header, a_report_type, a_results_key, a_output_format):
+    def __init__(self, a_results_header, a_report_type, a_result_targets):
         self.m_results_header = a_results_header
         self.m_report_type = a_report_type
-        self.m_results_key = a_results_key
-        self.m_output_format = a_output_format
+        self.m_result_targerts = a_result_targets
 
     def results_header(self):
         return self.m_results_header
@@ -21,13 +20,19 @@ class ReportTraitsBase():
             "to":   a_end_unix_time_millis
         }        
 
-    def download_url_from_job_results(self, a_job_results):
-        if self.m_results_key in a_job_results["results"] and self.m_output_format in a_job_results["results"][self.m_results_key]:
-            return [a_job_results["results"][self.m_results_key][self.m_output_format], re.sub(r'[^0-9_-a-zA-z]', '_', a_job_results["params"]["name"]) + "." + self.m_output_format]
+    def download_urls_from_job_results(self, a_job_results):
+        download_urls = []
+
+        for result_target in self.m_result_targerts:
+            key, formats = result_target
+            for format in formats:
+                if key in a_job_results["results"] and format in a_job_results["results"][key]:
+                    download_urls.append([a_job_results["results"][key][format], re.sub(r'[^0-9_-a-zA-z]', '_', a_job_results["params"]["name"]) + "." + key + "." + format])
+        return download_urls
 
 class HaulReportTraits(ReportTraitsBase):
     def __init__(self, a_report_subtype, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, "haul_report", "hauls", "xlsx")
+        ReportTraitsBase.__init__(self, a_results_header, "haul_report", [["hauls", ["xlsx","url"]], ["trails",["url"]]])
         self.report_subtype = a_report_subtype
 
     def job_params(self, a_report_name, a_start_unix_time_millis, a_end_unix_time_millis):
@@ -37,12 +42,12 @@ class HaulReportTraits(ReportTraitsBase):
 
 class DelayReportTraits(ReportTraitsBase):
     def __init__(self, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, "delay_report", "delays", "xlsx")
+        ReportTraitsBase.__init__(self, a_results_header, "delay_report", [["delays", ["xlsx","url"]]])
 
 class WeightReportTraits(ReportTraitsBase):
     def __init__(self ):
-        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "weight_report", "weights", "xlsx")
+        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "weight_report", [["weights", ["xlsx","json","url"]]])
 
 class ActivityReportTraits(ReportTraitsBase):
     def __init__(self ):
-        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "activity_report", "activity", "csv")
+        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "activity_report", [["activity", ["csv","jsonl"]]])
