@@ -35,7 +35,7 @@ def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
         response = requests.get(response.headers['Location'])
     response.raise_for_status()
     if not os.path.exists(a_target_dir):
-        ret = os.makedirs(a_target_dir)
+        os.makedirs(a_target_dir, exist_ok=True)
 
     output_file = os.path.join(a_target_dir, a_report_name)
     with open(output_file, "wb") as f:
