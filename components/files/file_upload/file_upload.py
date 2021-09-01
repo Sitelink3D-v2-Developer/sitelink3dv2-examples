@@ -21,8 +21,19 @@ from args import *
 
 session = requests.Session()
 
+# The act of uploading a file is represented by the upload_uuid field in this FileUploadBean bean.
+# This uuid allows the specific instance of a file upload to be referenced later. 
+# 
+# Referencing specific upload_uuid instances is useful when:
+# 1. Querying an uploaded file for its design data contents; see query_file_features function.
+# 2. Linking design objects in RDM to the particular file upload that created them; see import_file_features function.
+#
+# Multiple uploads of the same file are represented by different upload_uuids.
+# This is the mechanism by which file versioning is achieved.
+#
+# Because the FileUploadbean is the start of the upload_uuid chain, it is generated on creation rather than passsed in as a client parameter.
 class FileUploadBean:
-    def __init__(self,a_site_identifier, a_upload_uuid, a_file_location, a_file_name):
+    def __init__(self, a_upload_uuid, a_file_location, a_file_name):
         if is_valid_uuid(a_upload_uuid):
             self.upload_uuid = str(a_upload_uuid)
         else:
@@ -92,7 +103,7 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    file_upload_bean = FileUploadBean(a_site_identifier=args.site_id, a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
+    file_upload_bean = FileUploadBean(a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
 
     file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
 
