@@ -26,6 +26,8 @@ class FileMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value, a_display_name):
         MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
 
+    # This function builds a bean that is posted to RDM for the purpose of representing a file.
+    # The _id field represents the file entity/object and hence will be the same for multiple revisions of the same file.
     @staticmethod
     def post_bean_json(a_file_name, a_id, a_upload_uuid, a_file_size, a_domain="file_system", a_parent_uuid=None):
         ret = {
