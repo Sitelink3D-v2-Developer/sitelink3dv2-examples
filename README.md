@@ -84,4 +84,4 @@ run-report.sh
 ```
 
 ## Step 5. Inspect the results
-Results from running the script can be inspected in the `root\results` folder, or alternatively within the Sitelink3D v2 web portal within the `Report Manager`.
+Results from running the script vary depending on the specific example. Some results are sufficiently evident by viewing the console output. The Sitelink3D v2 web portal can also be used to view the results of some operations. An example is viewing reports within the `Report Manager` that were created with the API.
