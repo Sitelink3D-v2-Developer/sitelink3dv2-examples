@@ -1,11 +1,16 @@
 #!/usr/bin/python
 import re
+import requests
+
+session = requests.Session()
 
 class ReportTraitsBase():
-    def __init__(self, a_results_header, a_report_type, a_result_targets):
+    def __init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, a_report_type, a_result_targets):
         self.m_results_header = a_results_header
         self.m_report_type = a_report_type
-        self.m_result_targerts = a_result_targets
+        self.m_start_unix_time_millis = a_start_unix_time_millis
+        self.m_end_unix_time_millis = a_end_unix_time_millis
+        self.m_result_targets = a_result_targets
 
     def results_header(self):
         return self.m_results_header
@@ -13,17 +18,26 @@ class ReportTraitsBase():
     def report_type(self):
         return self.m_report_type
 
-    def job_params(self, a_report_name, a_start_unix_time_millis, a_end_unix_time_millis):
-        return {
-            "name": a_report_name,
-            "from": a_start_unix_time_millis,
-            "to":   a_end_unix_time_millis
-        }        
+    def job_params(self, a_report_name):
+        params = {}
+        ReportTraitsBase.add_name_params(self, params, a_report_name)
+        ReportTraitsBase.add_time_range_params(self, params, self.m_start_unix_time_millis, self.m_end_unix_time_millis)
+        return params
+        
+    def add_name_params(self, a_params, a_report_name):
+        a_params["name"] = a_report_name
+     
+    def add_time_range_params(self, a_params, a_start_unix_time_millis, a_end_unix_time_millis):
+        a_params["from"] = a_start_unix_time_millis
+        a_params["to"] = a_end_unix_time_millis   
 
-    def download_urls_from_job_results(self, a_job_results):
+    def add_time_epoch_params(self, a_params, a_date_unix_time_millis):
+        a_params["date"] = a_date_unix_time_millis
+
+    def download_urls_from_job_results(self, a_job_results, a_headers):
         download_urls = []
 
-        for result_target in self.m_result_targerts:
+        for result_target in self.m_result_targets:
             key, formats = result_target
             for format in formats:
                 if key in a_job_results["results"] and format in a_job_results["results"][key]:
@@ -31,23 +45,79 @@ class ReportTraitsBase():
         return download_urls
 
 class HaulReportTraits(ReportTraitsBase):
-    def __init__(self, a_report_subtype, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, "haul_report", [["hauls", ["xlsx","url"]], ["trails",["url"]]])
+    def __init__(self, a_report_subtype, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
+        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls", ["xlsx","url"]], ["trails",["url"]]])
         self.report_subtype = a_report_subtype
 
-    def job_params(self, a_report_name, a_start_unix_time_millis, a_end_unix_time_millis):
-        params = ReportTraitsBase.job_params(self, a_report_name, a_start_unix_time_millis, a_end_unix_time_millis)
+    def job_params(self, a_report_name):
+        params = {}
+        ReportTraitsBase.add_name_params(self, params, a_report_name)
+        ReportTraitsBase.add_time_range_params(self, params, self.m_start_unix_time_millis, self.m_end_unix_time_millis)
         params["subtype"] = self.report_subtype
         return params       
 
 class DelayReportTraits(ReportTraitsBase):
-    def __init__(self, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, "delay_report", [["delays", ["xlsx","url"]]])
+    def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
+        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "delay_report", [["delays", ["xlsx","url"]]])
 
 class WeightReportTraits(ReportTraitsBase):
-    def __init__(self ):
-        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "weight_report", [["weights", ["xlsx","json","url"]]])
+    def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis):
+        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, a_start_unix_time_millis, a_end_unix_time_millis, "weight_report", [["weights", ["xlsx","json","url"]]])
 
 class ActivityReportTraits(ReportTraitsBase):
-    def __init__(self ):
-        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, "activity_report", [["activity", ["csv","jsonl"]]])
+    def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis):
+        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, a_start_unix_time_millis, a_end_unix_time_millis, "activity_report", [["activity", ["csv","jsonl"]]])
+
+class HeightMapReportTraitsBase():
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis, a_report_type, a_result_target, a_results_header):
+        self.m_server_config = a_server_config
+        self.m_site_id = a_site_id
+        self.m_results_header = a_results_header
+        self.m_date_unix_time_millis = a_date_unix_time_millis
+        self.m_report_type = a_report_type
+        self.m_result_target = a_result_target
+
+    def results_header(self):
+        return self.m_results_header
+
+    def report_type(self):
+        return self.m_report_type
+
+    def job_params(self, a_report_name):
+        params = {}
+        ReportTraitsBase.add_name_params(self, params, a_report_name)
+        ReportTraitsBase.add_time_epoch_params(self, params, self.m_date_unix_time_millis)
+        return params   
+
+    def download_urls_from_job_results(self, a_job_results, a_headers):
+        download_urls = []
+
+        if self.m_result_target in a_job_results["results"]:
+            report_uuid = a_job_results["results"][self.m_result_target]
+       
+            url = "{0}/reporting/v1/sites/{1}/files/{2}/requests".format(self.m_server_config.to_url(), self.m_site_id, report_uuid)
+
+            response = session.post(url, headers=a_headers, data={})
+            report_key = response.json()["message"]
+            download_url = "{0}/reporting/v1/files/{1}".format(self.m_server_config.to_url(), report_key)
+            download_urls.append([download_url, re.sub(r'[^0-9_-a-zA-z]', '_', a_job_results["params"]["name"]) + "." + self.m_result_target])
+            
+        return download_urls               
+
+class PlyHeightMapReportTraits(HeightMapReportTraitsBase):
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis):
+        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.ply", {'content-type': 'application/json'}) 
+
+    def job_params(self, a_report_name):
+        params = HeightMapReportTraitsBase.job_params(self, a_report_name)
+        params["format"] = "ply"
+        return params  
+
+class XyzHeightMapReportTraits(HeightMapReportTraitsBase):
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis):
+        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.xyz", {'content-type': 'application/json'}) 
+
+    def job_params(self, a_report_name):
+        params = HeightMapReportTraitsBase.job_params(self, a_report_name)
+        params["format"] = "xyz"
+        return params  

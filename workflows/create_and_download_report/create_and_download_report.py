@@ -60,19 +60,26 @@ logger = logging.getLogger("create_and_download_report")
 start_unix_time_millis = datetime_to_unix_time_millis(report_start_datetime)
 end_unix_time_millis   = datetime_to_unix_time_millis(report_end_datetime)
 
-report_name = args.name or "Report for Period {} to {} run {}".format(report_start_datetime.isoformat(), report_end_datetime.isoformat(), datetime.datetime.utcnow().replace(microsecond=0).isoformat())
+report_range_name = args.name or "Report for Period {} to {} run {}".format(report_start_datetime.isoformat(), report_end_datetime.isoformat(), datetime.datetime.utcnow().replace(microsecond=0).isoformat())
+report_epoch_name = args.name or "Report for Epoch {} run {}".format(report_start_datetime.isoformat(), datetime.datetime.utcnow().replace(microsecond=0).isoformat())
 
 
        
-# create haul, delay, weight & activity reports spanning the configured time range
-haul_report_traits = HaulReportTraits(a_report_subtype="hauls", a_results_header=headers)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Haul {}".format(report_name), a_report_traits=haul_report_traits, a_report_term=args.term, a_headers=headers)
+# create haul, delay, weight, activity & height map reports spanning the configured time range
+haul_report_traits = HaulReportTraits(a_report_subtype="hauls", a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_range_name), a_report_traits=haul_report_traits, a_report_term=args.term, a_headers=headers)
 
-delay_report_traits = DelayReportTraits(a_results_header=headers)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Delay {}".format(report_name), a_report_traits=delay_report_traits, a_report_term=args.term, a_headers=headers)
+delay_report_traits = DelayReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Delay {}".format(report_range_name), a_report_traits=delay_report_traits, a_report_term=args.term, a_headers=headers)
 
-weight_report_traits = WeightReportTraits()
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Weight {}".format(report_name), a_report_traits=weight_report_traits, a_report_term=args.term, a_headers=headers)
+weight_report_traits = WeightReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Weight {}".format(report_range_name), a_report_traits=weight_report_traits, a_report_term=args.term, a_headers=headers)
 
-activity_report_traits = ActivityReportTraits()
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_report_name="Activity {}".format(report_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_headers=headers)
+activity_report_traits = ActivityReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_headers=headers)
+
+xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis) # additional requests required to access height map jobs
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="XYZ Height Map {}".format(report_epoch_name), a_report_traits=xyz_heigh_map_report_traits, a_report_term=args.term, a_headers=headers)
+
+ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis) # additional requests required to access height map jobs
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="PLY Height Map {}".format(report_epoch_name), a_report_traits=ply_heigh_map_report_traits, a_report_term=args.term, a_headers=headers)
