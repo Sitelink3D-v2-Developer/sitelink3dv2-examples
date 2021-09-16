@@ -27,24 +27,24 @@ def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_lo
         "region": "medium"
     }
 
-    print(create_site_url)
-    print(json.dumps(payload_json, indent=4)) 
+    logging.info("post site creation to site owner {}".format(create_site_url))
+    logging.debug(json.dumps(payload_json, indent=4))
     response = session.post(create_site_url, headers=a_headers, data=json.dumps(payload_json))
     site_details_json = response.json()
-    print(json.dumps(site_details_json))
-    logging.debug(json.dumps(site_details_json))
+    logging.debug("response from site owner {}".format(json.dumps(site_details_json, indent=4)))
     site_id = site_details_json["identifier"]
     time.sleep(1)
 
-    logging.debug(json.dumps(site_details_json))
-
     # Create site bean
     payload_json = SiteMetadataTraits.post_bean_json(a_site_name=a_site_name, a_latitude=a_latitude, a_longitude=a_longitude, a_phone=a_phone, a_email=a_email, a_name=a_name, a_timezone=a_timezone)
-
     data_encoded_json = {"data_b64": base64.b64encode(json.dumps(payload_json).encode('utf-8')).decode('utf-8')}
     create_site_rdm_url = "{0}/rdm_log/v1/site/{1}/domain/{2}/events".format(a_server_config.to_url(), site_id, "sitelink")
+    logging.info("post site definition to RDM {}".format(create_site_rdm_url))
+    logging.debug(json.dumps(payload_json, indent=4))
     response = session.post(create_site_rdm_url, headers=a_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()
+    rdm_json = response.json()
+    logging.debug("response from RDM {}".format(json.dumps(rdm_json, indent=4)))
     return site_id
 
 def main():
@@ -56,7 +56,7 @@ def main():
 
     # server parameters:
     arg_parser = add_arguments_environment(arg_parser)
-    arg_parser.add_argument("--jwt", default="", help="jwt")
+    arg_parser = add_arguments_auth(arg_parser)
 
     # request parameters:
     arg_parser.add_argument("--owner_id", help="Organization ID", required=True)
@@ -79,7 +79,7 @@ def main():
 
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-    headers =  to_bearer_token_header(a_access_token=args.jwt)
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 

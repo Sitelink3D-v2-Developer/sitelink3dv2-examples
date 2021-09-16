@@ -24,6 +24,9 @@ exec python site_create.py \
     --dc "$dc" \
     --owner_id "$owner_id" \
     --jwt "$jwt" \
+    --oauth_id "$oauth_id" \
+    --oauth_secret "$oauth_secret" \
+    --oauth_scope "$oauth_scope" \
     --site_name "$site_name" \
     --site_latitude "$site_latitude" \
     --site_longitude "$site_longitude" \
