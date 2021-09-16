@@ -30,7 +30,6 @@ def to_bearer_token_header(a_access_token, a_content_type=""):
     ret = {'Authorization': "Bearer {}".format(a_access_token)}
     if len(a_content_type) > 0:
         ret["Content-Type"] = a_content_type
-    print(ret)
     return ret
 
 def token_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_server_config):
