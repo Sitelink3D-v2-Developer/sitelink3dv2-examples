@@ -36,7 +36,6 @@ class ReportTraitsBase():
 
     def download_urls_from_job_results(self, a_job_results, a_headers):
         download_urls = []
-
         for result_target in self.m_result_targets:
             key, formats = result_target
             for format in formats:
@@ -46,7 +45,7 @@ class ReportTraitsBase():
 
 class HaulReportTraits(ReportTraitsBase):
     def __init__(self, a_report_subtype, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls", ["xlsx","url"]], ["trails",["url"]]])
+        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls", ["xlsx","json"]], ["trails",["json", "jsonl"]]])
         self.report_subtype = a_report_subtype
 
     def job_params(self, a_report_name):
@@ -58,11 +57,11 @@ class HaulReportTraits(ReportTraitsBase):
 
 class DelayReportTraits(ReportTraitsBase):
     def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "delay_report", [["delays", ["xlsx","url"]]])
+        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "delay_report", [["delays", ["xlsx","json"]]])
 
 class WeightReportTraits(ReportTraitsBase):
     def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis):
-        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, a_start_unix_time_millis, a_end_unix_time_millis, "weight_report", [["weights", ["xlsx","json","url"]]])
+        ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, a_start_unix_time_millis, a_end_unix_time_millis, "weight_report", [["weights", ["xlsx","json"]], ["tracks", ["json"]], ["lifts", ["json"]], ["aggregates-truck-total", ["json"]], ["aggregates-truck-material", ["json"]], ["aggregates-operator-total", ["json"]], ["aggregates-operator-material", ["json"]], ["aggregates-note-total", ["json"]], ["aggregates-mix-total", ["json"]], ["aggregates-material-total", ["json"]], ["aggregates-material-material", ["json"]], ["aggregates-machine-total", ["json"]], ["aggregates-machine-material", ["json"]], ["aggregates-location-total", ["json"]], ["aggregates-location-material", ["json"]], ["aggregates-load_region-total", ["json"]], ["aggregates-load_region-material", ["json"]], ["aggregates-haulier-total", ["json"]], ["aggregates-haulier-material", ["json"]], ["aggregates-haul-total", ["json"]], ["aggregates-haul-material", ["json"]], ["aggregates-dump_region-total", ["json"]], ["aggregates-dump_region-material", ["json"]], ["aggregates-destination-total", ["json"]], ["aggregates-destination-material", ["json"]], ["aggregates-customer-total", ["json"]], ["aggregates-customer-material", ["json"]]])
 
 class ActivityReportTraits(ReportTraitsBase):
     def __init__(self, a_start_unix_time_millis, a_end_unix_time_millis):
