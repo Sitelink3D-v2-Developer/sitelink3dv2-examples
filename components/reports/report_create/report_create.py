@@ -35,12 +35,9 @@ def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
         response = requests.get(response.headers['Location'])
     response.raise_for_status()
     if not os.path.exists(a_target_dir):
-        os.mkdir(a_target_dir)
+        ret = os.makedirs(a_target_dir)
 
     output_file = os.path.join(a_target_dir, a_report_name)
-    filename, file_extension = os.path.splitext(output_file)
-    if file_extension == ".url":
-        output_file = filename +'.json'
     with open(output_file, "wb") as f:
         f.write(response.content)
         logging.info("Saved report {}".format(output_file))
@@ -64,7 +61,7 @@ def download_urls_for_job(a_server_config, a_site_id, a_report_traits, a_report_
     result = json_from(requests.get(url, headers=a_headers))
     return a_report_traits.download_urls_from_job_results(result, a_headers)
 
-def create_and_download_report(a_server_config, a_site_id, a_report_name, a_report_traits, a_report_term, a_headers):
+def create_and_download_report(a_server_config, a_site_id, a_report_name, a_report_traits, a_report_term, a_target_dir, a_headers):
     report_job_id = create_report(a_server_config=a_server_config, a_site_id=a_site_id, a_report_name=a_report_name, a_report_traits=a_report_traits, a_report_term=a_report_term, a_headers=a_headers)
     logging.info("Submitted [{}] called [{}] with job identifier [{}]".format(a_report_traits.report_type(), a_report_name, report_job_id))
     poll_job(a_server_config=a_server_config, a_site_id=a_site_id, a_term=a_report_term, a_job_id=report_job_id, a_headers=a_headers)
@@ -77,6 +74,4 @@ def create_and_download_report(a_server_config, a_site_id, a_report_name, a_repo
         else:
             url, name = target
             logging.debug(url)
-            current_dir = os.path.dirname(os.path.realpath(__file__))
-            output_dir = os.path.join(current_dir, a_site_id)
-            download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=output_dir, a_report_name=name) 
+            download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=a_target_dir, a_report_name=name) 
