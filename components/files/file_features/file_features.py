@@ -74,8 +74,6 @@ def query_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_n
 # Any subset of the results of a feature job may be imported by an import job.
 # Imported design data is stored in MAXML format within Sitelink3D v2.
 #
-# The import_uuid field is a legacy, external ID that allows client code to define and specify how imports are semantically grouped.
-#
 # The selection of the _id field value when writing to RDM is based on the deterministic recommendation returned by the import job in the arbitrary format:
 # "design_object_id:strategy:unique_by_design_type_by_name:design_type:Surfaces:name:Task Surface"
 #
@@ -84,7 +82,6 @@ def query_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_n
 #
 def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_name, a_features, a_headers):
     data_payload = { "file_name": a_file_name,
-        "import_uuid":str(a_file_upload_uuid), # using a_file_upload_uuid here is correct if everything uploaded is an unrelated new file.
         "imports" : a_features
     }
 
@@ -110,7 +107,6 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
 
     # Add an RDM representation for each feature imported to MAXML
     file_uuid = rj["file_uuid"] # The propagation of the file upload instance. See FileUploadbean class in file_upload.py
-    import_uuid = rj["import_uuid"] 
     import_list = rj["imports"]
     design_objects_to_import = []
 
@@ -137,7 +133,6 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
             "name" : v["source_name"],
             "count" : v["count"],
             "doFileUUID" : v["design_file_uuid"], # The unique ID for this instance of this design object in the design file microservice.
-            "importUUID": import_uuid,
             "importFileUUID": file_uuid, # The propagation of the file upload instance. See FileUploadBean class in file_upload.py for details on the upload_uuid field.
             "path": v["path"]
         }
