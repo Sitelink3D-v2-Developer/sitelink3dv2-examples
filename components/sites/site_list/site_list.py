@@ -19,11 +19,12 @@ def list_sites(a_server_config, a_owner_id, a_headers):
 
     list_site_url = "{0}/siteowner/v1/owners/{1}/sites".format(a_server_config.to_url(), a_owner_id)
 
-    print(list_site_url)
+    logging.info("get site list from site owner {}".format(list_site_url))
     response = session.get(list_site_url, headers=a_headers)#, params={ "fetch_size":100, "order":"rdm_name", "filter":"e30", "archived":False })
     response.raise_for_status()
     
     site_list_json = response.json()
+    logging.debug("response from site owner {}".format(json.dumps(site_list_json, indent=4)))
     return site_list_json
 
 def main():
@@ -35,7 +36,7 @@ def main():
 
     # server parameters:
     arg_parser = add_arguments_environment(arg_parser)
-    arg_parser.add_argument("--jwt", default="", help="jwt")
+    arg_parser = add_arguments_auth(arg_parser)
 
     # request parameters:
     arg_parser.add_argument("--owner_id", help="Organization ID", required=True)
@@ -51,7 +52,7 @@ def main():
 
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-    headers = to_bearer_token_header(a_access_token=args.jwt)
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 
