@@ -18,6 +18,10 @@ site_contact_phone=""
 ## Authorization.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 jwt=""
+# - or -
+oauth_id=""
+oauth_secret=""
+oauth_scope=""
 
 exec python site_create.py \
     --env "$env" \
