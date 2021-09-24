@@ -1,5 +1,5 @@
 #!/bin/bash
-## Batch file to list the sites at an organization / owner.
+## Shell file to list the sites at an organization / owner.
 
 ## Settings for the environment.
 env="qa"

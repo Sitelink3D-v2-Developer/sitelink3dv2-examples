@@ -163,6 +163,16 @@ class SiteMetadataTraits(MetadataTraitsBase):
                 "email": a_email,
                 "name" : a_name
             },
+            "_extra": {
+                "sl::site::site_discovery": {
+                "contact": {
+                    "name": a_name,
+                    "email": a_email,
+                    "phone": a_phone
+                },
+                "discoverable": True
+                }
+            },
             "name"     : a_site_name,
             "timezone" : a_timezone
         }
