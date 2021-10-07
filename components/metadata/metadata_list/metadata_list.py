@@ -6,6 +6,7 @@ import os
 import sys
 import requests
 import base64
+import json
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
@@ -27,14 +28,13 @@ def query_metadata_by_domain_view(a_server_config, a_site_id, a_domain, a_view, 
     if len(a_page_limit) > 0:
         params["limit"] = a_page_limit
     if len(a_start) > 0:
-        s_id = json.dumps([a_start]).encode()
-        params["start"] = base64.urlsafe_b64encode(s_id).replace("=", "", 4)
-
+        logging.debug("start key sepcified: {}".format(a_start))
+        params["start"] = base64.urlsafe_b64encode(json.dumps(a_start).encode('utf-8')).decode('utf-8').rstrip("=")
+    
     response = session.get(rdm_list_url, headers=a_headers, params=params)
     response.raise_for_status()
-    entry_list = response.json()["items"]
    
-    return entry_list
+    return response.json()
 
 def main():
     # >> Arguments
@@ -83,7 +83,7 @@ def main():
         logging.info("Found {} views.".format(view_list_length))
         for rdm_view in rdm_view_list["items"]:
             logging.info("querying view {}".format(rdm_view["id"]))
-            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_headers=headers)
+            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_headers=headers)["items"]
 
             logging.info ("Found {} items".format(len(metadata_list)))
             for fi in metadata_list:
