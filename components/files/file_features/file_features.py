@@ -116,6 +116,8 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
     logging.debug ("\nAdd an RDM representation for each imported design object so it can be found & managed:")
     # ------------------------------------------------------------------------------
 
+    imported_design_uuids = []
+
     for i, design_object in enumerate(import_list):
 
         v = {k : design_object.get(k) for k in ["design_type", "source_name", "count", "design_file_uuid", "design_object_id", "path"] if k in design_object}
@@ -147,6 +149,9 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
 
         rj = response.json()
         logging.debug ("RDM post returned {0}\n{1}".format(response.status_code, json.dumps(rj,indent=4)))
+        
+        imported_design_uuids.append(v["design_file_uuid"])
+    return imported_design_uuids
 
 
 def main():

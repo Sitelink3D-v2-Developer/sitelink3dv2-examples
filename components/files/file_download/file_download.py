@@ -19,7 +19,7 @@ from args import *
 
 session = requests.Session()
 
-def download_file(a_server_config, a_site_id, a_file_uuid, a_headers):
+def download_file(a_server_config, a_site_id, a_file_uuid, a_headers, a_target_dir="", a_target_name=""):
 
     get_file_url = "{0}/file/v1/sites/{1}/files/{2}/url".format(a_server_config.to_url(), a_site_id, a_file_uuid)
 
@@ -29,16 +29,23 @@ def download_file(a_server_config, a_site_id, a_file_uuid, a_headers):
 
     # get the content of the url
     url = "{0}{1}".format(a_server_config.to_url(), response.text)
-    print ("get file {0} by url {1}".format(a_file_uuid, url))
+    logging.debug("get file {0} by url {1}".format(a_file_uuid, url))
     response = session.get(url, headers=a_headers, stream=True)
     response.raise_for_status()
 
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    output_dir = os.path.join(current_dir, a_site_id)
+    output_name = a_target_name
+    if len(output_name) is 0:
+        output_name = a_file_uuid
+
+    output_dir = a_target_dir
+    if len(output_dir) is 0:
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        output_dir = os.path.join(current_dir, a_site_id)
+
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    output_file = os.path.join(output_dir, a_file_uuid)
+    output_file = os.path.join(output_dir, output_name)
     with open(output_file, "wb") as handle:
         for data in tqdm(response.iter_content()):
             handle.write(data)
