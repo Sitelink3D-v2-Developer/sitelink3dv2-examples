@@ -32,6 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_features"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_list"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "task_create"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_list"))
 
 from get_token      import *
 from utils          import *
@@ -43,12 +44,7 @@ from task_create    import *
 from datetime       import datetime
 from args           import *
 from metadata_traits import *
-
-def query_rdm_view(a_server_config, a_domain, a_site_id, a_view, a_headers, a_limit=100):
-    url = "{0}/rdm/v1/site/{1}/domain/{2}/view/{3}?limit={4}".format(a_server_config.to_url(), a_site_id, a_domain, a_view, a_limit)
-    response = session.get(url, headers=a_headers)
-    response.raise_for_status()
-    return response.json()
+from metadata_list  import *
 
 def create_design_set(a_server_config, a_site_id, a_design_set_id, a_design_objects, a_headers):
 
@@ -150,12 +146,9 @@ logging.info("Listing design objects using RDM view:")
 # In production code, you should subscribe to the events service and respond appropriately.
 time.sleep(0.5)
 
-
-rj = query_rdm_view(a_server_config=server, a_domain="sitelink", a_site_id=args.site_id, a_view="v_sl_designObject_by_path", a_headers=headers)
+rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_designObject_by_path", a_page_limit="200", a_start="", a_end="", a_headers=headers)
 
 logging.debug("RDM view design objects by path of size {}: {}".format(len(rj["items"]), json.dumps(rj, indent=4)))
-
-
 
 # ------------------------------------------------------------------------------
 logging.info ("Create a new Design Set that references all imported design objects:")

@@ -19,7 +19,7 @@ from args import *
 
 session = requests.Session()
 
-def query_metadata_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_page_limit, a_start, a_headers):
+def query_metadata_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_page_limit, a_start, a_end, a_headers):
 
     rdm_list_url = "{0}/rdm/v1/site/{1}/domain/{2}/view/{3}".format(a_server_config.to_url(), a_site_id, a_domain, a_view)
 
@@ -30,11 +30,14 @@ def query_metadata_by_domain_view(a_server_config, a_site_id, a_domain, a_view, 
     if len(a_start) > 0:
         logging.debug("start key sepcified: {}".format(a_start))
         params["start"] = base64.urlsafe_b64encode(json.dumps(a_start).encode('utf-8')).decode('utf-8').rstrip("=")
+    if len(a_end) > 0:
+        logging.debug("end key sepcified: {}".format(a_end))
+        params["end"] = base64.urlsafe_b64encode(json.dumps(a_end).encode('utf-8')).decode('utf-8').rstrip("=")
     
     response = session.get(rdm_list_url, headers=a_headers, params=params)
     response.raise_for_status()
    
-    return response.json()
+    return response.json() 
 
 def main():
     # >> Arguments
@@ -83,7 +86,7 @@ def main():
         logging.info("Found {} views.".format(view_list_length))
         for rdm_view in rdm_view_list["items"]:
             logging.info("querying view {}".format(rdm_view["id"]))
-            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_headers=headers)["items"]
+            metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_page_limit=args.page_limit, a_start=args.start, a_end="", a_headers=headers)["items"]
 
             logging.info ("Found {} items".format(len(metadata_list)))
             for fi in metadata_list:

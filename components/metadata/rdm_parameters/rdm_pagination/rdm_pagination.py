@@ -53,7 +53,7 @@ def main():
     pagination_frame = None
     page_number = 1
     while True:
-        metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_page_limit=args.page_limit, a_start=start_key, a_headers=headers)
+        metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_page_limit=args.page_limit, a_start=start_key, a_end="", a_headers=headers)
         pagination_frame = metadata_list["last_excl"]
         
         logging.info ("Found {} items {}".format(len(metadata_list["items"]), "({})".format("unpaginated" if page_number == 1 else "last page") if not pagination_frame else "(page {})".format(page_number)))

@@ -29,12 +29,12 @@ class FileMetadataTraits(MetadataTraitsBase):
     # This function builds a bean that is posted to RDM for the purpose of representing a file.
     # The _id field represents the file entity/object and hence will be the same for multiple revisions of the same file.
     @staticmethod
-    def post_bean_json(a_file_name, a_id, a_upload_uuid, a_file_size, a_domain="file_system", a_parent_uuid=None):
+    def post_bean_json(a_file_name, a_id, a_upload_uuid, a_file_size, a_domain="file_system", a_parent_uuid=None, a_rev=str(uuid.uuid4())):
         ret = {
             "_id": a_id,
             "name" : a_file_name,
             "size" : a_file_size,
-            "_rev": str(uuid.uuid4()),
+            "_rev": a_rev,
             "_v"   : 0,
             "_at":int(round(time.time() * 1000))
         }
