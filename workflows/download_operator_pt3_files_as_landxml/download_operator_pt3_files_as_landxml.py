@@ -57,7 +57,7 @@ def main():
     if len(operator_domain_file_list) == 0:
         sys.exit("")
     
-    operator_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_operator_by_name", a_page_limit="100", a_start="", a_headers=headers)
+    operator_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_operator_by_name", a_page_limit="100", a_start="", a_end="", a_headers=headers)
 
     operators = {}
     items_list = operator_list["items"]

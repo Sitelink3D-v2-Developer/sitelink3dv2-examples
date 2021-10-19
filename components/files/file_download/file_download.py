@@ -34,11 +34,11 @@ def download_file(a_server_config, a_site_id, a_file_uuid, a_headers, a_target_d
     response.raise_for_status()
 
     output_name = a_target_name
-    if len(output_name) is 0:
+    if len(output_name) == 0:
         output_name = a_file_uuid
 
     output_dir = a_target_dir
-    if len(output_dir) is 0:
+    if len(output_dir) == 0:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         output_dir = os.path.join(current_dir, a_site_id)
 
