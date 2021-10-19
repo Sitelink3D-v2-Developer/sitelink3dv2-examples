@@ -1,12 +1,16 @@
 @echo off
-rem ## Batch script to download operator pt3 files as landxml files.
+rem ## Batch file to download a report at a site.
 
 rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 set site_id=""
 
-set page_limit="200"
+rem ## Settings specific to this script.
+rem # report_url will take the form "https://us-api.sitelink.topcon.com:443/sparkreports/v1/sites/da947..358f/jobs/90e..11ec-935b-02..34e/hauls"
+set report_url=""
+set report_name=""
+set page_limit="500"
 set start=""
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
@@ -17,12 +21,14 @@ set oauth_id=""
 set oauth_secret=""
 set oauth_scope=""
 
-python download_operator_pt3_files_as_landxml.py ^
+python report_download.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
     --page_limit %page_limit% ^
     --start %start% ^
+    --report_url %report_url% ^
+    --report_name %report_name% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

@@ -29,3 +29,8 @@ def add_arguments_auth(a_arg_parser):
     a_arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
     a_arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
     return a_arg_parser
+
+def add_arguments_pagination(a_arg_parser):
+    a_arg_parser.add_argument("--page_limit", default="", help="the max size a result list can be prior to being split into pages.")
+    a_arg_parser.add_argument("--start", help="the starting item offset for the return of results.")
+    return a_arg_parser

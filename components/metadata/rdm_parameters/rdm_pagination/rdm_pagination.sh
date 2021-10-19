@@ -22,14 +22,14 @@ oauth_secret=""
 oauth_scope=""
 
 exec python rdm_pagination.py \
-	--dc "$dc" \
-	--env "$env" \
-	--site_id "$site_id" \
-	--start "$start" \
-	--page_limit "$page_limit" \
+    --env "$env" \
+    --dc "$dc" \
+    --site_id "$site_id" \
+    --start "$start" \
+    --page_limit "$page_limit" \
     --rdm_view "$rdm_view" \
     --rdm_domain "$rdm_domain" \
-	--jwt "$jwt" \
+    --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \
     --oauth_scope "$oauth_scope"

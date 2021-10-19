@@ -1,5 +1,5 @@
 @echo off
-rem ## Batch script to create a new operator at a Sitelink3D v2 site.
+rem ## Batch script to create a new operator at a site.
 
 rem ## Settings for the environment.
 set env="qa"

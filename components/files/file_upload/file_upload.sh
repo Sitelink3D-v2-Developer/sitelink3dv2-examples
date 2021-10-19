@@ -1,5 +1,5 @@
 #!/bin/bash
-## Shell file to upload file.
+## Shell file to upload a file.
 
 ## ## Settings for the environment.
 env="qa"

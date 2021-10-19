@@ -4,7 +4,10 @@
 ## Settings for the environment.
 env="qa"
 dc="us"
-owner_id=""
+
+## Site creation specifics.
+# run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console to obtain the owner / organization identifier.
+owner_id="" 
 
 site_name="API Site"
 site_latitude=""

@@ -34,6 +34,8 @@ def main():
     arg_parser = add_arguments_environment(arg_parser)
     arg_parser = add_arguments_auth(arg_parser)
 
+    arg_parser = add_arguments_pagination(arg_parser)
+
     # request parameters:
     arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True) 
 
@@ -57,7 +59,8 @@ def main():
     if len(operator_domain_file_list) == 0:
         sys.exit("")
     
-    operator_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_operator_by_name", a_page_limit="100", a_start="", a_end="", a_headers=headers)
+    page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+    operator_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_operator_by_name", a_headers=headers, a_params=page_traits.params())
 
     operators = {}
     items_list = operator_list["items"]
@@ -85,7 +88,7 @@ def main():
             response = session.get(url, headers=headers, stream=True)
             response.raise_for_status()
             
-            output_file = os.path.join(converted_dir, "{} {} from {}.xml".format("design",design_uuid,rdm_file_name))
+            output_file = os.path.join(converted_dir, "{}.xml".format(os.path.splitext(rdm_file_name)[0]))
             with open(output_file, "wb") as handle:
                 for data in tqdm(response.iter_content()):
                     handle.write(data)

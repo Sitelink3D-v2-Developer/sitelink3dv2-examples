@@ -1,7 +1,7 @@
 @echo off
 rem ## Batch file to create a folder.
 
-rem ## Settings for the site:
+rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 set site_id=""

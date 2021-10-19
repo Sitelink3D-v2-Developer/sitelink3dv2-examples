@@ -8,7 +8,6 @@ site_id=""
 
 ## Settings specific to this script.
 page_limit="100"
-## uuid
 start=""
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
@@ -23,8 +22,8 @@ exec python file_list.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
-    --start "$start" \
     --page_limit "$page_limit" \
+    --start "$start" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

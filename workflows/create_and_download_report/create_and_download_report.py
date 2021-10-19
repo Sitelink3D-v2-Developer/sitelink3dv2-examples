@@ -11,12 +11,14 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_create"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_download"))
 
 from get_token      import *
 from utils          import *
 from report_traits  import *
 from report_create  import *
 from args           import *
+from report_download import *
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description="Test reporting.")
@@ -79,8 +81,8 @@ create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_rep
 activity_report_traits = ActivityReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis) # additional requests required to access height map jobs
+xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="XYZ Height Map {}".format(report_epoch_name), a_report_traits=xyz_heigh_map_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis) # additional requests required to access height map jobs
+ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="PLY Height Map {}".format(report_epoch_name), a_report_traits=ply_heigh_map_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
