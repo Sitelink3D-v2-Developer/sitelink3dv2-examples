@@ -30,10 +30,10 @@ def main():
     arg_parser = add_arguments_environment(arg_parser)
     arg_parser = add_arguments_auth(arg_parser)
 
+    arg_parser = add_arguments_pagination(arg_parser)
+
     # request parameters:
     arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-    arg_parser.add_argument("--start", default="", help="Start from here")
-    arg_parser.add_argument("--page_limit", default="500", help="Page size")
 
     arg_parser.set_defaults()
     args = arg_parser.parse_args()

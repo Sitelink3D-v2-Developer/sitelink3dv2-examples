@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_create"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_download"))
 
 from get_token      import *
 from utils          import *
@@ -19,6 +20,7 @@ from report_traits  import *
 from report_create  import *
 from report_convert import *
 from args           import *
+from report_download import *
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description="Test reporting.")

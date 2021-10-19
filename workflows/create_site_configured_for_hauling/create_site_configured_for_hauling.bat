@@ -30,7 +30,7 @@ rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your brow
 set jwt=""
 
 python create_site_configured_for_hauling.py ^
-    --env %env% ^    
+    --env %env% ^
     --dc %dc% ^
     --owner_id %owner_id% ^
     --jwt %jwt% ^

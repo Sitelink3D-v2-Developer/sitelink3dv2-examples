@@ -10,9 +10,11 @@ import getpass
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "report_download"))
 
 from get_token import *
 from utils import *
+from report_download import *
 
 def fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
     url = "{}/reporting/v1/{}/{}/{}".format(a_server_config.to_url(), a_site_id, a_term, a_job_id)
@@ -28,19 +30,6 @@ def poll_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
         status = job.get("status", "SUBMITTED")
     job = fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers)
     print("Job {} final status is {}.".format(a_job_id, status))    
-
-def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
-    response = session.get(a_report_url, headers=a_headers, allow_redirects=False)
-    if response.status_code in [301,302]:
-        response = requests.get(response.headers['Location'])
-    response.raise_for_status()
-    if not os.path.exists(a_target_dir):
-        os.makedirs(a_target_dir, exist_ok=True)
-
-    output_file = os.path.join(a_target_dir, a_report_name)
-    with open(output_file, "wb") as f:
-        f.write(response.content)
-        logging.info("Saved report {}".format(output_file))
 
 def create_report(a_server_config, a_site_id,a_report_name, a_report_traits, a_report_term, a_headers):
     frame = {

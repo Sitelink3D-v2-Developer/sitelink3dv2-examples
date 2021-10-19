@@ -1,5 +1,5 @@
 #!/bin/bash
-## Shell file to create a site.
+## Shell file to create a folder.
 
 ## Settings for the environment.
 env="qa"

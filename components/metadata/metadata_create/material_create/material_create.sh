@@ -1,5 +1,5 @@
 #!/bin/bash
-## Shell script to create a new material at a Sitelink3D v2 site.
+## Shell script to create a new material at a site.
 
 ## Settings for the environment.
 env="qa"

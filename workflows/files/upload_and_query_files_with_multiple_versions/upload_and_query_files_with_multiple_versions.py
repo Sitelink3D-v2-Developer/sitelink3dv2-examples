@@ -97,13 +97,15 @@ time.sleep(0.5)
 logging.info("Listing all files with more than one version...")
 # ------------------------------------------------------------------------------
 
-rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_page_limit="200", a_start="", a_end="", a_headers=headers)
+page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
+rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers, a_params=page_traits.params())
 
 for fi in rj["items"]:
     if fi["value"]["_type"] == "fs::file":
 
-        # query the revision history for this file       
-        ret = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_hist", a_page_limit="200", a_start=[fi["id"]], a_end=[fi["id"],None], a_headers=headers)
+        # query the revision history for this file  
+        page_traits = MetadataPaginationTraits(a_page_size="500", a_start=[fi["id"]], a_end=[fi["id"],None])     
+        ret = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_hist", a_headers=headers, a_params=page_traits.params())
 
         if len(ret["items"]) > 1:
             logging.info("File {} {} has {} versions".format(fi["id"], fi["value"]["name"], len(ret["items"])))

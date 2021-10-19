@@ -119,7 +119,7 @@ make_folder(a_folder_bean=folder_bean, a_server_config=server, a_site_id=args.si
 logging.info("Uploading files to folder id={0} name={1}".format(folder_bean._id, folder_name))
 
 # ------------------------------------------------------------------------------
-logging.info("Uploading file containing design data ...")
+logging.info("Uploading file containing design data...")
 # ------------------------------------------------------------------------------
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=args.design_file_name)
@@ -146,7 +146,8 @@ logging.info("Listing design objects using RDM view:")
 # In production code, you should subscribe to the events service and respond appropriately.
 time.sleep(0.5)
 
-rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_designObject_by_path", a_page_limit="200", a_start="", a_end="", a_headers=headers)
+page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
+rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_designObject_by_path", a_headers=headers, a_params=page_traits.params())
 
 logging.debug("RDM view design objects by path of size {}: {}".format(len(rj["items"]), json.dumps(rj, indent=4)))
 
