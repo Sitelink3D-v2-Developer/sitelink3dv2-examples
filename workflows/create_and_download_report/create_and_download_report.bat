@@ -16,7 +16,13 @@ set oauth_scope=""
 
 rem ## Settings for the reports:
 set report_iso_date_time_start="2020-12-31 17:21:00"
-set report_iso_date_time_end="2021-03-19 17:21:00"
+set report_iso_date_time_end="2021-11-09 17:21:00"
+
+rem ## Optional settings specific to height map reports
+set mask_region_uuid=""
+set task_uuid=""
+rem # sequence_instance if for level sequences: index formatted '%08d'; for shift sequences: 'YYYY-MM-DD`T`{startTime}' in site-local time
+set sequence_instance="" 
 
 python create_and_download_report.py ^
     --env %env% ^
@@ -27,5 +33,8 @@ python create_and_download_report.py ^
     --oauth_secret %oauth_secret% ^
     --oauth_scope %oauth_scope% ^
     --report_iso_date_time_start %report_iso_date_time_start% ^
-    --report_iso_date_time_end %report_iso_date_time_end% 
+    --report_iso_date_time_end %report_iso_date_time_end% ^
+    --mask_region_uuid %mask_region_uuid% ^
+    --task_uuid %task_uuid% ^
+    --sequence_instance %sequence_instance%
     
