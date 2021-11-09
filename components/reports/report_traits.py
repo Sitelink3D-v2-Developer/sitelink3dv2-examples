@@ -68,13 +68,16 @@ class ActivityReportTraits(ReportTraitsBase):
         ReportTraitsBase.__init__(self, {'content-type': 'application/json'}, a_start_unix_time_millis, a_end_unix_time_millis, "activity_report", [["activity", ["csv","jsonl"]]])
 
 class HeightMapReportTraitsBase():
-    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis, a_report_type, a_result_target, a_results_header):
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis, a_report_type, a_result_target, a_results_header, a_mask_region_uuid=None, a_task_uuid=None, a_seqence_instance=None):
         self.m_server_config = a_server_config
         self.m_site_id = a_site_id
         self.m_results_header = a_results_header
         self.m_date_unix_time_millis = a_date_unix_time_millis
         self.m_report_type = a_report_type
         self.m_result_target = a_result_target
+        self.m_mask_region_uuid = a_mask_region_uuid
+        self.m_task_uuid = a_task_uuid
+        self.m_sequence_instance = a_seqence_instance
 
     def results_header(self):
         return self.m_results_header
@@ -86,6 +89,23 @@ class HeightMapReportTraitsBase():
         params = {}
         ReportTraitsBase.add_name_params(self, params, a_report_name)
         ReportTraitsBase.add_time_epoch_params(self, params, self.m_date_unix_time_millis)
+
+        if self.m_mask_region_uuid is not None:
+            if len(self.m_mask_region_uuid) > 0:
+                params["mask_region"] = self.m_mask_region_uuid
+        
+        if self.m_task_uuid is not None:
+            if len(self.m_task_uuid) > 0:
+                params["sequence"] = self.m_task_uuid + ":" + self.m_sequence_instance
+
+        params["tileConfig"] = {
+            "cellTemplate": "default",
+            "default": {
+                "cellSize": "512",
+                "additionalMeasure": "pass"
+            }
+        }
+        
         return params   
 
     def download_urls_from_job_results(self, a_job_results, a_headers):
@@ -104,8 +124,8 @@ class HeightMapReportTraitsBase():
         return download_urls               
 
 class PlyHeightMapReportTraits(HeightMapReportTraitsBase):
-    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis):
-        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.ply", {'content-type': 'application/json'}) 
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis, a_mask_region_uuid=None, a_task_uuid=None, a_seqence_instance=None):
+        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.ply", {'content-type': 'application/json'}, a_mask_region_uuid=a_mask_region_uuid, a_task_uuid=a_task_uuid, a_seqence_instance=a_seqence_instance) 
 
     def job_params(self, a_report_name):
         params = HeightMapReportTraitsBase.job_params(self, a_report_name)
@@ -113,8 +133,8 @@ class PlyHeightMapReportTraits(HeightMapReportTraitsBase):
         return params  
 
 class XyzHeightMapReportTraits(HeightMapReportTraitsBase):
-    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis):
-        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.xyz", {'content-type': 'application/json'}) 
+    def __init__(self, a_server_config, a_site_id, a_date_unix_time_millis, a_mask_region_uuid=None, a_task_uuid=None, a_seqence_instance=None):
+        HeightMapReportTraitsBase.__init__(self, a_server_config, a_site_id, a_date_unix_time_millis, "height_map", "points.xyz", {'content-type': 'application/json'}, a_mask_region_uuid=a_mask_region_uuid, a_task_uuid=a_task_uuid, a_seqence_instance=a_seqence_instance) 
 
     def job_params(self, a_report_name):
         params = HeightMapReportTraitsBase.job_params(self, a_report_name)

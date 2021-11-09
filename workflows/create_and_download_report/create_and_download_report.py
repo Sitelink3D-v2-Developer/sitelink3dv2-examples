@@ -36,6 +36,10 @@ arg_parser.add_argument("--name", help="Name for the report")
 arg_parser.add_argument("--report_iso_date_time_start", help="Start date for the report (in ISO date format)")
 arg_parser.add_argument("--report_iso_date_time_end", help="End date for the report (in ISO date format)")
 
+arg_parser.add_argument("--mask_region_uuid", default = "")
+arg_parser.add_argument("--task_uuid", default = "")
+arg_parser.add_argument("--sequence_instance", default = "")
+
 arg_parser.add_argument("--site_id", default="", help="Site Identifier")
 arg_parser.set_defaults()
 args = arg_parser.parse_args()
@@ -81,8 +85,8 @@ create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_rep
 activity_report_traits = ActivityReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis)
+xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=end_unix_time_millis, a_mask_region_uuid=args.mask_region_uuid, a_task_uuid=args.task_uuid, a_seqence_instance=args.sequence_instance)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="XYZ Height Map {}".format(report_epoch_name), a_report_traits=xyz_heigh_map_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=start_unix_time_millis)
+ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=end_unix_time_millis, a_mask_region_uuid=args.mask_region_uuid, a_task_uuid=args.task_uuid, a_seqence_instance=args.sequence_instance)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="PLY Height Map {}".format(report_epoch_name), a_report_traits=ply_heigh_map_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
