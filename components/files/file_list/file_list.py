@@ -67,13 +67,9 @@ def main():
     filesystem_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers)
     operator_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="operator", a_view="v_op_files_by_operator", a_headers=headers)
 
-    logging.info ("Found {} files in the 'file_system' domain".format(len(filesystem_domain_list)))
-    for fi in filesystem_domain_list:
-        logging.info (json.dumps(fi, sort_keys=True, indent=4))
-    
+    logging.info ("Found {} files in the 'file_system' domain".format(len(filesystem_domain_list)))  
     logging.info ("Found {} files in the 'operator' domain".format(len(operator_domain_list)))
-    for fi in operator_domain_list:
-        logging.info (json.dumps(fi, sort_keys=True, indent=4))
+
 
 if __name__ == "__main__":
     main()    

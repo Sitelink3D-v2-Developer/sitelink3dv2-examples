@@ -19,7 +19,7 @@ rem # A parent_uuid is REQUIRED when writing to the "operator" domain. This uuid
 rem # A parent_uuid is NOT REQUIRED when writing to the "file_system" domain.
 rem # To find the uuid for an existing operator, perform the following steps:
 rem # 1. Navigate this repo to the file components/metadata/metadata_list/metadata_list.py and ensure the logging level is set to logging.DEBUG.
-rem # 2. Populate the wrapper script suitable for you platform (metadata_list.bat or metadata_list.sh) with the details of your site and credentials.
+rem # 2. Populate the wrapper script suitable for your platform (metadata_list.bat or metadata_list.sh) with the details of your site and credentials.
 rem # 3. Run the wrapper script to list all metadata at your site. Redirect the output to a file to make the contents easy to inspect.
 rem # 4. Search the output file for the operators available at the site and identify the associated id field for the operator of interest as follows.
 rem # 5. Copy the operator id into the "parent_uuid" field in this file below this comment block.

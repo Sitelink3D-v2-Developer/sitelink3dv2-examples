@@ -7,7 +7,7 @@ set dc="us"
 set site_id=""
 
 rem ## Settings specific to this script.
-set page_limit="100"
+set page_limit="500"
 set start=""
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
