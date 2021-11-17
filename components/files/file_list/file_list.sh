@@ -7,7 +7,7 @@ dc="us"
 site_id=""
 
 ## Settings specific to this script.
-page_limit="100"
+page_limit="500"
 start=""
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
