@@ -9,12 +9,29 @@ import base64
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata", "rdm_parameters", "rdm_pagination"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_list"))
 
 from get_token import *
 from utils import *
 from args import *
+from rdm_pagination_traits import *
+from metadata_list  import *
 
 session = requests.Session()
+
+def query_nested_files_and_folders(a_server_config, a_site_id, a_parent_folder_uuid, a_headers):
+
+    files_and_folders = []
+    page_traits = MetadataPaginationTraits(a_page_size="500", a_start=[a_parent_folder_uuid], a_end=[a_parent_folder_uuid, None])
+    rj = query_metadata_by_domain_view(a_server_config=a_server_config, a_site_id=a_site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=a_headers, a_params=page_traits.params())
+
+    for fi in rj["items"]:
+        files_and_folders.append(fi)
+        if fi["value"]["_type"] == "fs::folder":
+            files_and_folders = files_and_folders + query_nested_files_and_folders(a_server_config=a_server_config, a_site_id=a_site_id, a_parent_folder_uuid=fi["id"], a_headers=a_headers)
+
+    return files_and_folders
 
 def query_files(a_server_config, a_site_id, a_page_limit, a_start, a_domain, a_view, a_headers):
 
@@ -67,9 +84,13 @@ def main():
     filesystem_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers)
     operator_domain_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit=args.page_limit, a_start=args.start, a_domain="operator", a_view="v_op_files_by_operator", a_headers=headers)
 
-    logging.info ("Found {} files in the 'file_system' domain".format(len(filesystem_domain_list)))  
+    logging.info ("Found {} files in the 'file_system' domain".format(len(filesystem_domain_list)))
+    for fi in filesystem_domain_list:
+        logging.info (json.dumps(fi, sort_keys=True, indent=4))
+    
     logging.info ("Found {} files in the 'operator' domain".format(len(operator_domain_list)))
-
+    for fi in operator_domain_list:
+        logging.info (json.dumps(fi, sort_keys=True, indent=4))
 
 if __name__ == "__main__":
     main()    
