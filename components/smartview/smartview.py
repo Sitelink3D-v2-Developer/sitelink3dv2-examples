@@ -15,9 +15,9 @@ class SmartView(object):
         self.headers = token
         return self
 
-    def stream_data(self, start, args, keep_alive):
-        start_b64 = b64(start) if start is not None else ""
-        url = "{}/start/{}?push_interval={}".format(self.url, start_b64, keep_alive)
+    def stream_data(self, args):
+        start_b64 = b64("{\"from\":\"continuous\"}")
+        url = "{}/start/{}".format(self.url, start_b64)
         logging.info("subscribing to {}".format(url))
         response = requests.get(url, stream=True, headers=self.headers, params=args)
         response.raise_for_status()

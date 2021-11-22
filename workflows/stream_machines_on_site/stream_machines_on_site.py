@@ -43,7 +43,7 @@ logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basenam
 
 sv = SmartView("topcon/machines/machine_list").configure(server.to_url(), args.site_id, headers)
 try:
-    for line in sv.stream_data(args.start, args.args, args.keep_alive):
+    for line in sv.stream_data(args.args):
         print(line)
 except KeyboardInterrupt:
     exit(0)

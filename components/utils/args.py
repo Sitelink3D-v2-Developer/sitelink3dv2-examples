@@ -18,8 +18,6 @@ def add_arguments_site(a_arg_parser):
 
 def add_arguments_smartview(a_arg_parser, a_app):
     a_arg_parser.add_argument("--app"  , help="the SmartApp required", default=a_app)
-    a_arg_parser.add_argument("--start", help="""Value for start. A JSON object detailed elsewhere.""", default="""{"from":"continuous"}""")
-    a_arg_parser.add_argument("--keep-alive", help="maximum interval between messages being sent", default="10s")
     a_arg_parser.add_argument("--args" , help="""extra arguments passed to the SmartApp. String of the form "a=1&b=2&b=3".""")
     return a_arg_parser
 
