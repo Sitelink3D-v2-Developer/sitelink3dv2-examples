@@ -15,8 +15,8 @@ def rot_matrix(rx, ry, rz):
                     ( 0.,         1., 0.        ),
                     (-np.sin(ry), 0., np.cos(ry))], float)
     mx = np.matrix([(1., 0.,         0.        ),
-                    (0., np.cos(rz),-np.sin(rz)),
-                    (0., np.sin(rz), np.cos(rz))], float)
+                    (0., np.cos(rx),-np.sin(rx)),
+                    (0., np.sin(rx), np.cos(rx))], float)
     return mz * my * mx
 
 class Interface(object):
