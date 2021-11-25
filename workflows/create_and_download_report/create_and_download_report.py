@@ -73,7 +73,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 output_dir = os.path.join(current_dir, args.site_id[0:12])
        
 # create haul, delay, weight, activity & height map reports spanning the configured time range
-haul_report_traits = HaulReportTraits(a_report_subtype="hauls", a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
+haul_report_traits = HaulReportTraits(a_haul_states=["CYCLED"], a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_range_name), a_report_traits=haul_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
 delay_report_traits = DelayReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)

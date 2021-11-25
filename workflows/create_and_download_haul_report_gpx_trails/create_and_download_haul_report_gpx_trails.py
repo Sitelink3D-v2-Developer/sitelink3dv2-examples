@@ -67,7 +67,7 @@ end_unix_time_millis   = datetime_to_unix_time_millis(report_end_datetime)
 report_name = args.name or "run {}".format(datetime.datetime.utcnow().replace(microsecond=0).isoformat())
 
 # create haul report spanning the configured time range
-haul_report_traits = HaulReportTraits(a_report_subtype="hauls", a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
+haul_report_traits = HaulReportTraits(a_haul_states=["CYCLED"], a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 
 report_job_id = create_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_name), a_report_traits=haul_report_traits, a_report_term=args.term, a_headers=headers)
 logging.info("Submitted [{}] called [{}] with job identifier [{}]".format(haul_report_traits.report_type(), report_name, report_job_id))

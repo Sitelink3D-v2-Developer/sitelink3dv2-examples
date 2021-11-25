@@ -44,15 +44,15 @@ class ReportTraitsBase():
         return download_urls
 
 class HaulReportTraits(ReportTraitsBase):
-    def __init__(self, a_report_subtype, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
+    def __init__(self, a_haul_states, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
         ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls", ["xlsx","json"]], ["trails",["json", "jsonl"]]])
-        self.report_subtype = a_report_subtype
+        self.haul_states = a_haul_states
 
     def job_params(self, a_report_name):
         params = {}
         ReportTraitsBase.add_name_params(self, params, a_report_name)
         ReportTraitsBase.add_time_range_params(self, params, self.m_start_unix_time_millis, self.m_end_unix_time_millis)
-        params["subtype"] = self.report_subtype
+        params["status"] = self.haul_states
         return params       
 
 class DelayReportTraits(ReportTraitsBase):
