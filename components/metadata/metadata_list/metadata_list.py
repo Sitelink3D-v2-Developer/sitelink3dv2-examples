@@ -6,6 +6,7 @@ import os
 import sys
 import requests
 import json
+import itertools
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))

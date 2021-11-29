@@ -34,6 +34,8 @@ def create_region(a_region_name, a_site_id, a_server_config, a_verticies_file, a
 
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()
+    if response.status_code == 200:
+        logging.info("Region created.")
     logging.debug ("create region returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
 
 
