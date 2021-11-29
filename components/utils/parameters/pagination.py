@@ -56,4 +56,3 @@ def process_pages(a_page_traits, a_page_query):
                 a_page_query.result(da)
                 logging.debug (json.dumps(da, sort_keys=True, indent=4))
                 
-        logging.info ("Found {} total items".format(cnt))

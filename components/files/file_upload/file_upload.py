@@ -67,11 +67,11 @@ def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id,
     
     url = "{0}/rdm_log/v1/site/{1}/domain/{2}/events".format(a_server_config.to_url(), a_site_id, a_domain)
     logging.debug ("Upload RDM to {}".format(url))
-    
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
-    response.raise_for_status()
     logging.debug ("upload_file returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
 
+    if response.status_code == 200:
+        logging.info("File uploaded.")
 
 def main():
     # >> Arguments

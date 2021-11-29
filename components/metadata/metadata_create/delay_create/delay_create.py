@@ -33,6 +33,8 @@ def create_delay(a_site_id, a_server_config, a_delay_name, a_delay_code, a_heade
 
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()
+    if response.status_code == 200:
+        logging.info("Delay created.")
     logging.debug ("create delay returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
 
 

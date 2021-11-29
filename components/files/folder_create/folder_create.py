@@ -46,6 +46,8 @@ def make_folder(a_folder_bean, a_server_config, a_site_id, a_headers):
     response = session.post(rdm_create_folder_url, headers=a_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()
     logging.debug ("make-folder returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    if response.status_code == 200:
+        logging.info("Folder created.")
     logging.debug ("The new folder uuid = {0}".format(a_folder_bean._id))
 
 
