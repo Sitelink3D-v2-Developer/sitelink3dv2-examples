@@ -32,3 +32,12 @@ def add_arguments_pagination(a_arg_parser):
     a_arg_parser.add_argument("--page_limit", default="", help="the max size a result list can be prior to being split into pages.")
     a_arg_parser.add_argument("--start", help="the starting item offset for the return of results.")
     return a_arg_parser
+
+def add_arguments_sorting(a_arg_parser):
+    a_arg_parser.add_argument("--sort_field", default="", help="The optional column to sort the resulting list by.")
+    a_arg_parser.add_argument("--sort_order", default="+", help="The direction to sort the results by.")
+    return a_arg_parser
+
+def add_arguments_filtering(a_arg_parser, a_filter_list):
+    [a_arg_parser.add_argument("--filter_" + i) for i in a_filter_list]
+    return a_arg_parser

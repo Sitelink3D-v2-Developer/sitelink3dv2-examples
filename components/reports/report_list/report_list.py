@@ -6,17 +6,43 @@ import os
 import sys
 import requests
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils", "parameters"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata", "metadata_list"))
 
 from get_token import *
 from utils import *
 from args import *
 from metadata_list import *
+from filtering import *
+from sorting import *
+from report_pagination_traits import *
 
 session = requests.Session()
 
+class ReportListPageQuery():
+    def __init__(self, a_server_config, a_site_id, a_params, a_headers):
+        self.m_server_config = a_server_config
+        self.m_site_id = a_site_id
+        self.m_params = a_params
+        self.m_headers = a_headers
+
+    def query(self, a_params):
+        params = self.m_params | a_params
+        logging.debug("Using parameters:{}".format(json.dumps(params)))
+        report_list_url = "{0}/reporting/v1/{1}/longterms/".format(self.m_server_config.to_url(), self.m_site_id)
+        response = session.get(report_list_url, headers=self.m_headers, params=params)
+        response.raise_for_status()     
+        return response.json()
+
+    @staticmethod
+    def result(a_value):
+        try:
+            logging.info("'{}' of type:{} run by {} ({})".format(a_value["params"]["name"], a_value["job_type"], a_value["issued_by"], "archived" if a_value["archived"] else "active")) 
+        except KeyError as err:  
+            pass 
 
 def main():
     # >> Arguments
@@ -29,8 +55,9 @@ def main():
     # server parameters:
     arg_parser = add_arguments_environment(arg_parser)
     arg_parser = add_arguments_auth(arg_parser)
-
+    arg_parser = add_arguments_sorting(arg_parser)
     arg_parser = add_arguments_pagination(arg_parser)
+    arg_parser = add_arguments_filtering(arg_parser, ["issued_since_epoch","job_type","name","issued_by","status"])
 
     # request parameters:
     arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
@@ -46,14 +73,21 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    report_list_url = "{0}/reporting/v1/{1}/longterms/?order=issued_at&filter=e30".format(server.to_url(), args.site_id)
 
-    response = session.get(report_list_url, headers=headers)
-    response.raise_for_status()
-   
-    report_list = response.json()
+    sort_traits = SortTraits(a_sort_field=args.sort_field, a_sort_order=args.sort_order)
+    filters = add_filter_term(a_filter={}, a_field_name="job_type", a_operation="in", a_value=[args.filter_job_type])
+    if len(args.filter_issued_since_epoch) > 0:    
+        filters = add_filter_term(a_filter=filters, a_field_name="issued_at", a_operation=">", a_value=int(args.filter_issued_since_epoch))
+    filters = add_filter_term(a_filter=filters, a_field_name="params.name", a_operation="=", a_value=args.filter_name)
+    filters = add_filter_term(a_filter=filters, a_field_name="issued_by", a_operation="in", a_value=[args.filter_issued_by])
+    filters = add_filter_term(a_filter=filters, a_field_name="status", a_operation="in", a_value=[args.filter_status])
 
-    logging.info(json.dumps(report_list, indent=4))
+    for state in [{"archived":False},{"archived":True}]:
+        
+        page_traits = ReportListPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+
+        report_list_query = ReportListPageQuery(a_server_config=server, a_site_id=args.site_id, a_params=sort_traits.params(filter_params(state, filters)), a_headers=headers)
+        process_pages(a_page_traits=page_traits, a_page_query=report_list_query)
 
 
 if __name__ == "__main__":

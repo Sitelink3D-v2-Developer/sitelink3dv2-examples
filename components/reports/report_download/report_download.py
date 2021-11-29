@@ -51,7 +51,7 @@ def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
 
     if paginate_report:
         logging.info("Downloading paginated report.")
-        page_traits = ReportPaginationTraits(a_page_size="500", a_start="0")
+        page_traits = ReportDataPaginationTraits(a_page_size="500", a_start="0")
         more_data = True
 
         output_list = []
