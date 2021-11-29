@@ -13,7 +13,8 @@ class MetadataTraitsBase():
         return self.display_name
 
     def object_name(self):
-        return self.value["name"]
+            state = " (archived)" if self.value.get("_archived", False) else " (active)"
+            return self.value["name"] + state
 
 class GenericNamedMetadataTraits(MetadataTraitsBase):
     def __init__(self, a_object_value, a_display_name):

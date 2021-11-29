@@ -4,13 +4,11 @@
 # Create a site and configure it for material haulage.
 # ------------------------------------------------------------------------------
 
-import base64
 import logging
 import argparse
 import json
 import requests
 import sys
-import uuid
 import os
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
@@ -69,7 +67,7 @@ session = requests.Session()
 
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
 
-headers = to_bearer_token_header(a_access_token=args.jwt)
+headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
 logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
 

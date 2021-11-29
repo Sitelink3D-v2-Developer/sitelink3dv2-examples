@@ -6,6 +6,7 @@ import sys
 import requests
 import json
 from tqdm import tqdm
+import itertools
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
@@ -50,9 +51,20 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    operator_domain_file_list = query_files(a_server_config=server, a_site_id=args.site_id, a_page_limit="500", a_start="", a_domain="operator", a_view="v_op_files_by_operator", a_headers=headers)
-   
+    page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
+    operator_domain_file_list = []
+    more_data = True
+    while more_data:
+        params=page_traits.params()
+        logging.debug("Using parameters:{}".format(json.dumps(params)))
+        file_page = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="operator", a_view="v_op_files_by_operator", a_headers=headers, a_params=params)
+        more_data = page_traits.more_data(file_page)
+        logging.info ("Found {} items {}".format(len(file_page["items"]), "({})".format("unpaginated" if page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(page_traits.page_number())))
+        operator_domain_file_list.append(file_page["items"])
+    operator_domain_file_list = list(itertools.chain.from_iterable(operator_domain_file_list))
+
     logging.info ("Found {} files in the 'operator' domain".format(len(operator_domain_file_list)))
+
     for fi in operator_domain_file_list:
         logging.debug(json.dumps(fi, sort_keys=True, indent=4))
 

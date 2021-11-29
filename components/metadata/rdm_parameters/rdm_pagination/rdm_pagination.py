@@ -53,18 +53,22 @@ def main():
 
     page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
     more_data = True
-    while True:
+    while more_data:
         metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
         more_data = page_traits.more_data(metadata_list)
-        logging.info ("Found {} items {}".format(len(metadata_list["items"]), "({})".format("unpaginated" if page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(page_traits.page_number())))
+
+        num_items = len(metadata_list["items"])
+        if more_data:
+            logging.info("Found {} items (page {})".format(num_items, page_traits.page_number()))
+        elif page_traits.page_number() == 1:
+            logging.info("Found {} items (unpaginated)".format(num_items))
+        else:
+            logging.info("Found {} items (last page)".format(num_items))
 
         for fi in metadata_list["items"]:
             obj = Metadata.traits_factory(fi["value"])
             if obj is not None:
                 logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))        
-
-        if not more_data:
-            break
 
 if __name__ == "__main__":
     main()    
