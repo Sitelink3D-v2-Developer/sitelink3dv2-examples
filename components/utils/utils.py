@@ -47,3 +47,15 @@ def datetime_to_unix_time_millis(a_date_time):
 def json_from(r):
     r.raise_for_status()
     return r.json()
+
+def compare_dict(expected, actual):
+    for (key, expected_value) in expected.items():
+        actual_value = actual[key]
+        if type(expected_value) is dict:
+            if type(actual_value) is not dict:
+                return False
+            if not compare_dict(expected_value, actual_value):
+                return False
+        elif actual_value != expected_value:
+            return False
+    return True
