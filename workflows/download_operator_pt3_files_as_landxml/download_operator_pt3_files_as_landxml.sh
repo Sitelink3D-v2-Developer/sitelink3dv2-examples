@@ -17,7 +17,7 @@ oauth_id=""
 oauth_secret=""
 oauth_scope=""
 
-exec python file_download.py \
+exec python download_operator_pt3_files_as_landxml.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
