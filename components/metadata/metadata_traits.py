@@ -493,6 +493,19 @@ class AssetMetadataTraits(MetadataTraitsBase):
 
         return "\'{}\' ({}).".format(self.object_name(), assetClass)
 
+class DeviceDesignObjectTraits(MetadataTraitsBase):
+    def __init__(self, a_object_value):
+        MetadataTraitsBase.__init__(self, a_object_value, "Device Design Object")
+
+    def object_details(self):
+        assetClass = ""
+        try:          
+            deviceUrn = self.value["deviceURN"]
+        except KeyError as err:  
+            pass    
+
+        return "\'{}\' from device URN {}.".format(self.object_name(), deviceUrn)
+
 class Metadata(object):
 
     def traits_factory(a_object_value):
@@ -525,6 +538,10 @@ class Metadata(object):
                 return AssetMetadataTraits(a_object_value)
             if a_object_value["_type"] == "sl::designObject":
                 return GenericNamedMetadataTraits(a_object_value, "Design Object")
+            if a_object_value["_type"] == "sl::deviceDesignObject":
+                return DeviceDesignObjectTraits(a_object_value)
+            if a_object_value["_type"] == "sl::sequenceType":
+                return GenericNamedMetadataTraits(a_object_value, "Sequence Type")
             if a_object_value["_type"] == "sl::asbuilt_passcount_color_map":
                 return GenericNamedMetadataTraits(a_object_value, "AsBuilt Pass Count Color Map")
             if a_object_value["_type"] == "sl::asbuilt_cutfill_color_map":
