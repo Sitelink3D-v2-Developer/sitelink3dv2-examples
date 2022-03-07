@@ -6,6 +6,7 @@ import base64
 import uuid
 from collections import OrderedDict
 from struct import Struct
+import logging
 
 def rot_matrix(rx, ry, rz):
     mz = np.matrix([(np.cos(rz),-np.sin(rz), 0.),
@@ -52,7 +53,7 @@ class Replicate(Interface):
 
     def decode(self, manifest_binary):
         items = self.struct.unpack(manifest_binary)
-        print ("Replicate interface object has decoded the binary manifest to produce the following items: {0}".format(items))
+        logging.debug("Replicate interface object has decoded the binary manifest to produce the following items: {0}".format(items))
         return dict(zip(list(m.ref for m in self.manifest_items), items))
 
     class ManifestItem(object):
@@ -104,6 +105,28 @@ class PointsOfInterest(Interface):
 
         def __repr__(self):
             return str((self.id, self.tx, self.ty, self.tz, "+" + self.node_ref))
+
+class AuxControlData(Interface):
+    def __init__(self, aux_control_json):
+        super(AuxControlData, self).__init__(aux_control_json)
+        self.control_data = list(map(functools.partial(self.ControlData, interface=self), aux_control_json["data"]))
+    
+    class ControlData(object):
+        def __init__(self, conrol_json, interface):
+            self.id = conrol_json.get("id", 0)
+            self.description = conrol_json.get("description", "")
+            self.value = conrol_json.get("value", 0)
+            self.interface = interface
+            interface[self.id] = self
+
+        def get_id(self):
+            return self.id
+
+        def __setitem__(self, key, value):
+            setattr(self, key, value)
+
+        def __repr__(self):
+            return str((self.id, self.description, self.value))
 
 class Attach(Interface):
     def __init__(self, attach_json):
@@ -250,6 +273,7 @@ class Transform(Interface):
 
 class Component(object):
     interface_factory = {
+        "aux_control_data" : AuxControlData,
         "replicate": Replicate,
         "points_of_interest": PointsOfInterest,
         "nodes": Nodes,
@@ -303,7 +327,7 @@ class ResourceConfiguration(object):
     def apply_manifest(self, manifests):
         for manifest, component in zip(manifests, list(self.components)):
             values = component.decode_manifest(manifest)
-            print ("values = {0}".format(values))
+            logging.debug("values = {0}".format(values))
             component.update(values)
         self.update_transforms()
         return self
