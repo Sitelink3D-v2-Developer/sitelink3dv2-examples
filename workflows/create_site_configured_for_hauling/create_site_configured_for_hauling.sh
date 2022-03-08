@@ -6,7 +6,7 @@ env="qa"
 dc="us"
 
 ## Site creation specifics
-# run `SitelinkFrontend.core.store.getState().app.owner.ownerId` in your browser developer console to obtain the owner / organization identifier.
+# The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 owner_id=""
 
 site_name="API Hauling Site"
