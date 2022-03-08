@@ -94,15 +94,12 @@ def main():
             continue
         logging.info("Found {} views.".format(view_list_length))
         for rdm_view in rdm_view_list["items"]:
-            logging.info("querying view {}".format(rdm_view["id"]))
-
-        for state in [{"archived":False},{"archived":True}]:
             
-            page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
-
-            file_list_query = MetadataListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_params=state, a_headers=headers)
-            process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
-
+            for state in [{"archived":False},{"archived":True}]:
+                logging.info("querying view {} ({})".format(rdm_view["id"], state))
+                page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+                file_list_query = MetadataListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_params=state, a_headers=headers)
+                process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
 
 if __name__ == "__main__":
     main()    

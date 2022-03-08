@@ -50,8 +50,10 @@ def process_pages(a_page_traits, a_page_query):
             params=a_page_traits.params({})
             data_page = a_page_query.query(a_params=params)
             more_data = a_page_traits.more_data(data_page)
-            logging.info ("Found {} items {}".format(len(data_page["items"]), "({})".format("unpaginated" if a_page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(a_page_traits.page_number())))
-            for da in data_page["items"]:
+            data_items = data_page["items"]
+            logging.info ("Found {} items {}".format(len(data_items), "({})".format("unpaginated" if a_page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(a_page_traits.page_number())))
+
+            for da in data_items:
                 cnt+=1
                 a_page_query.result(da)
                 logging.debug (json.dumps(da, sort_keys=True, indent=4))

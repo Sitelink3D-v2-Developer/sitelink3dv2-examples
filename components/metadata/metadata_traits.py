@@ -543,6 +543,8 @@ class Metadata(object):
                 return DeviceDesignObjectTraits(a_object_value)
             if a_object_value["_type"] == "sl::sequenceType":
                 return GenericNamedMetadataTraits(a_object_value, "Sequence Type")
+            if a_object_value["_type"] == "sl::sequence":
+                return GenericNamedMetadataTraits(a_object_value, "Sequence")
             if a_object_value["_type"] == "sl::asbuilt_passcount_color_map":
                 return GenericNamedMetadataTraits(a_object_value, "AsBuilt Pass Count Color Map")
             if a_object_value["_type"] == "sl::asbuilt_cutfill_color_map":
