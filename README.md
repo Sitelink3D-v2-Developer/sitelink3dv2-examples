@@ -154,12 +154,23 @@ set env=""
 Some examples require an owner identifier. This will be the case when operations are targeted at the owner of a site rather than a site itelf. Examples include:
 - Creating a site.
 - Listing existing sites.
- 
-Obtaining an owner identifier is achieved with the following process:
+
+There are two ways to obtain the owner identifier:
+1. Extract from the browser developer console.
+2. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
+
+Obtaining an owner identifier by extracting from the browser console:
 1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
 2. Select the desired organization.
 3. Press F12 in your Chrome browser to open a console.
 4. Type in the following command ```SitelinkFrontend.core.store.getState().app.owner.ownerId``` to obtain the owner identifier.
+
+Obtaining an owner identifier by copying from the site information dialog:
+1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
+2. Select the desired organization and site.
+3. Click on the site name in the top bar to reveal the site menu.
+4. Click on Site Information.
+5. Copy the owner identifier from the Site Information dialog.
 
 ```
 set owner_id=""

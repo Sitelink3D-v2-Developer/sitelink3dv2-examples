@@ -39,7 +39,7 @@ dc=""
 
 The Topcon Organization (also known as Owner) to create the Site within.
 
-*NOTE: To obtain this, in a web browser open the Sitelink3D v2 web portal (in the target environment). In the developer console window, copy the result of `SitelinkFrontend.core.store.getState().app.owner.ownerId`*
+*NOTE: To obtain this, follow the process at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 
 ```bash
 owner_id="1234abcd-12ab-12ab-12ab-123456abcdef"
