@@ -1,4 +1,5 @@
 
+from textwrap import indent
 import numpy as np
 import numpy.matlib
 import functools
@@ -7,6 +8,7 @@ import uuid
 from collections import OrderedDict
 from struct import Struct
 import logging
+import json
 
 def rot_matrix(rx, ry, rz):
     mz = np.matrix([(np.cos(rz),-np.sin(rz), 0.),
@@ -112,10 +114,10 @@ class AuxControlData(Interface):
         self.control_data = list(map(functools.partial(self.ControlData, interface=self), aux_control_json["data"]))
     
     class ControlData(object):
-        def __init__(self, conrol_json, interface):
-            self.id = conrol_json.get("id", 0)
-            self.description = conrol_json.get("description", "")
-            self.value = conrol_json.get("value", 0)
+        def __init__(self, control_json, interface):
+            self.id = control_json.get("id", 0)
+            self.description = control_json.get("description", "")
+            self.value = control_json.get("value", 0)
             self.interface = interface
             interface[self.id] = self
 
@@ -305,6 +307,7 @@ class Component(object):
     def update(self, values):
         for key,value in values.items():
             node_name, prop = key.rsplit(".", 1)
+            logging.debug("Updating node name {} and property {} to value {}".format(node_name, prop, value))
             node = self.get_interface_object(node_name)
             if node:
                 node[prop] = value
