@@ -7,7 +7,6 @@ dc="us"
 site_id=""
 
 file_name="file_to_upload.txt"
-file_uuid=""
 parent_uuid=""
 
 ## There are two domains within which files are stored in Sitelink3D v2.
@@ -29,7 +28,6 @@ exec python file_upload.py \
     --dc "$dc" \
     --site_id "$site_id" \
     --file_name "$file_name" \
-    --file_uuid "$file_uuid" \
     --parent_uuid "$parent_uuid" \
     --domain "$domain" \
     --jwt "$jwt" \

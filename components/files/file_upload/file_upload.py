@@ -22,7 +22,8 @@ from args import *
 session = requests.Session()
 
 # The act of uploading a file is represented by the upload_uuid field in this FileUploadBean bean.
-# This uuid allows the specific instance of a file upload to be referenced later. 
+# This uuid internally represents the upload blobs as they happen and allows the specific instance 
+# of a file upload to be referenced later.
 # 
 # Referencing specific upload_uuid instances is useful when:
 # 1. Querying an uploaded file for its design data contents; see query_file_features function.
@@ -81,7 +82,6 @@ def main():
     arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     arg_parser.add_argument("--file_name", default="", required=True)
-    arg_parser.add_argument("--file_uuid", default=str(uuid.uuid4()), help="UUID of file")
     arg_parser.add_argument("--parent_uuid", default=None, help="UUID of parent")
     arg_parser.add_argument("--domain", default="file_system", help="The purpose of the file - file_system or operator")
 
@@ -103,9 +103,9 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    file_upload_bean = FileUploadBean(a_upload_uuid=args.file_uuid, a_file_location=".", a_file_name=os.path.basename(args.file_name))
+    file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=os.path.basename(args.file_name))
 
-    file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=file_upload_bean.upload_uuid, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
+    file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.file_name, a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
 
     upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain=args.domain, a_headers=headers)
    
