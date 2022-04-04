@@ -13,7 +13,6 @@ dc="us"
 site_id=""
 
 file_name="My_Operator_Data.pt3"
-file_uuid=""
 
 # A parent_uuid is REQUIRED when writing to the "operator" domain. This uuid determines the target operator folder on the "Operator Files" tab.
 # A parent_uuid is NOT REQUIRED when writing to the "file_system" domain.
@@ -62,7 +61,6 @@ exec python file_upload.py \
     --dc "$dc" \
     --site_id "$site_id" \
     --file_name "$file_name" \
-    --file_uuid "$file_uuid" \
     --parent_uuid "$parent_uuid" \
     --domain "$domain" \
     --jwt "$jwt" \
