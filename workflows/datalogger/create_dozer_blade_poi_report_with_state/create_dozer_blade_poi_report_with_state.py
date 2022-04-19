@@ -78,7 +78,7 @@ def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
 
     # We want to multiple the POI's referenced (and pre-transformed) node by the POI's offset.
     # In this example, the point is blade left or blade right.
-    # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK SDK.
+    # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
     poi_offset = poi.get_point()
     transformed_offset_point =  node_transform * poi_offset
 
@@ -170,11 +170,11 @@ for line in response.iter_lines():
             resrouce_url = "{}/dba/v1/sites/{}/resources/{}".format(server_https.to_url(), args.site_id, rc_uuid)
             rc_uuid_response = session.get(resrouce_url, headers=headers)
             resources[rc_uuid] = rc_uuid_response.json()
-            sdk_rc = resources[rc_uuid]
-            sdk_rc["data"] = { "components": resources[rc_uuid]["components"] }
-            sdk_rc.pop("components")
-            logging.debug("Resource Configuration: {}".format(json.dumps(sdk_rc,indent=4)))
-            rc = ResourceConfiguration(sdk_rc)
+            mfk_rc = resources[rc_uuid]
+            mfk_rc["data"] = { "components": resources[rc_uuid]["components"] }
+            mfk_rc.pop("components")
+            logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
+            rc = ResourceConfiguration(mfk_rc)
         else:
             logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
         

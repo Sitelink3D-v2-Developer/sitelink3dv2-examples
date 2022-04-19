@@ -55,7 +55,7 @@ response.raise_for_status()
 
 resource_definitions = {}
 assets = {}
-sdk = {}
+mfk = {}
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 output_dir = os.path.join(current_dir, args.site_id[0:12])
@@ -75,11 +75,11 @@ payload_output_file["mfk::Replicate"]  = open(kinematics_file_name, "w")
 
 
 # Callback function to allow the payload processing code to lookup data it
-# needs to log to file when format() is called. This callback means an SDK
-# instances is not needed in the datalogger payload processing code.
+# needs to log to file when format() is called. This callback means an MFK
+# instance is not needed in the datalogger payload processing code.
 # 
 # The Replicate Interface within the cached Resource Configuration is used
-# to determine the fields to query in the SDK interface. This provides the
+# to determine the fields to query in the MFK interface. This provides the
 # most recent data from the field for the provided UUID
 def get_replicate_data_for_rc_uuid(a_rc_uuid):
 
@@ -87,10 +87,10 @@ def get_replicate_data_for_rc_uuid(a_rc_uuid):
     for rc_interface in resource_definitions[a_rc_uuid]["data"]["components"][0]["interfaces"]:
         if rc_interface["oem"] == "topcon" and rc_interface["name"] == "replicate":
             
-            sdk_component = sdk[rc_uuid].components[0]
+            mfk_component = mfk[rc_uuid].components[0]
             vals = {}
             # The Topcon Replicate Interface manifest contains the field definitions appropriate 
-            # for this RC UUID. These fields are used to query the associated data from the SDK.
+            # for this RC UUID. These fields are used to query the associated data from the MFK code.
             # Fields are in the format <node.property> meaning that the following example in the
             # RC Interface results in a node of "topcon.transform.wgs" and property "lat".
             #
@@ -102,8 +102,8 @@ def get_replicate_data_for_rc_uuid(a_rc_uuid):
             for val in rc_interface["manifest"]:
                 node_name, prop = val["value_ref"].rsplit(".", 1)
 
-                # We've found a node name so we can obtain the node of that name from the SDK.
-                node = sdk_component.get_interface_object(node_name)
+                # We've found a node name so we can obtain the node of that name from the MFK code.
+                node = mfk_component.get_interface_object(node_name)
                 
                 # Nodes are queried differently for the data they contain as a function of their
                 # MFK type. This code handles the following types explicitly:
@@ -147,7 +147,7 @@ for line in response.iter_lines():
     decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
 
     # Before we intepret the payload, we fetch the Asset Context and Resource Configuration
-    # definitions and initialise the MFK SDK for the Resource Configuration if required. 
+    # definitions and initialise the MFK code for the Resource Configuration if required. 
     #
     # This requires separate calls to the API so the results are cached to avoid the need to 
     # query on every message. 
@@ -159,16 +159,16 @@ for line in response.iter_lines():
             logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
             resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
 
-            sdk_rc = resource_definitions[rc_uuid]
+            mfk_rc = resource_definitions[rc_uuid]
 
-            # The MFK SDK expects a slightly differnt JSON structure to that provided by DBA
-            sdk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
-            sdk_rc.pop("components")
-            logging.debug("Resource Configuration: {}".format(json.dumps(sdk_rc,indent=4)))
+            # The MFK code expects a slightly differnt JSON structure to that provided by DBA
+            mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
+            mfk_rc.pop("components")
+            logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
 
-            # Instantiate the SDK for this Resource Configuration and cache it for subsequent queries.
-            rc = ResourceConfiguration(sdk_rc)
-            sdk[rc_uuid] = rc
+            # Instantiate the MFK code for this Resource Configuration and cache it for subsequent queries.
+            rc = ResourceConfiguration(mfk_rc)
+            mfk[rc_uuid] = rc
 
             # Write the Resource Configuration to file for ease of inspection.
             resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
@@ -195,8 +195,8 @@ for line in response.iter_lines():
     # 
     # State and Event payloads are self contained and can be written to file without extra processing.
     # 
-    # Replicate payloads however contain updates that must be applied to the SDK instantiated for the
-    # associated UUID. Once the replicate manifest is applied to the SDK, the latter can be queried 
+    # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
+    # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried 
     # by the LogPayload function for the latest kinematic information which is then written to file. 
 
     payload = DataloggerPayload.payload_factory(decoded_json, get_asset_name_for_ac_uuid, get_replicate_data_for_rc_uuid)
@@ -205,7 +205,7 @@ for line in response.iter_lines():
         logging.debug(payload.format())
 
         if payload.payload_type() == "mfk::Replicate":
-            updated_manifest = sdk[rc_uuid].apply_manifest(payload.manifest())
+            updated_manifest = mfk[rc_uuid].apply_manifest(payload.manifest())
 
         LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
     
