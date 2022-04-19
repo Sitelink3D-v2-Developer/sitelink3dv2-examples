@@ -1,23 +1,17 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
-import json
-import base64
-import uuid
-import time
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from metadata_traits import *
-from args import *
+components_dir = path_up_to_last("components")
 
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "get_token", "metadata_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 

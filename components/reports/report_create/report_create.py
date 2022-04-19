@@ -1,20 +1,18 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
-import json
-import uuid
 import getpass
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "report_download"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from report_download import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["utils", "get_token", "report_download"]:
+    exec(import_cmd(components_dir, imp))
 
 def fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
     url = "{}/reporting/v1/{}/{}/{}".format(a_server_config.to_url(), a_site_id, a_term, a_job_id)

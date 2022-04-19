@@ -1,26 +1,17 @@
 #!/usr/bin/python
-import argparse
-import datetime
-import json
-import logging
 import os
-import requests
 import sys
-import re
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "reports", "report_download"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token      import *
-from utils          import *
-from report_traits  import *
-from report_create  import *
-from report_convert import *
-from args           import *
-from report_download import *
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "report_traits", "report_create", "report_convert", "report_download"]:
+    exec(import_cmd(components_dir, imp))
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description="Test reporting.")

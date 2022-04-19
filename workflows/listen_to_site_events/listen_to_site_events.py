@@ -1,22 +1,17 @@
 #!/usr/bin/env python
-
-import argparse
-import requests
-import logging
-import argparse
-import json
-import logging
 import os
-import requests
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token      import *
-from utils          import *
-from args           import *
-from events         import *
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "events"]:
+    exec(import_cmd(components_dir, imp))
 
 logger = logging.getLogger("listen_to_events")
 

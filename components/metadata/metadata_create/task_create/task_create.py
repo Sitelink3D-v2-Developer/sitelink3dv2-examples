@@ -1,21 +1,17 @@
 #!/usr/bin/python
-import logging
 import os
 import sys
-import requests
-import json
-import base64
-import uuid
-import time
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "metadata"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from metadata_traits import *
+components_dir = path_up_to_last("components")
 
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "get_token", "metadata_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
@@ -29,5 +25,9 @@ def create_task(a_server_config, a_site_id, a_task_name, a_headers, a_design_set
     url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(),a_site_id)
 
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
-    response.raise_for_status()        
+    response.raise_for_status()    
+    if response.status_code == 200:
+        logging.info("Task created.")
+    logging.debug ("create task returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    
     return response.json()

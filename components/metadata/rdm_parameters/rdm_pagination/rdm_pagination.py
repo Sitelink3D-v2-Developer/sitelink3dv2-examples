@@ -1,21 +1,17 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..","..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..","..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata_list"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..", ".."))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from metadata_traits import *
-from args import *
-from metadata_list import *
-from rdm_pagination_traits import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args","get_token", "metadata_traits", "metadata_list", "rdm_pagination_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
@@ -25,7 +21,7 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Paginating RDM data")
 
     # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.DEBUG)
+    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
 
     # server parameters:
     arg_parser = add_arguments_environment(arg_parser)
