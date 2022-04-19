@@ -1,13 +1,6 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
-import json
-import base64
-import uuid
-import time
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))

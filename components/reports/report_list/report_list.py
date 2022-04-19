@@ -1,24 +1,17 @@
 #!/usr/bin/python
-import argparse
-import json
-import logging
 import os
 import sys
-import requests
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils", "parameters"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata", "metadata_list"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from args import *
-from metadata_list import *
-from filtering import *
-from sorting import *
-from report_pagination_traits import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["utils", "get_token", "filtering", "sorting", "args", "report_pagination_traits", "metadata_list"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 

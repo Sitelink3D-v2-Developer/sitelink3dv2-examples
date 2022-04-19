@@ -1,21 +1,17 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
-import json
-import base64
-import uuid
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "metadata"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from metadata_traits import *
-from args import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "get_token", "metadata_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
@@ -29,7 +25,7 @@ def create_operator(a_site_id, a_server_config, a_first_name, a_last_name, a_cod
     json.dumps(operator_rdm_bean,indent=4)
 
     data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(operator_rdm_bean).encode('utf-8')).decode('utf-8') }
-    print("Operator RDM payload: {}".format(json.dumps(operator_rdm_bean, indent=4)))
+    logging.debug("Operator RDM payload: {}".format(json.dumps(operator_rdm_bean, indent=4)))
 
     response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
     response.raise_for_status()

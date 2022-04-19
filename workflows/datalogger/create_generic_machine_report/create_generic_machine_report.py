@@ -1,24 +1,17 @@
 #!/usr/bin/env python
-
-import argparse
-import requests
-import logging
-import json
 import os
 import sys
-import base64
-import urllib.parse
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "mfk"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "datalogger"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token      import *
-from utils          import *
-from args           import *
-from mfk            import *
-from datalogger_payload import *
-from datalogger_utils import *
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "mfk", "datalogger_payload", "datalogger_utils"]:
+    exec(import_cmd(components_dir, imp))
 
 # Configure Arguments
 arg_parser = argparse.ArgumentParser(description="Read historical data from the datalogger microservice.")

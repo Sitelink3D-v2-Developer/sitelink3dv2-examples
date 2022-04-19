@@ -1,27 +1,18 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
-import json
-from tqdm import tqdm
 import itertools
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_download"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_list"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "files", "file_features"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_list"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from args import *
-from file_download import *
-from file_list import *
-from file_features import *
-from metadata_list import *
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "file_download", "file_list", "file_features", "metadata_list"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 

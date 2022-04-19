@@ -1,30 +1,17 @@
 #!/usr/bin/env python
-
-import logging
-import argparse
-import requests
-import sys
-import uuid
 import os
-import json
+import sys
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "files", "folder_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "files", "file_upload"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "files", "file_list"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "components", "metadata", "metadata_list"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token      import *
-from utils          import *
-from folder_create  import *
-from file_upload    import *
-from file_list      import *
-from datetime       import datetime
-from args           import *
-from metadata_traits import *
-from metadata_list  import *
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_list", "metadata_list", "metadata_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description=os.path.basename(os.path.realpath(__file__)))

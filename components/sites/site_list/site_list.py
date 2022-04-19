@@ -1,25 +1,17 @@
 #!/usr/bin/python
-import argparse
-import json
-import logging
 import os
-import requests
 import sys
-import itertools
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils", "parameters"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "metadata"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from sorting import *
-from metadata_traits import *
-from args import *
-from filtering import *
-from site_pagination_traits import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "sorting", "filtering", "site_pagination_traits"]:
+    exec(import_cmd(components_dir, imp))
 
 def list_sites(a_server_config, a_owner_id, a_headers, a_params):
 

@@ -4,32 +4,20 @@
 # Create a site and configure it for material haulage.
 # ------------------------------------------------------------------------------
 
-import logging
-import argparse
-import json
-import requests
 import sys
 import os
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "sites", "site_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "region_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "delay_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "material_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "task_create"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "metadata", "metadata_create", "auth_code_create"))
-
-from get_token      import *
-from utils          import *
-from site_create    import *
-from delay_create   import *
-from material_create import *
-from region_create  import *
-from task_create    import *
-from auth_code_create import *
 from datetime       import datetime
-from args           import *
+
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
+
+components_dir = os.path.join(path_up_to_last("workflows", False), "components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "site_create", "delay_create", "material_create", "region_create", "task_create", "auth_code_create"]:
+    exec(import_cmd(components_dir, imp))
 
 # >> Arguments
 arg_parser = argparse.ArgumentParser(description="Create a complete site.")

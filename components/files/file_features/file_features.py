@@ -1,13 +1,7 @@
 #!/usr/bin/python
-import argparse
-import logging
 import os
 import sys
-import requests
 import json
-import base64
-import uuid
-import time
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
@@ -15,7 +9,6 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 from get_token import *
 from utils import *
 from args import *
-
 
 session = requests.Session()
 
