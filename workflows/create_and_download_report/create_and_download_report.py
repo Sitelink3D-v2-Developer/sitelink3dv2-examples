@@ -79,10 +79,10 @@ create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_rep
 delay_report_traits = DelayReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Delay {}".format(report_range_name), a_report_traits=delay_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-weight_report_traits = WeightReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
+weight_report_traits = WeightReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Weight {}".format(report_range_name), a_report_traits=weight_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
-activity_report_traits = ActivityReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
+activity_report_traits = ActivityReportTraits(a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.term, a_target_dir=output_dir, a_headers=headers)
 
 xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=end_unix_time_millis, a_mask_region_uuid=args.mask_region_uuid, a_task_uuid=args.task_uuid, a_seqence_instance=args.sequence_instance)
