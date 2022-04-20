@@ -4,7 +4,7 @@ import json
 import uuid
 import time
 
-class MetadataTraitsBase():
+class RdmTraitsBase():
     def __init__(self, a_object_value, a_display_name):
         self.value = a_object_value
         self.display_name = a_display_name
@@ -16,16 +16,16 @@ class MetadataTraitsBase():
             state = " (archived)" if self.value.get("_archived", False) else " (active)"
             return self.value["name"] + state
 
-class GenericNamedMetadataTraits(MetadataTraitsBase):
+class GenericNamedRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value, a_display_name):
-        MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
+        RdmTraitsBase.__init__(self, a_object_value, a_display_name)
 
     def object_details(self):
         return "\'{}\'.".format(self.object_name())
 
-class FileMetadataTraits(MetadataTraitsBase):
+class FileRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value, a_display_name):
-        MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
+        RdmTraitsBase.__init__(self, a_object_value, a_display_name)
 
     # This function builds a bean that is posted to RDM for the purpose of representing a file.
     # The _id field represents the file entity/object and hence will be the same for multiple revisions of the same file.
@@ -51,9 +51,9 @@ class FileMetadataTraits(MetadataTraitsBase):
                 ret["operator"] = str(a_parent_uuid)
         return ret
 
-class DelayMetadataTraits(GenericNamedMetadataTraits):
+class DelayRdmTraits(GenericNamedRdmTraits):
     def __init__(self, a_object_value, a_display_name):
-        MetadataTraitsBase.__init__(self, a_object_value, a_display_name)
+        RdmTraitsBase.__init__(self, a_object_value, a_display_name)
 
     @staticmethod
     def post_bean_json(a_delay_name, a_id, a_delay_code=None):
@@ -69,9 +69,9 @@ class DelayMetadataTraits(GenericNamedMetadataTraits):
             ret["code"] = a_delay_code
         return ret
 
-class SmartViewWidgetMetadataTraits(MetadataTraitsBase):
+class SmartViewWidgetRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Live Statistics Widget")
+        RdmTraitsBase.__init__(self, a_object_value, "Live Statistics Widget")
 
     def smartview_instance_type_details(self):
         try:
@@ -84,9 +84,9 @@ class SmartViewWidgetMetadataTraits(MetadataTraitsBase):
     def object_details(self):
         return "\'{}\' ({}).".format(self.object_name(), self.smartview_instance_type_details())
 
-class TaskMetadataTraits(MetadataTraitsBase):
+class TaskRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Task")
+        RdmTraitsBase.__init__(self, a_object_value, "Task")
 
     def object_details(self):
         designObjectStatus = ""
@@ -127,9 +127,9 @@ class TaskMetadataTraits(MetadataTraitsBase):
             ret["design"]["designObjectSets"] = [a_design_set_id]
         return ret
         
-class SiteMetadataTraits(MetadataTraitsBase):
+class SiteRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Site")
+        RdmTraitsBase.__init__(self, a_object_value, "Site")
 
     def object_details(self):
         siteDiscoveryStatus = "site discovery disabled"
@@ -178,9 +178,9 @@ class SiteMetadataTraits(MetadataTraitsBase):
             "timezone" : a_timezone
         }
     
-class RegionMetadataTraits(MetadataTraitsBase):
+class RegionRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Region")
+        RdmTraitsBase.__init__(self, a_object_value, "Region")
 
     class Vertices:
         def __init__(self, a_data):
@@ -254,7 +254,7 @@ class RegionMetadataTraits(MetadataTraitsBase):
         return "\'{}\' with {} vertices and {}.".format(self.object_name(), verticiesLen, siteDiscoveryStatus)
 
 
-class OperatorMetadataTraits():
+class OperatorRdmTraits():
     def __init__(self, a_object_value):
         self.value = a_object_value
         
@@ -282,9 +282,9 @@ class OperatorMetadataTraits():
             ret["code"] = a_code
         return ret
 
-class MaterialMetadataTraits(MetadataTraitsBase):
+class MaterialRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Material")
+        RdmTraitsBase.__init__(self, a_object_value, "Material")
 
     class AcceptedMeasurement:
         def __init__(self, a_axis, a_units):
@@ -370,7 +370,7 @@ class MaterialMetadataTraits(MetadataTraitsBase):
             "_at":int(round(time.time() * 1000))
         }
         measurements_json = []
-        accepted_measurement_volume =  MaterialMetadataTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
+        accepted_measurement_volume =  MaterialRdmTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
         ret["acceptedMeasurements"] = [accepted_measurement_volume.to_json()]
         if a_accepted_measurements is not None:
             for measurement in a_accepted_measurements:
@@ -389,8 +389,8 @@ class MaterialMetadataTraits(MetadataTraitsBase):
         amalgamated_states_json = {"additionalState" : states_json, "defaultState": default_state_json}
         ret["states"] = amalgamated_states_json
 
-        haul_mixin = MaterialMetadataTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name="Default")
-        rds_mixin = MaterialMetadataTraits.RDS(a_density=1, a_descriptions=[], a_price=0, a_regulation="none")
+        haul_mixin = MaterialRdmTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name="Default")
+        rds_mixin = MaterialRdmTraits.RDS(a_density=1, a_descriptions=[], a_price=0, a_regulation="none")
         extras_json = {}
 
 
@@ -420,9 +420,9 @@ class MaterialMetadataTraits(MetadataTraitsBase):
 
         return "\'{}\' with {} accepted measurement type(s) and {} material state(s).".format(self.object_name(), acceptedMeasurementsLen, additionalStateLen+1)
 
-class DesignObjectSetMetadataTraits(MetadataTraitsBase):
+class DesignObjectSetRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Design Object Set")
+        RdmTraitsBase.__init__(self, a_object_value, "Design Object Set")
 
     def object_details(self):
         designObjectLen = 0
@@ -434,9 +434,9 @@ class DesignObjectSetMetadataTraits(MetadataTraitsBase):
 
         return "\'{}\' with {} Design Object(s).".format(self.object_name(), designObjectLen)
 
-class ListMetadataTraits(MetadataTraitsBase):
+class ListRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "View List")
+        RdmTraitsBase.__init__(self, a_object_value, "View List")
 
     def object_details(self):
         view_name = ""
@@ -453,9 +453,9 @@ class ListMetadataTraits(MetadataTraitsBase):
 
         return "with view name {} and display icon \'{}\'.".format(view_name, view_icon)
 
-class AuthCodeMetadataTraits(MetadataTraitsBase):
+class AuthCodeRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Auth Code")
+        RdmTraitsBase.__init__(self, a_object_value, "Auth Code")
 
     def object_details(self):
         validDays = 0
@@ -481,9 +481,9 @@ class AuthCodeMetadataTraits(MetadataTraitsBase):
         return ret
 
 
-class AssetMetadataTraits(MetadataTraitsBase):
+class AssetRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Asset")
+        RdmTraitsBase.__init__(self, a_object_value, "Asset")
 
     def object_details(self):
         assetClass = ""
@@ -494,9 +494,9 @@ class AssetMetadataTraits(MetadataTraitsBase):
 
         return "\'{}\' ({}).".format(self.object_name(), assetClass)
 
-class DeviceDesignObjectTraits(MetadataTraitsBase):
+class DeviceDesignObjectTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
-        MetadataTraitsBase.__init__(self, a_object_value, "Device Design Object")
+        RdmTraitsBase.__init__(self, a_object_value, "Device Design Object")
 
     def object_details(self):
         assetClass = ""
@@ -507,60 +507,60 @@ class DeviceDesignObjectTraits(MetadataTraitsBase):
 
         return "\'{}\' from device URN {}.".format(self.object_name(), deviceUrn)
 
-class Metadata(object):
+class Rdm(object):
 
     def traits_factory(a_object_value):
         try:
             if a_object_value["_type"] == "sl::task":
-                return TaskMetadataTraits(a_object_value)
+                return TaskRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::smartview":
-                return SmartViewWidgetMetadataTraits(a_object_value)
+                return SmartViewWidgetRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::site":
-                return SiteMetadataTraits(a_object_value)
+                return SiteRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::shift_plan":
-                return GenericNamedMetadataTraits(a_object_value, "Shift Plan")
+                return GenericNamedRdmTraits(a_object_value, "Shift Plan")
             if a_object_value["_type"] == "sl::region":
-                return RegionMetadataTraits(a_object_value)
+                return RegionRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::operator" or  a_object_value["_type"] == "sl::customer":
-                return OperatorMetadataTraits(a_object_value)
+                return OperatorRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::material":
-                return MaterialMetadataTraits(a_object_value)    
+                return MaterialRdmTraits(a_object_value)    
             if a_object_value["_type"] == "_type" and a_object_value["_mixin"] == "sl::smartview":
-                return GenericNamedMetadataTraits(a_object_value, "Widget Type")   
+                return GenericNamedRdmTraits(a_object_value, "Widget Type")   
             if a_object_value["_type"] == "sl::designObjectSet":
-                return DesignObjectSetMetadataTraits(a_object_value)      
+                return DesignObjectSetRdmTraits(a_object_value)      
             if a_object_value["_type"] == "sl::delay":
-                return DelayMetadataTraits(a_object_value, "Delay")    
+                return DelayRdmTraits(a_object_value, "Delay")    
             if a_object_value["_type"] == "sl::list":
-                return ListMetadataTraits(a_object_value)   
+                return ListRdmTraits(a_object_value)   
             if a_object_value["_type"] == "sl::auth_code":
-                return AuthCodeMetadataTraits(a_object_value)
+                return AuthCodeRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::asset":
-                return AssetMetadataTraits(a_object_value)
+                return AssetRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::designObject":
-                return GenericNamedMetadataTraits(a_object_value, "Design Object")
+                return GenericNamedRdmTraits(a_object_value, "Design Object")
             if a_object_value["_type"] == "sl::deviceDesignObject":
                 return DeviceDesignObjectTraits(a_object_value)
             if a_object_value["_type"] == "sl::sequenceType":
-                return GenericNamedMetadataTraits(a_object_value, "Sequence Type")
+                return GenericNamedRdmTraits(a_object_value, "Sequence Type")
             if a_object_value["_type"] == "sl::sequence":
-                return GenericNamedMetadataTraits(a_object_value, "Sequence")
+                return GenericNamedRdmTraits(a_object_value, "Sequence")
             if a_object_value["_type"] == "sl::asbuilt_passcount_color_map":
-                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Pass Count Color Map")
+                return GenericNamedRdmTraits(a_object_value, "AsBuilt Pass Count Color Map")
             if a_object_value["_type"] == "sl::asbuilt_cutfill_color_map":
-                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Cut Fill Color Map")
+                return GenericNamedRdmTraits(a_object_value, "AsBuilt Cut Fill Color Map")
             if a_object_value["_type"] == "sl::asbuilt_stiffness_color_map":
-                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Stiffness Color Map")
+                return GenericNamedRdmTraits(a_object_value, "AsBuilt Stiffness Color Map")
             if a_object_value["_type"] == "sl::asbuilt_temperature_color_map":
-                return GenericNamedMetadataTraits(a_object_value, "AsBuilt Temperature Color Map")
+                return GenericNamedRdmTraits(a_object_value, "AsBuilt Temperature Color Map")
             if a_object_value["_type"] == "sl::mapTileset":
-                return GenericNamedMetadataTraits(a_object_value, "Map Tile Set")
+                return GenericNamedRdmTraits(a_object_value, "Map Tile Set")
             if a_object_value["_type"] == "fs::file":
-                return GenericNamedMetadataTraits(a_object_value, "File")
+                return GenericNamedRdmTraits(a_object_value, "File")
             if a_object_value["_type"] == "op::file":
-                return GenericNamedMetadataTraits(a_object_value, "File")
+                return GenericNamedRdmTraits(a_object_value, "File")
             if a_object_value["_type"] == "fs::folder":
-                return GenericNamedMetadataTraits(a_object_value, "Folder")
+                return GenericNamedRdmTraits(a_object_value, "Folder")
         except TypeError as err:
             pass
 

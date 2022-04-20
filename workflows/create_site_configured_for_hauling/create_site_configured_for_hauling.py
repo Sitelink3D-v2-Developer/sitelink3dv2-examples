@@ -69,29 +69,29 @@ logging.info("Site {0} successfully created.".format(site_id, indent=4))
 logging.info("creating materials")
 material_waste_id = create_material(a_site_id=site_id, a_server_config=server, a_material_name="Waste", a_headers=headers)
 
-accepted_measurement_volume =  MaterialMetadataTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
-conversion_volume = MaterialMetadataTraits.Conversion(a_accepted_measurement=accepted_measurement_volume, a_factor=10.1)
+accepted_measurement_volume =  MaterialRdmTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
+conversion_volume = MaterialRdmTraits.Conversion(a_accepted_measurement=accepted_measurement_volume, a_factor=10.1)
 
-accepted_measurement_weight = MaterialMetadataTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
-conversion_weight = MaterialMetadataTraits.Conversion(a_accepted_measurement=accepted_measurement_weight, a_factor=100.2)
+accepted_measurement_weight = MaterialRdmTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
+conversion_weight = MaterialRdmTraits.Conversion(a_accepted_measurement=accepted_measurement_weight, a_factor=100.2)
 
-state_excavated = MaterialMetadataTraits.AdditionalState(a_name="Excavated", a_conversions=[conversion_volume, conversion_weight])
+state_excavated = MaterialRdmTraits.AdditionalState(a_name="Excavated", a_conversions=[conversion_volume, conversion_weight])
 
-default_measurement_volume =  MaterialMetadataTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
-default_measurement_weight = MaterialMetadataTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
+default_measurement_volume =  MaterialRdmTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
+default_measurement_weight = MaterialRdmTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
 
-conversion_default_left = MaterialMetadataTraits.Conversion(a_accepted_measurement=default_measurement_volume, a_factor=1)
-conversion_default_right = MaterialMetadataTraits.Conversion(a_accepted_measurement=default_measurement_weight, a_factor=1)
+conversion_default_left = MaterialRdmTraits.Conversion(a_accepted_measurement=default_measurement_volume, a_factor=1)
+conversion_default_right = MaterialRdmTraits.Conversion(a_accepted_measurement=default_measurement_weight, a_factor=1)
 
-paired_conversion = MaterialMetadataTraits.PairedConversion(a_left_conversion=conversion_default_left, a_right_conversion=conversion_default_right)
-state_default = MaterialMetadataTraits.DefaultState(a_name="Default", a_paired_conversions=[paired_conversion])
+paired_conversion = MaterialRdmTraits.PairedConversion(a_left_conversion=conversion_default_left, a_right_conversion=conversion_default_right)
+state_default = MaterialRdmTraits.DefaultState(a_name="Default", a_paired_conversions=[paired_conversion])
 
-haul_mixin = MaterialMetadataTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name=state_default.name)
+haul_mixin = MaterialRdmTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name=state_default.name)
 
 material_overburden_id = create_material(a_site_id=site_id, a_server_config=server, a_material_name="Overburden", a_headers=headers, a_accepted_measurements=[accepted_measurement_volume,accepted_measurement_weight], a_default_state=state_default, a_additional_states=[state_excavated], a_haul_mixin = haul_mixin)
 
-load_waste_region_haul_mixin = RegionMetadataTraits.Haul(a_autoload_material_uuid=material_waste_id)
-dump_waste_region_haul_mixin = RegionMetadataTraits.Haul(a_autoload_material_uuid=None, a_autodump_material_uuid=material_waste_id)
+load_waste_region_haul_mixin = RegionRdmTraits.Haul(a_autoload_material_uuid=material_waste_id)
+dump_waste_region_haul_mixin = RegionRdmTraits.Haul(a_autoload_material_uuid=None, a_autodump_material_uuid=material_waste_id)
 
 ###### Now add some regions: Site discovery to allow easy connection, a load region and a dump region for the haul trucks to use.
 logging.info("creating regions")

@@ -10,14 +10,14 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "get_token", "metadata_traits"]:
+for imp in ["args", "get_token", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
 def create_operator(a_site_id, a_server_config, a_first_name, a_last_name, a_code, a_headers):
 
-    operator_rdm_bean = OperatorMetadataTraits.post_bean_json(a_first_name=a_first_name, a_last_name=a_last_name, a_code=a_code)
+    operator_rdm_bean = OperatorRdmTraits.post_bean_json(a_first_name=a_first_name, a_last_name=a_last_name, a_code=a_code)
 
     url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(), a_site_id)
     logging.debug ("Upload RDM to {}".format(url))

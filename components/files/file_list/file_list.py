@@ -10,7 +10,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "metadata_list"]:
+for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
@@ -18,8 +18,8 @@ session = requests.Session()
 def query_nested_files_and_folders(a_server_config, a_site_id, a_parent_folder_uuid, a_headers):
 
     files_and_folders = []
-    page_traits = MetadataPaginationTraits(a_page_size="500", a_start=[a_parent_folder_uuid], a_end=[a_parent_folder_uuid, None])
-    rj = query_metadata_by_domain_view(a_server_config=a_server_config, a_site_id=a_site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=a_headers, a_params=page_traits.params())
+    page_traits = RdmPaginationTraits(a_page_size="500", a_start=[a_parent_folder_uuid], a_end=[a_parent_folder_uuid, None])
+    rj = query_rdm_by_domain_view(a_server_config=a_server_config, a_site_id=a_site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=a_headers, a_params=page_traits.params())
 
     for fi in rj["items"]:
         files_and_folders.append(fi)
@@ -59,14 +59,14 @@ def main():
 
     for state in [{"archived":False},{"archived":True}]:
         
-        page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+        page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
         logging.info("Listing file_system domain entries")
-        file_list_query = MetadataListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_params=state, a_headers=headers)
+        file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_params=state, a_headers=headers)
         process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
 
         logging.info("Listing operator domain entries")
-        file_list_query = MetadataListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="operator", a_view="v_op_files_by_operator", a_params=state, a_headers=headers)
+        file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="operator", a_view="v_op_files_by_operator", a_params=state, a_headers=headers)
         process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
 
 

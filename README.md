@@ -24,7 +24,7 @@ Each component example is implemented in a function that can be included in othe
 The Workflows folder contains examples of how more elaborate functionality is implemented by aggregating various component examples together. These examples can be used to learn how our microservices and technologies work together in a broader context. Workflow examples include:
 -	Convert a design file into a task able to be viewed on a machine control client.
 -	Stream live information about the machines connected to a site using SmartView.
--	Configure a site with the metadata required to run the Topcon Haul App.
+-	Configure a site with the RDM objects (also known as metadata) required to run the Topcon Haul App.
 
 # Running the Examples
 The steps required to run the example code will vary depending on:

@@ -1,12 +1,12 @@
 @echo off
-rem # Batch file to list metadata from of the specified view at the specified page size and request subsequent pages until all data is received.
+rem # Batch file to list RDM data from of the specified view at the specified page size and request subsequent pages until all data is received.
 
 rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 set site_id=""
 
-rem # Use the components/metadata/metadata_list example to discover the domains and assocaited views at your site.
+rem # Use the components/rdm/rdm_list example to discover the domains and assocaited views at your site.
 set rdm_view="v_sl_delay_by_name"
 set rdm_domain="sitelink"
 

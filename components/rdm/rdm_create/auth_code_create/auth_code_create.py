@@ -13,14 +13,14 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["metadata_traits"]:
+for imp in ["rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
 def create_auth_code(a_server_config, a_site_id, a_code_name, a_code_pin, a_headers, a_valid_days=1):
 
-    auth_code_rdm_bean = AuthCodeMetadataTraits.post_bean_json(a_code_name=a_code_name, a_code_pin=a_code_pin, a_valid_days=a_valid_days)
+    auth_code_rdm_bean = AuthCodeRdmTraits.post_bean_json(a_code_name=a_code_name, a_code_pin=a_code_pin, a_valid_days=a_valid_days)
 
     url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(), a_site_id)
     logging.debug ("Upload RDM to {}".format(url))

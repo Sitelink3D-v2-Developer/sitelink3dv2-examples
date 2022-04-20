@@ -10,7 +10,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_list", "metadata_list", "metadata_traits"]:
+for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_list", "rdm_list", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 # >> Arguments
@@ -67,7 +67,7 @@ file_ver1_uuid = str(uuid.uuid4())
 file_ver2_uuid = str(uuid.uuid4())
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=example_file_ver1_path, a_file_name="example_file.txt")
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name="example_file.txt", a_id=file_id, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id, a_rev=file_ver1_uuid)
+file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name="example_file.txt", a_id=file_id, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id, a_rev=file_ver1_uuid)
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
 # ------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ logging.info("Uploading file version 2...")
 # ------------------------------------------------------------------------------
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=example_file_ver2_path, a_file_name="example_file.txt")
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name="example_file.txt", a_id=file_id, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id, a_rev=file_ver2_uuid)
+file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name="example_file.txt", a_id=file_id, a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id, a_rev=file_ver2_uuid)
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
 # Inserting into RDM is asyncronous. So we need to allow for a delay before checking.
@@ -85,15 +85,15 @@ time.sleep(0.5)
 logging.info("Listing all files with more than one version...")
 # ------------------------------------------------------------------------------
 
-page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
-rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers, a_params=page_traits.params())
+page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+rj = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers, a_params=page_traits.params())
 
 for fi in rj["items"]:
     if fi["value"]["_type"] == "fs::file":
 
         # query the revision history for this file  
-        page_traits = MetadataPaginationTraits(a_page_size="500", a_start=[fi["id"]], a_end=[fi["id"],None])     
-        ret = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_hist", a_headers=headers, a_params=page_traits.params())
+        page_traits = RdmPaginationTraits(a_page_size="500", a_start=[fi["id"]], a_end=[fi["id"],None])     
+        ret = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_hist", a_headers=headers, a_params=page_traits.params())
 
         if len(ret["items"]) > 1:
             logging.info("File {} {} has {} versions".format(fi["id"], fi["value"]["name"], len(ret["items"])))

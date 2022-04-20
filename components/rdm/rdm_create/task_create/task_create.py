@@ -10,14 +10,14 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "get_token", "metadata_traits"]:
+for imp in ["args", "get_token", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
 def create_task(a_server_config, a_site_id, a_task_name, a_headers, a_design_set_id=None):
 
-    data_payload = TaskMetadataTraits.post_bean_json(a_task_name, a_design_set_id)
+    data_payload = TaskRdmTraits.post_bean_json(a_task_name, a_design_set_id)
     
     logging.debug("Task RDM payload: {}".format(json.dumps(data_payload, indent=4)))
 

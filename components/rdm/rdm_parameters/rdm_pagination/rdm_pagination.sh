@@ -1,12 +1,12 @@
 #!/bin/bash
-## Shell file to list metadata from of the specified view at the specified page size and request subsequent pages until all data is received.
+## Shell file to list RDM data from of the specified view at the specified page size and request subsequent pages until all data is received.
 
 ## Settings for the environment.
 env="qa"
 dc="us"
 site_id=""
 
-# Use the components/metadata/metadata_list example to discover the domains and assocaited views at your site.
+# Use the components/rdm/rdm_list example to discover the domains and assocaited views at your site.
 rdm_view="v_sl_delay_by_name"
 rdm_domain="sitelink"
 

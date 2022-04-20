@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "utils", "parameters"))
 from pagination import *
 
-class MetadataPaginationTraits(PaginationTraitsBase):
+class RdmPaginationTraits(PaginationTraitsBase):
 
     def __init__(self, a_page_size, a_start, a_end=""):
         PaginationTraitsBase.__init__(self, a_page_size=a_page_size, a_page_start=a_start, a_fetch_size_key_field="limit", a_start_key_field="start", a_next_key_field="last_excl")

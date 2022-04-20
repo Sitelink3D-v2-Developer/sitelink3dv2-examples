@@ -10,7 +10,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["utils", "get_token", "filtering", "sorting", "args", "report_pagination_traits", "metadata_list"]:
+for imp in ["utils", "get_token", "filtering", "sorting", "args", "report_pagination_traits", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()

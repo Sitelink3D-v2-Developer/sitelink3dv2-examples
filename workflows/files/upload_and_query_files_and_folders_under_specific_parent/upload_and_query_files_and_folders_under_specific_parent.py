@@ -10,7 +10,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_list", "metadata_list", "metadata_traits"]:
+for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_list", "rdm_list", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 # >> Arguments
@@ -61,7 +61,7 @@ root_folder_path = os.path.join(current_dir, "folder_root")
 level_1_file_uuid = str(uuid.uuid4())
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=root_folder_path, a_file_name="level_1_file.txt")
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name="level_1_file.txt", a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=root_folder_bean._id, a_rev=level_1_file_uuid)
+file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name="level_1_file.txt", a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=root_folder_bean._id, a_rev=level_1_file_uuid)
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
 level_1_folder_name = "level_1_folder"
@@ -77,7 +77,7 @@ level_2_file_uuid = str(uuid.uuid4())
 level_1_folder_path = os.path.join(root_folder_path, "level_1_folder")
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=level_1_folder_path, a_file_name="level_2_file.txt")
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name="level_2_file.txt", a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=level_1_folder_bean._id, a_rev=level_2_file_uuid)
+file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name="level_2_file.txt", a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=level_1_folder_bean._id, a_rev=level_2_file_uuid)
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
 level_2_folder_name = "level_2_folder"
