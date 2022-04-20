@@ -10,19 +10,19 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "metadata_traits"]:
+for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
-def query_metadata_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_headers, a_params={}):
+def query_rdm_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_headers, a_params={}):
 
     rdm_list_url = "{0}/rdm/v1/site/{1}/domain/{2}/view/{3}".format(a_server_config.to_url(), a_site_id, a_domain, a_view)
     response = session.get(rdm_list_url, headers=a_headers, params=a_params)
     response.raise_for_status()
     return response.json() 
 
-class MetadataListPageQuery():
+class RdmListPageQuery():
     def __init__(self, a_server_config, a_site_id, a_domain, a_view, a_params, a_headers):
         self.m_server_config = a_server_config
         self.m_site_id = a_site_id
@@ -34,18 +34,18 @@ class MetadataListPageQuery():
     def query(self, a_params):
         params = self.m_params | a_params
         logging.debug("Using parameters:{}".format(json.dumps(params)))
-        return query_metadata_by_domain_view(a_server_config=self.m_server_config, a_site_id=self.m_site_id, a_domain=self.m_domain, a_view=self.m_view, a_headers=self.m_headers, a_params=params)
+        return query_rdm_by_domain_view(a_server_config=self.m_server_config, a_site_id=self.m_site_id, a_domain=self.m_domain, a_view=self.m_view, a_headers=self.m_headers, a_params=params)
     
     @staticmethod
     def result(a_value):
-        obj = Metadata.traits_factory(a_value["value"])
+        obj = Rdm.traits_factory(a_value["value"])
         if obj is not None:
             logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))
 
 def main():
     # >> Arguments
 
-    arg_parser = argparse.ArgumentParser(description="Metadata Listing")
+    arg_parser = argparse.ArgumentParser(description="RDM Listing")
 
     # script parameters:
     arg_parser = add_arguments_logging(arg_parser, logging.INFO)
@@ -91,8 +91,8 @@ def main():
             
             for state in [{"archived":False},{"archived":True}]:
                 logging.info("querying view {} ({})".format(rdm_view["id"], state))
-                page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
-                file_list_query = MetadataListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_params=state, a_headers=headers)
+                page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+                file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain=domain, a_view=rdm_view["id"], a_params=state, a_headers=headers)
                 process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
 
 if __name__ == "__main__":

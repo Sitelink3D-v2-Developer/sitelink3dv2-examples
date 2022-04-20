@@ -28,7 +28,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_features", "file_list", "task_create", "metadata_traits", "metadata_list"]:
+for imp in ["args", "utils", "get_token", "folder_create", "file_upload", "file_features", "file_list", "task_create", "rdm_traits", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
 
 
@@ -109,7 +109,7 @@ logging.info("Uploading file containing design data...")
 # ------------------------------------------------------------------------------
 
 file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=args.design_file_name)
-file_rdm_bean = FileMetadataTraits.post_bean_json(a_file_name=args.design_file_name, a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
+file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name=args.design_file_name, a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_parent_uuid=folder_bean._id)
 
 upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_headers=headers)
 
@@ -132,8 +132,8 @@ logging.info("Listing design objects using RDM view:")
 # In production code, you should subscribe to the events service and respond appropriately.
 time.sleep(0.5)
 
-page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
-rj = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_designObject_by_path", a_headers=headers, a_params=page_traits.params())
+page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+rj = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_designObject_by_path", a_headers=headers, a_params=page_traits.params())
 
 logging.debug("RDM view design objects by path of size {}: {}".format(len(rj["items"]), json.dumps(rj, indent=4)))
 

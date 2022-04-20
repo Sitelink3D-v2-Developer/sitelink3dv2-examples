@@ -17,14 +17,14 @@ set file_name="My_Operator_Data.pt3"
 rem # A parent_uuid is REQUIRED when writing to the "operator" domain. This uuid determines the target operator folder on the "Operator Files" tab.
 rem # A parent_uuid is NOT REQUIRED when writing to the "file_system" domain.
 rem # To find the uuid for an existing operator, perform the following steps:
-rem # 1. Navigate this repo to the file components/metadata/metadata_list/metadata_list.py and ensure the logging level is set to logging.DEBUG.
-rem # 2. Populate the wrapper script suitable for your platform (metadata_list.bat or metadata_list.sh) with the details of your site and credentials.
-rem # 3. Run the wrapper script to list all metadata at your site. Redirect the output to a file to make the contents easy to inspect.
+rem # 1. Navigate this repo to the file components/rdm/rdm_list/rdm_list.py and ensure the logging level is set to logging.DEBUG.
+rem # 2. Populate the wrapper script suitable for your platform (rdm_list.bat or rdm_list.sh) with the details of your site and credentials.
+rem # 3. Run the wrapper script to list all rdm at your site. Redirect the output to a file to make the contents easy to inspect.
 rem # 4. Search the output file for the operators available at the site and identify the associated id field for the operator of interest as follows.
 rem # 5. Copy the operator id into the "parent_uuid" field in this file below this comment block.
 rem #
-rem # > 2021-07-13 14:29:29,806 metadata_list INFO main:   Found Operator 'John Galt'.
-rem # > 2021-07-13 14:29:29,806 metadata_list DEBUG main:   {
+rem # > 2021-07-13 14:29:29,806 rdm_list INFO main:   Found Operator 'John Galt'.
+rem # > 2021-07-13 14:29:29,806 rdm_list DEBUG main:   {
 rem #     "id": "187d83e1-465b-48de-bed8-cef49e8d678a",
 rem #     "key": [
 rem #         "Galt",

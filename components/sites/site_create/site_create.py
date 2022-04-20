@@ -10,7 +10,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["utils", "get_token", "metadata_traits", "args"]:
+for imp in ["utils", "get_token", "rdm_traits", "args"]:
     exec(import_cmd(components_dir, imp))
 
 def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_longitude, a_phone, a_email, a_name, a_timezone, a_headers):
@@ -33,7 +33,7 @@ def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_lo
     time.sleep(1)
 
     # Create site bean
-    payload_json = SiteMetadataTraits.post_bean_json(a_site_name=a_site_name, a_latitude=a_latitude, a_longitude=a_longitude, a_phone=a_phone, a_email=a_email, a_name=a_name, a_timezone=a_timezone)
+    payload_json = SiteRdmTraits.post_bean_json(a_site_name=a_site_name, a_latitude=a_latitude, a_longitude=a_longitude, a_phone=a_phone, a_email=a_email, a_name=a_name, a_timezone=a_timezone)
     data_encoded_json = {"data_b64": base64.b64encode(json.dumps(payload_json).encode('utf-8')).decode('utf-8')}
     create_site_rdm_url = "{0}/rdm_log/v1/site/{1}/domain/{2}/events".format(a_server_config.to_url(), site_id, "sitelink")
     logging.info("post site definition to RDM {}".format(create_site_rdm_url))

@@ -10,7 +10,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "file_download", "file_list", "file_features", "metadata_list"]:
+for imp in ["args", "utils", "get_token", "file_download", "file_list", "file_features", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
  
 session = requests.Session()
@@ -59,8 +59,8 @@ def main():
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id,
                                         a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    page_traits = MetadataPaginationTraits(a_page_size="500", a_start="")
-    device_design_object_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink",
+    page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+    device_design_object_list = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink",
                                                               a_view="v_sl_deviceDesignObject_by_deviceURN", a_headers=headers, a_params=page_traits.params())["items"]
 
     logging.info("Found {} device design objects".format(

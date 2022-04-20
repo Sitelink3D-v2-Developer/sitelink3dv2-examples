@@ -10,7 +10,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "get_token", "metadata_traits"]:
+for imp in ["args", "get_token", "rdm_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
@@ -18,7 +18,7 @@ session = requests.Session()
 def create_material(a_site_id, a_server_config, a_material_name, a_headers, a_accepted_measurements=None, a_default_state=None, a_additional_states=None, a_haul_mixin=None, a_rds_mixin=None):
     
     material_id = str(uuid.uuid4())
-    material_rdm_bean = MaterialMetadataTraits.post_bean_json(a_material_name=a_material_name, a_id=material_id, a_accepted_measurements=a_accepted_measurements, a_default_state=a_default_state, a_additional_states=a_additional_states, a_haul_mixin = a_haul_mixin, a_rds_mixin = a_rds_mixin)
+    material_rdm_bean = MaterialRdmTraits.post_bean_json(a_material_name=a_material_name, a_id=material_id, a_accepted_measurements=a_accepted_measurements, a_default_state=a_default_state, a_additional_states=a_additional_states, a_haul_mixin = a_haul_mixin, a_rds_mixin = a_rds_mixin)
 
     logging.debug(json.dumps(material_rdm_bean, indent=4))
 
@@ -63,25 +63,25 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    accepted_measurement_volume =  MaterialMetadataTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
-    conversion_volume = MaterialMetadataTraits.Conversion(a_accepted_measurement=accepted_measurement_volume, a_factor=10.1)
+    accepted_measurement_volume =  MaterialRdmTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
+    conversion_volume = MaterialRdmTraits.Conversion(a_accepted_measurement=accepted_measurement_volume, a_factor=10.1)
 
-    accepted_measurement_weight = MaterialMetadataTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
-    conversion_weight = MaterialMetadataTraits.Conversion(a_accepted_measurement=accepted_measurement_weight, a_factor=100.2)
+    accepted_measurement_weight = MaterialRdmTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
+    conversion_weight = MaterialRdmTraits.Conversion(a_accepted_measurement=accepted_measurement_weight, a_factor=100.2)
 
-    state_excavated = MaterialMetadataTraits.AdditionalState(a_name="Excavated", a_conversions=[conversion_volume, conversion_weight])
+    state_excavated = MaterialRdmTraits.AdditionalState(a_name="Excavated", a_conversions=[conversion_volume, conversion_weight])
 
-    default_measurement_volume =  MaterialMetadataTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
-    default_measurement_weight = MaterialMetadataTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
+    default_measurement_volume =  MaterialRdmTraits.AcceptedMeasurement(a_axis="volume", a_units="cubic_metres")
+    default_measurement_weight = MaterialRdmTraits.AcceptedMeasurement(a_axis="weight", a_units="metric_tons")
 
-    conversion_default_left = MaterialMetadataTraits.Conversion(a_accepted_measurement=default_measurement_volume, a_factor=1)
-    conversion_default_right = MaterialMetadataTraits.Conversion(a_accepted_measurement=default_measurement_weight, a_factor=1)
+    conversion_default_left = MaterialRdmTraits.Conversion(a_accepted_measurement=default_measurement_volume, a_factor=1)
+    conversion_default_right = MaterialRdmTraits.Conversion(a_accepted_measurement=default_measurement_weight, a_factor=1)
 
-    paired_conversion = MaterialMetadataTraits.PairedConversion(a_left_conversion=conversion_default_left, a_right_conversion=conversion_default_right)
-    state_default = MaterialMetadataTraits.DefaultState(a_name="Default", a_paired_conversions=[paired_conversion])
+    paired_conversion = MaterialRdmTraits.PairedConversion(a_left_conversion=conversion_default_left, a_right_conversion=conversion_default_right)
+    state_default = MaterialRdmTraits.DefaultState(a_name="Default", a_paired_conversions=[paired_conversion])
 
-    haul_mixin = MaterialMetadataTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name=state_default.name)
-    rds_mixin = MaterialMetadataTraits.RDS(a_density=3, a_descriptions=["customer material", "low cost"], a_price=10.2, a_regulation="ce")
+    haul_mixin = MaterialRdmTraits.Haul(a_operator_entry_measurement=accepted_measurement_volume, a_operator_entry_state_name=state_default.name)
+    rds_mixin = MaterialRdmTraits.RDS(a_density=3, a_descriptions=["customer material", "low cost"], a_price=10.2, a_regulation="ce")
 
     logging.debug("Accepted measurement")
     logging.debug(json.dumps(accepted_measurement_volume.to_json(), indent=4))

@@ -10,7 +10,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args","get_token", "metadata_traits", "metadata_list", "rdm_pagination_traits"]:
+for imp in ["args","get_token", "rdm_traits", "rdm_list", "rdm_pagination_traits"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
@@ -47,13 +47,13 @@ def main():
 
     logging.info("Querying view {}".format(args.rdm_view))
 
-    page_traits = MetadataPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+    page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
     more_data = True
     while more_data:
-        metadata_list = query_metadata_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
-        more_data = page_traits.more_data(metadata_list)
+        rdm_list = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
+        more_data = page_traits.more_data(rdm_list)
 
-        num_items = len(metadata_list["items"])
+        num_items = len(rdm_list["items"])
         if more_data:
             logging.info("Found {} items (page {})".format(num_items, page_traits.page_number()))
         elif page_traits.page_number() == 1:
@@ -61,8 +61,8 @@ def main():
         else:
             logging.info("Found {} items (last page)".format(num_items))
 
-        for fi in metadata_list["items"]:
-            obj = Metadata.traits_factory(fi["value"])
+        for fi in rdm_list["items"]:
+            obj = Rdm.traits_factory(fi["value"])
             if obj is not None:
                 logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))        
 

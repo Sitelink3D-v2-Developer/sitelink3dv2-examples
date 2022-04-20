@@ -1,5 +1,5 @@
 #!/bin/bash
-## Shell file to list all metadata views and all data provided by those views at all domains at a sitelink site
+## Shell file to list all RDM views and all data provided by those views at all domains at a sitelink site
 
 ## Settings for the environment.
 env="qa"
@@ -17,7 +17,7 @@ oauth_id=""
 oauth_secret=""
 oauth_scope=""
 
-exec python metadata_list.py \
+exec python rdm_list.py \
     --env "$env" \	
     --dc "$dc" \
     --site_id "$site_id" \

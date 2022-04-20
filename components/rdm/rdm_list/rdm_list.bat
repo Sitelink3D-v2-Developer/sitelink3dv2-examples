@@ -1,5 +1,5 @@
 @echo off
-rem # Batch file to list all metadata views and all data provided by those views at all domains at a sitelink site
+rem # Batch file to list all RDM views and all data provided by those views at all domains at a sitelink site
 
 rem ## Settings for the environment.
 set env="qa"
@@ -17,7 +17,7 @@ set oauth_id=""
 set oauth_secret=""
 set oauth_scope=""
 
-python metadata_list.py ^
+python rdm_list.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
