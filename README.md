@@ -35,7 +35,7 @@ The steps required to run the example code will vary depending on:
 The following steps describe the complete process required to run the example code from scratch:
 1.	Select a cloud environment.
 2.	Setup a Topcon account.
-3.	Obtain Service Points.
+3.	Obtain Service Points (if connecting software clients to your site).
 4.	Obtain API credentials.
 5.	Configure the python environment.
 6.	Navigate to the desired example.
@@ -68,13 +68,13 @@ New Sitelink3D v2 users will need to perform the following initial tasks for the
 - Create a Topcon Account.
 - Create or Join an Organization.
 
-These tasks are documented in our Topcon Software Developer Network (TSDN) page at https://developer.topcon.com under the ```Get Setup``` link. Account and organization creation is free.
+These tasks are documented in the ```setup``` folder found in our documentation repository [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-api-documentation/tree/master/setup). Account and organization creation is free.
 
 ## Obtain Service Points
 Sitelink3D v2 usage is charged under a consumption-based model. Consumption is reconciled by the use of Service Points. Service Points have the following properties:
 
 - Preloaded into an Organization.
-- Consumed on a per-client, per-day basis.
+- Consumed on a per-software-client-connection, per-day basis.
 
 Service Points are only consumed from an Organization when data is logged to one of its sites using our ```datalogger``` microservice. As none of these examples log such data, you will only need to apply for Service Points when you intend to connect a datalogging client to your site.
 
@@ -82,12 +82,12 @@ Example datalogging clients include:
 - The Topcon Haul App for Android and iOS.
 - 3DMC.
 
-Logging data to a site allows you to better utilize these examples by:
+Logging data to a site allows you to better utilize these examples by, for example:
 - Running reports that contain real data.
 - Streaming live information about the connected clients.
 - Observing weight payloads being sent between machines.
 
-Service Points are required on both our QA and production environments but are charged differently. Service Points for use on QA organizations may be requested from Topcon free of charge [here](https://developer.topcon.com/en/gwWiCQ). Service Points for use on Production organizations may be purchased from our dealer network.
+Service Points are required on both our QA and production environments but are charged differently. Service Points for use on QA organizations may be requested from Topcon free of charge [here](mailto:sitelink3d-api-support@topcon.com). Service Points for use on Production organizations may be purchased from our dealer network.
 
 ## Obtain API Credentials
 The examples support two forms of authorization:
@@ -102,7 +102,7 @@ Using OAuth credentials is recommended due to its convenience and fine grained a
 -	Client Secret.
 -	Scope.
 
-Obtaining OAuth credentials is documented in our Topcon Software Developer Network (TSDN) page at https://developer.topcon.com under the ```Get Connected``` link
+Obtaining OAuth credentials is documented [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-api-documentation/blob/master/setup/getting_authorized_and_connected_to_api.md)
 
 ### JWT
 Using a JWT (JSON Web Token) is supported but incurs the following difficulties in the context of these examples:
@@ -110,7 +110,19 @@ Using a JWT (JSON Web Token) is supported but incurs the following difficulties 
 - JWTs are not automatically refreshed on expiration.
 - No fine grained access control is possible.
 
-Obtaining a JWT is achieved with the following process:
+There are two ways to obtain the JWT:
+
+1. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
+2. Extract from the browser developer console.
+
+Obtaining a JWT by copying from the site information dialog:
+1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
+2. Select the desired organization and site.
+3. Click on the site name in the top bar to reveal the site menu.
+4. Click on Site Information.
+5. Copy the JWT from the Site Information dialog.
+
+Obtaining a JWT by extracting from the browser console:
 1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
 2. Select the desired organization and site.
 3. Press F12 in your Chrome browser to open a console.
@@ -156,14 +168,8 @@ Some examples require an owner identifier. This will be the case when operations
 - Listing existing sites.
 
 There are two ways to obtain the owner identifier:
-1. Extract from the browser developer console.
-2. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
-
-Obtaining an owner identifier by extracting from the browser console:
-1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
-2. Select the desired organization.
-3. Press F12 in your Chrome browser to open a console.
-4. Type in the following command ```SitelinkFrontend.core.store.getState().app.owner.ownerId``` to obtain the owner identifier.
+1. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
+2. Extract from the browser developer console.
 
 Obtaining an owner identifier by copying from the site information dialog:
 1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
@@ -172,28 +178,59 @@ Obtaining an owner identifier by copying from the site information dialog:
 4. Click on Site Information.
 5. Copy the owner identifier from the Site Information dialog.
 
+Obtaining an owner identifier by extracting from the browser console:
+1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
+2. Select the desired organization.
+3. Press F12 in your Chrome browser to open a console.
+4. Type in the following command ```SitelinkFrontend.core.store.getState().app.owner.ownerId``` to obtain the owner identifier.
+
 ```
 set owner_id=""
 ```
 
 ### Site Identifier
-Most examples require the 64 alpha-numeric identifier string for the target site. Obtaining a site identifier is achieved with the following process:
+Most examples require the 64 alpha-numeric identifier string for the target site. 
+
+There are two ways to obtain the site identifier:
+1. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
+2. Extract by running the ```site_list``` python example.
+
+Obtaining an site identifier by copying from the site information dialog:
 1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
 2. Select the desired organization and site.
 3. Click on the site name to the left of the top banner to expand the site menu.
 4. Click on the Site Information menu item to display the Site Information dialog.
 5. Copy the displayed identifier string.
+
+Obtaining an site identifier by running the site_list example:
+1. Navigate to the site_list example [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples/tree/main/components/sites/site_list).
+2. Configure the wrapper script.
+3. Edit the python file to set the log level to ```logging.DEBUG``` as described [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#log-level).
+4. Run the wrapper script as described [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#run-the-example) and observe the site identifiers for all sites listed under the ```identifier``` field.
+
 ```
 set site_id=""
 ```
 
 ### Data Center
-When sites are created they are assigned to a data center. Once assigned, the data center cannot be changed. Obtaining the data center is achieved with the following process:
+When sites are created they are assigned to a data center. Once assigned, the data center cannot be changed.
+
+There are two ways to obtain the data center:
+1. Copy from the Sitelink3D v2 Web Portal Site Information dialog.
+2. Extract by running the ```site_list``` python example.
+
+Obtaining the data center by copying from the site information dialog:
 1. Log in to the Sitelink3D v2 web portal as appropriate for the selected cloud environment.
 2. Select the desired organization and site.
 3. Click on the site name to the left of the top banner to expand the site menu.
 4. Click on the Site Information menu item to display the Site Information dialog.
 5. Observe the site's data center assignment.
+
+Obtaining the data center by running the site_list example:
+1. Navigate to the site_list example [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples/tree/main/components/sites/site_list).
+2. Configure the wrapper script.
+3. Edit the python file to set the log level to ```logging.DEBUG``` as described [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#log-level).
+4. Run the wrapper script as described [here](https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#run-the-example) and observe the data centers for all sites listed under the ```dc``` field.
 
 Note that the syntax displayed on the Site Information dialog differs from that required in the wrapper script. The options for the latter are:
 - “us”.
