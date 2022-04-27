@@ -1,4 +1,8 @@
 #!/usr/bin/python
+
+# 
+
+import logging
 import os
 import sys
 
@@ -13,9 +17,12 @@ from imports import *
 for imp in ["args", "utils", "get_token", "sorting", "filtering", "site_pagination_traits"]:
     exec(import_cmd(components_dir, imp))
 
-def list_sites(a_server_config, a_owner_id, a_headers, a_params):
+def list_sites(a_server_config, a_headers, a_params, a_owner_id=None):
 
-    list_site_url = "{0}/siteowner/v1/owners/{1}/sites".format(a_server_config.to_url(), a_owner_id)
+    list_site_url = "{0}/siteowner/v1/sites".format(a_server_config.to_url())
+    if a_owner_id is not None and len(a_owner_id) > 0:
+        logging.debug("Querying Site Owner using Owner ID {}".format(a_owner_id))
+        list_site_url = "{0}/siteowner/v1/owners/{1}/sites".format(a_server_config.to_url(), a_owner_id)
 
     logging.info("get site list from site owner {}".format(list_site_url))
     response = session.get(list_site_url, headers=a_headers, params=a_params)
@@ -35,7 +42,7 @@ class SiteListPageQuery():
     def query(self, a_params):
         params = self.m_params | a_params
         logging.debug("Using parameters:{}".format(json.dumps(params)))
-        return list_sites(a_server_config=self.m_server_config, a_owner_id=self.m_owner_id, a_headers=self.m_headers, a_params=params)
+        return list_sites(a_server_config=self.m_server_config, a_headers=self.m_headers, a_params=params, a_owner_id=self.m_owner_id)
     
     @staticmethod
     def result(a_value):
@@ -59,7 +66,7 @@ def main():
     arg_parser = add_arguments_filtering(arg_parser, ["name_includes","owner_email_includes","created_since_epoch","cell_size_equals","data_center_equals"])
 
     # request parameters:
-    arg_parser.add_argument("--owner_id", help="Organization ID", required=True)
+    arg_parser.add_argument("--owner_id", help="Organization ID")
     
     arg_parser.set_defaults()
     args = arg_parser.parse_args()
@@ -89,7 +96,7 @@ def main():
         
         page_traits = SitePaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
-        site_list_query = SiteListPageQuery(a_server_config=server, a_owner_id=args.owner_id, a_params=sort_traits.params(filter_params(state, filters)), a_headers=headers)
+        site_list_query = SiteListPageQuery(a_server_config=server, a_params=sort_traits.params(filter_params(state, filters)), a_headers=headers, a_owner_id=args.owner_id)
         process_pages(a_page_traits=page_traits, a_page_query=site_list_query)
 
 if __name__ == "__main__":
