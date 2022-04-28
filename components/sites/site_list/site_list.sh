@@ -7,6 +7,7 @@ dc="us"
 
 ## Settings specific to this script.
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
+# This parameter is optional.
 owner_id=""
 
 ## optionally sort the results. sort_field may be either "rdm_name" or "create_timestamp_ms".
