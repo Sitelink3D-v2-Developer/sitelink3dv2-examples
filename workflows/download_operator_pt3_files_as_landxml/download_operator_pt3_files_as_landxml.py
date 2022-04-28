@@ -1,8 +1,13 @@
 #!/usr/bin/python
+
+# This example demonstrates the ability to download design data surveyed by an operator on a machine control client via the Design File service. Furthermore, 
+# this service is used to perform a file format conversion to LANDXML. Device Design Data is stored within Sitelink3D v2 once it is pushed
+# to the cloud and is accessed from the cloud using an RDM query with the view "v_op_files_by_operator". An RDM view is a named
+# definition of the type of metadata being requested and how that data is keyed in the response.
+
 import os
 import sys
 import itertools
-from textwrap import indent
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -20,30 +25,21 @@ session = requests.Session()
 def main():
     arg_parser = argparse.ArgumentParser(description="Download operator pt3 files as landxml")
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_pagination_page_limit, arg_pagination_start])
+    # << Argument handling
 
-    arg_parser = add_arguments_pagination(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True) 
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
+    # >> Server & logging configuration
+    server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
     logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
-    server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+    page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
     operator_domain_file_list = []
     more_data = True
     while more_data:
@@ -72,15 +68,16 @@ def main():
         operators[item["id"]] = "{} {} {}".format(item["value"]["firstName"], item["value"]["lastName"], item["id"])
     logging.debug(json.dumps(operators, indent=4))
 
+    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+
     for fi in operator_domain_file_list:
-        current_dir = os.path.dirname(os.path.realpath(__file__))
         try:
-            output_dir = os.path.join(current_dir, args.site_id[0:12], operators[fi["value"]["operator"]])
+            operator_output_dir = os.path.join(output_dir, operators[fi["value"]["operator"]])
         except KeyError:
             # perhaps the operator is archived, we can continue.
             continue
-        download_dir = os.path.join(output_dir, "downloaded")
-        converted_dir = os.path.join(output_dir, "converted")
+        download_dir = os.path.join(operator_output_dir, "downloaded")
+        converted_dir = os.path.join(operator_output_dir, "converted")
         rdm_file_name = fi["value"]["name"]
 
         os.makedirs(download_dir, exist_ok=True)

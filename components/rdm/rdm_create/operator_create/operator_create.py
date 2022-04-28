@@ -36,34 +36,21 @@ def create_operator(a_site_id, a_server_config, a_first_name, a_last_name, a_cod
         logging.info("Operator creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Upload an Operator.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_rdm_operator_code, arg_rdm_operator_first_name, arg_rdm_operator_second_name])
+    # << Argument handling
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-    arg_parser.add_argument("--operator_first_name", default="", help="The first name of the operator", required=True)
-    arg_parser.add_argument("--operator_last_name", default=None, help="The last name of the operator", required=True)
-    arg_parser.add_argument("--operator_code", default=None, help="An optional code to describe the operator")
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-   
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
     
-    create_operator(a_site_id=args.site_id, a_server_config=server, a_first_name=args.operator_first_name, a_last_name=args.operator_last_name, a_code=args.operator_code, a_headers=headers)
+    create_operator(a_site_id=args.site_id, a_server_config=server, a_first_name=args.rdm_operator_first_name, a_last_name=args.rdm_operator_second_name, a_code=args.rdm_operator_code, a_headers=headers)
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ rem #         "lastName": "Galt"
 rem #     }
 rem # }
 
-set parent_uuid=""
+set file_parent_uuid=""
 
 rem ## There are two domains within which files are stored in Sitelink3D v2.
 rem # use domain="file_system" to access general files that are visible on the "Site Files" tab in the File Manager.
@@ -61,7 +61,7 @@ python file_upload.py ^
     --dc %dc% ^
     --site_id %site_id% ^
     --file_name %file_name% ^
-    --parent_uuid %parent_uuid% ^
+    --file_parent_uuid %file_parent_uuid% ^
     --domain %domain% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^

@@ -1,7 +1,35 @@
 #!/usr/bin/env python
+
+# This example demonstrates how the Sitelink3D v2 API can be used to access detailed weight and state information streamed over one of our two
+# live data technologies, MFK (Machine Forward Kinematics). State information is common to all Sitelink3D v2 compatible client software but
+# weight information will be provided by client software specifically designed for weighing applications. Examples include the RDS LoadMaster
+# and LoadEx on-board-weighing (OBW) systems and the Haul App running in excavator or loader mode.
+#
+# This example does not configure the site with the required RDM metadata for facilitating this demonstration but will stream live weight
+# payloads for existing sites as the accompanying demonstration video illustrates. 
+#
+# The type of information available from MFK includes:
+# 1. The weighing job identifier (both a UUID and a job number).
+# 2. Individual lift payloads including the material and weight for each lift.
+# 3. The target truck or trailer and their associated target tonnes (weight limits).
+# 4. Whether the job is from a calibrated legal for trade weighing system. 
+# 5. Loading machine identifier.
+# 6. Aggregated weight for the job.
+# 7. Lift count for the job.
+#
+# The following is an overview of this example:
+# 1. Subscribe to MFK Live web socket at the site.
+# 2. Loop over the messages received over the web socket processing the Sitelink::Event and Sitelink::State types.
+# 3. For each event message, query the asset details referenced by the event using the "GetDbaResource" function.
+# 4. Handle the events of data types "obw_open", "obw_lift" and "obw_clear" to track the progress of each weighing job.
+# 5. Cache each state update as it is processed so that the current state can be associated with the weighing job once it is cleared.
+# 6. Output processing details to the console as part of the message processing loop. More information is available by running this example in debug.
+#
+# Note that an instructional video of this example is provided in the "videos" folder accompanying this example script.
+
+
 import os
 import sys
-from textwrap import indent
 import websocket
 import ssl
 
@@ -16,27 +44,18 @@ from imports import *
 for imp in ["args", "utils", "get_token", "mfk", "datalogger_utils", "rdm_pagination_traits", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
 
-# Configure Arguments
-arg_parser = argparse.ArgumentParser(description="Sample test rig to read Machine Forward Kinematics information for machines at a site.")
-arg_parser = add_arguments_environment(arg_parser)
-arg_parser = add_arguments_logging(arg_parser, logging.DEBUG)
-arg_parser = add_arguments_site(arg_parser)
-arg_parser = add_arguments_auth(arg_parser)
+script_name = os.path.basename(os.path.realpath(__file__))
 
-arg_parser.set_defaults()
-args = arg_parser.parse_args()
+# >> Argument handling  
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id])
+# << Argument handling
 
-# Configure Logging
-logger = logging.getLogger("mfk")
-logging.basicConfig(format=args.log_format, level=args.log_level)
-
-# >> Server settings
-session = requests.Session()
-
+# >> Server & logging configuration
 server_wss = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="wss")
 server_https = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
-
+logging.basicConfig(format=args.log_format, level=args.log_level)
 logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server_wss.to_url(), args.dc, args.site_id))
+# << Server & logging configuration
 
 token = token_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server_https)
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server_https)

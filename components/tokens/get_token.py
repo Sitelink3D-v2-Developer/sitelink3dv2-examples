@@ -8,6 +8,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "utils"))
 from utils import *
+from args import *
 
 session = requests.Session()
 
@@ -40,29 +41,18 @@ def headers_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_se
     return to_bearer_token_header(token_from_jwt_or_oauth(a_jwt, a_client_id, a_client_secret, a_scope, a_server_config))
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Exchange OAuth credentials for an API token")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser.add_argument("--log-format", default='%(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    arg_parser.add_argument("--log-level", default=logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO)
+    # << Argument handling
 
-    # server parameters:
-    arg_parser.add_argument("--dc", default="us", required=True)
-    arg_parser.add_argument("--env", default="", help="deploy environment (which determines server location)")
-    arg_parser.add_argument("--oauth_id", default="", help="oauth_id")
-    arg_parser.add_argument("--oauth_secret", default="", help="oauth_secret")
-    arg_parser.add_argument("--oauth_scope", default="", help="oauth_scope")
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2}".format(script_name, server.to_url(), args.dc))
+    # << Server & logging configuration
 
-    logging.info("Running {0} for server={1} dc={2}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc))
-    
     token = get_token(a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     logging.info(token)

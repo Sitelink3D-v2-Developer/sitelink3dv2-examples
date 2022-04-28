@@ -52,36 +52,21 @@ class SiteListPageQuery():
             pass 
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Site List.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_owner_uuid, arg_sort_field, arg_sort_order, arg_pagination_page_limit, arg_pagination_start], a_arg_filter_list=["name_includes","owner_email_includes","created_since_epoch","cell_size_equals","data_center_equals"] )
+    # << Argument handling
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-    arg_parser = add_arguments_sorting(arg_parser)
-    arg_parser = add_arguments_pagination(arg_parser)
-    arg_parser = add_arguments_filtering(arg_parser, ["name_includes","owner_email_includes","created_since_epoch","cell_size_equals","data_center_equals"])
-
-    # request parameters:
-    arg_parser.add_argument("--owner_id", help="Organization ID")
-    
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
-
-    # << Server settings
-    session = requests.Session()
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} owner={3}".format(script_name, server.to_url(), args.dc, args.site_owner_uuid))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
+    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_owner_uuid))
 
     sort_traits = SortTraits(a_sort_field=args.sort_field, a_sort_order=args.sort_order)
     
@@ -96,7 +81,7 @@ def main():
         
         page_traits = SitePaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
-        site_list_query = SiteListPageQuery(a_server_config=server, a_params=sort_traits.params(filter_params(state, filters)), a_headers=headers, a_owner_id=args.owner_id)
+        site_list_query = SiteListPageQuery(a_server_config=server, a_params=sort_traits.params(filter_params(state, filters)), a_headers=headers, a_owner_id=args.site_owner_uuid)
         process_pages(a_page_traits=page_traits, a_page_query=site_list_query)
 
 if __name__ == "__main__":

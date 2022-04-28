@@ -20,7 +20,7 @@ set oauth_scope=""
 python owner_get.py ^
     --env %env% ^
     --dc %dc% ^
-    --owner_id %owner_id% ^
+    --site_owner_uuid %site_owner_uuid% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

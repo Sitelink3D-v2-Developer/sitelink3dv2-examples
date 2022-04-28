@@ -7,8 +7,8 @@ dc="us"
 site_id=""
 
 # machine activity window in ms from epoch
-startms="1646961300000"
-endms="1646962619225"
+datalogger_start_ms="1646961300000"
+datalogger_end_ms="1646962619225"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -22,8 +22,8 @@ exec python create_generic_machine_report.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
-    --startms "$startms" \
-    --endms "$endms" \
+    --datalogger_start_ms "$datalogger_start_ms" \
+    --datalogger_end_ms "$datalogger_end_ms" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

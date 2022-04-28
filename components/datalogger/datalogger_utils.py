@@ -5,6 +5,8 @@ import requests
 import sys
 import os
 import urllib
+import datetime
+from dateutil import tz
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "mfk"))
 
@@ -14,8 +16,8 @@ from datalogger_utils import *
 session = requests.Session()
 
 def GetDbaResource(a_server_config, a_site_id, a_uuid, a_headers):
-    resrouce_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server_config.to_url(), a_site_id, a_uuid)
-    resource_response = session.get(resrouce_url, headers=a_headers)
+    resource_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server_config.to_url(), a_site_id, a_uuid)
+    resource_response = session.get(resource_url, headers=a_headers)
     return resource_response.json()
 
 # Extract the human readable machine name from the supplied machine asset.
@@ -130,8 +132,8 @@ def UpdateResourceConfiguration(a_resource_config_uuid, a_resource_config_dict, 
 
     if not a_resource_config_uuid in a_resource_config_dict:
         logging.debug("Getting RC_UUID (Resource Configuration).")
-        resrouce_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server.to_url(), a_site_id, a_resource_config_uuid)
-        rc_uuid_response = session.get(resrouce_url, headers=a_headers)
+        resource_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server.to_url(), a_site_id, a_resource_config_uuid)
+        rc_uuid_response = session.get(resource_url, headers=a_headers)
         a_resource_config_dict[a_resource_config_uuid] = rc_uuid_response.json()
         resource_configuration_updated = True
 
@@ -230,3 +232,255 @@ def FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration)
         except KeyError:
             pass
     return None
+
+# Write a variable list of "objects" each of which has a variable list of "items" to a serialised string that can be output to the CSV.
+# The items will each have a "title" property that identifies the CSV header (effectively the column) that the data is to be associated
+# with and written to. An example of an object may be a point of interest on the left of a machine blade or bucket. That point of interest
+# will then have items # representing the x, y and z coordinate for that point of interest with a title of a form similar to "blade left [x]",
+# "blade left [y]" and "blade left [z]". This function would hence produce 3 outputs for that object before moving to the next. This approach
+# allows objects to be defined outside of this object with no knowledge required of the structure of what's being serialised. For
+# example another object may represent a single point in space represented by a WGS84 coordinate. That object's item list then may contain
+# 3 items called "lat", "lon" and "height". Objects with shorter or longer item lists are also possible making this function flexible.
+# The algorithm uses the title_list to managed where in the CSV output string each item is written so that data aligns with the comma
+# separated titles when they're eventually written to file. State is written in a similar way but at fixed (known) column offsets.
+#
+def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, aux_control_data_dict, a_object_list, a_header_list, a_state={}):
+    ac_uuid = a_replicate["data"]["ac_uuid"]
+    machine_name = "-"
+    device_id = "-"
+    operator_id = "-"
+    task_id = "-"
+    delay_id = "-"
+    surface_name = "-"
+
+    try:
+        operator_id = a_state["topcon.rdm.list"]["operator"]["value"]
+    except KeyError:
+        logging.debug("No Operator state found.")
+
+    try:
+        delay_id = a_state["topcon.rdm.list"]["delay"]["value"]
+    except KeyError:
+        logging.debug("No Delay state found.")
+
+    try:
+        task_id = a_state["topcon.task"]["id"]["value"]
+    except KeyError:
+        logging.debug("No Task state found.")
+
+    try:
+        surface_name = a_state["topcon.task"]["surface_name"]["value"]
+    except KeyError:
+        logging.debug("No Surface state found.")
+
+    try:
+        for i, val in enumerate(a_assets_dict[ac_uuid]["signatures"]):
+            if val["asset_urn"].startswith("urn:X-topcon:machine"):
+                machine_name = urllib.parse.unquote(val["asset_urn"].split(":")[-1])
+
+            if val["asset_urn"].startswith("urn:X-topcon:device"):
+                device_id = urllib.parse.unquote(val["asset_urn"].split(":")[-1])
+    except KeyError:
+        logging.debug("No machine or device information found.")
+
+    utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.UTC)
+
+    position_quality = "Unknown"
+
+    try:
+        if aux_control_data_dict["position_quality"] == 0:
+            position_quality = "Unknown"
+        elif aux_control_data_dict["position_quality"] == 1:
+            position_quality = "GPS Float"
+        elif aux_control_data_dict["position_quality"] == 2:
+            position_quality = "RTK Fixed"
+        elif aux_control_data_dict["position_quality"] == 3:
+            position_quality = "mm Enhanced"
+    except:
+        pass
+
+    reverse = "Unknown"
+    position_error_horz = "Unknown"
+    position_error_vert = "Unknown"
+    auto_grade_control = "Unknown"
+
+    try:
+        reverse = aux_control_data_dict["reverse"]
+    except:
+        pass
+    try:
+        position_error_horz = aux_control_data_dict["position_error_horz"]
+    except:
+        pass
+    try:
+        position_error_vert = aux_control_data_dict["position_error_vert"]
+    except:
+        pass
+    try:
+        auto_grade_control = aux_control_data_dict["auto_grade_control"]
+    except:
+        pass
+
+    # Dynamically build the output position_string as a function of the available columns we've been given to write.
+    position_string = ""
+
+    # Output the position columns by iterating over the header list. when we find the headers representing
+    # the point name we're writing, we inject thd data. If we don't find the header names, we add them to
+    # the list and return. They'll then be in the header list the next time we encounter data for that field.
+    for obj in a_object_list:
+        for item in obj["items"]:
+            point_name = item["title"]
+            try:
+                point_name_header_index = a_header_list.index(point_name)
+            except ValueError:
+                # add to list
+                a_header_list.append(point_name)
+                point_name_header_index = a_header_list.index(point_name)
+
+    # Here we populate the value list at the index that matches the POI title for this value in the header list, or None otherwise to correctly space the value list for POIs.
+    # header list, or None otherwise to correctly space the value list for POIs.
+    value_list = [None for _ in range(len(a_header_list))]
+    for obj in a_object_list:
+        for item in obj["items"]:
+            point_name = item["title"]
+            point_name_header_index = a_header_list.index(point_name)
+            value_list[point_name_header_index] = "{}, ".format(item["value"])
+
+    for val in value_list:
+        val = "-, " if val is None else val
+        position_string += val
+
+    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_id, operator_id, task_id, surface_name, position_string))
+
+def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_server, a_site_id, a_headers, a_machine_description_filter=None):
+        logging.debug("Found replicate.")
+        rc_uuid = a_decoded_json['data']['rc_uuid']
+        rc_updated = UpdateResourceConfiguration(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+        if rc_updated:
+            # Write the Resource Configuration to file for ease of inspection.
+            resource_description = a_resource_config_dict[rc_uuid]["description"] + " [" + a_resource_config_dict[rc_uuid]["uuid"][0:8] + "]"
+            resource_file_name = os.path.join(a_resources_dir, resource_description + ".json")
+            resource_file = open(resource_file_name, "w")
+            resource_file.write(json.dumps(a_resource_config_dict[rc_uuid], indent=4))
+
+        resource_config_processor = UpdateResourceConfigurationProcessor(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict)
+
+        ac_uuid = a_decoded_json['data']['ac_uuid']
+        if not ac_uuid in a_assets_dict:
+            logging.debug("Getting AC_UUID (Asset Context).")
+            resource_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server.to_url(), a_site_id, ac_uuid)
+            ac_uuid_response = session.get(resource_url, headers=a_headers)
+            ac_uuid_response.raise_for_status()
+            a_assets_dict[ac_uuid] = ac_uuid_response.json()
+        else:
+            logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
+
+        if a_machine_description_filter is not None:
+            if a_machine_description_filter != resource_config_processor._json["description"]:
+                return
+        Replicate.load_manifests(resource_config_processor, a_decoded_json['data']['manifest'])
+
+        # Here we need to find the component in the resource configuration that contains the aux_control_data interface.
+        # This will contain position quality information if available for this machine. A machine may specify multiple
+        # components in its resource configuration but only one of those components will specify aux control data.
+        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
+        aux_control_data_dict = GetAuxControlDataFromComponent(a_component=aux_control_data_comp)
+
+        # Here we need to find the component(s) in the resource configuration that contains the points_of_interest interface.
+        # This will contain the machine specific locations on the machine such as "front_drum_l" or "bucket_r" that we will
+        # receive position updates for in replicate messages for logging. A machine may specify multiple components in its
+        # resource configuration and any number of them may specify a points of interest interface so the following function
+        # returns a list of all components reporting points of interest. Some machines such as haul truck don't specify any.
+        # so the component_point_list may be legitimately empty.
+        component_point_list = FindPointsOfInterestInResourceConfiguration(a_resource_configuration=resource_config_processor)
+        # The component specifying the "transform" component is required to apply replicate manifest updates.
+        transform_component = FindTransformComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
+
+        # Here we build our list of objects to print, each of which contains a list of items. This object list is passed to the
+        # OutputLineObjects function to serialise for output. This object list is populated by a combination of two categories.
+        # One of either:
+        # 1. point of interest
+        # 2. WGS 84 location
+        # This is because 3DMC clients will report their positions in terms of (usually multiple) site localised points of
+        # interest whereas haul truck clients report their positions in terms of a single postition in lat, lon,
+        # height and direction.
+        object_list = []
+        if len(component_point_list) > 0:
+
+            for comp in component_point_list:
+
+                for point in comp["points"]:
+
+                    poi_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=comp["points_component"], a_transform_component=transform_component, a_point_of_interest=point["point_node"])
+
+                    item_x = {
+                        "title" : point["display_name"] + " [x]",
+                        "value" : poi_local_space[1]
+                    }
+
+                    item_y = {
+                        "title" : point["display_name"] + " [y]",
+                        "value" : poi_local_space[0]
+                    }
+
+                    item_z = {
+                        "title" : point["display_name"] + " [z]",
+                        "value" : poi_local_space[2]
+                    }
+                    obj = {
+                        "items" : [item_x,item_y,item_z]
+                    }
+
+                    object_list.append(obj)
+        else:
+            # This is likely a haul truck, but could be any client that simply wants to report WGS 84 positions rather
+            # that site localised points. Look whether we can output lat,lon,alt,dir from the replicate.
+            wgs_point = FindWgs84InResourceConfiguration(resource_config_processor, transform_component)
+            if bool(wgs_point):
+                obj = {
+                    "items" : []
+                }
+                try:
+                    lat = wgs_point["lat"]
+                    item_lat = {
+                            "title" : "latitude",
+                            "value" : lat
+                        }
+                    obj["items"].append(item_lat)
+                except KeyError:
+                    pass
+
+                try:
+                    lon = wgs_point["lon"]
+                    item_lon = {
+                            "title" : "longitude",
+                            "value" : lon
+                        }
+                    obj["items"].append(item_lon)
+                except KeyError:
+                    pass
+
+                try:
+                    alt = wgs_point["alt"]
+                    item_alt = {
+                            "title" : "altitude",
+                            "value" : alt
+                        }
+                    obj["items"].append(item_alt)
+                except KeyError:
+                    pass
+
+                try:
+                    dir = wgs_point["dir"]
+                    item_dir = {
+                            "title" : "direction",
+                            "value" : dir
+                        }
+                    obj["items"].append(item_dir)
+                except KeyError:
+                    pass
+
+                object_list.append(obj)
+
+        OutputLineObjects(a_report_file, resource_config_processor._json["description"], a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
+

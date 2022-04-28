@@ -45,42 +45,23 @@ def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_lo
     return site_id
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Site Creation.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_owner_uuid, arg_site_name, arg_site_latitude, arg_site_longitude, arg_site_timezone, arg_site_contact_name, arg_site_contact_email, arg_site_contact_phone] )
+    # << Argument handling
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--owner_id", help="Organization ID", required=True)
-    arg_parser.add_argument("--site_name", help="Name for the site", required=True)
-    arg_parser.add_argument("--site_latitude", help="Site Latitude",  default="-27.4699")
-    arg_parser.add_argument("--site_longitude", help="Site Longitude", default="153.0252")
-    arg_parser.add_argument("--site_timezone", help="Site Timezone", default="Australia/Brisbane")
-    arg_parser.add_argument("--site_contact_name", help="Site Contact Name")
-    arg_parser.add_argument("--site_contact_email", help="Site Contact Email")
-    arg_parser.add_argument("--site_contact_phone", help="Site Contact Phone")
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
-
-    # << Server settings
-    session = requests.Session()
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_name))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
+    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_owner_uuid))
 
-    site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
+    site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.site_owner_uuid, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
 
     logging.info("Site {0} successfully created \n".format(site_id, indent=4))
 

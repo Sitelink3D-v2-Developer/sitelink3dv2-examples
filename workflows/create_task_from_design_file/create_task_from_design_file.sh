@@ -6,7 +6,7 @@ env="qa"
 dc="us"
 site_id=""
 
-design_file_name="tps-bris.tp3"
+file_name="tps-bris.tp3"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -21,7 +21,7 @@ exec python create_task_from_design_file.py \
     --dc "$dc" \
     --site_id "$site_id" \
     --jwt "$jwt" \
-    --design_file_name "$design_file_name" \
+    --file_name "$file_name" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \
     --oauth_scope "$oauth_scope"

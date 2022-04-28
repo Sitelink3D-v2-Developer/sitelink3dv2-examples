@@ -1,7 +1,20 @@
 #!/usr/bin/env python
+
+# This example demonstrates the power of accessing historical raw data at a site using the Datalogger service. The Datalogger service provides
+# historical data over a specified time period in a format consistent with the way data is provided live with MFK Live. That is to say that
+# the data consists of three broad message types:
+# 1. Events.
+# 2. State.
+# 3. MFK updates (Machine Forward Kinematics).
+#
+# This script is one of many potential applications for such raw data. Here, all machine updates are processed for the last 24 hours and the
+# last known position for every machine is written to file. This enables a quick snapshot of where machines were last working or known to be 
+# located for the last shift.
+#
+# Note that an instructional video of this example is provided in the "videos" folder accompanying this example script.
+
 import os
 import sys
-from textwrap import indent
 import time
 
 from numpy import sort
@@ -17,35 +30,26 @@ from imports import *
 for imp in ["args", "utils", "get_token", "mfk", "datalogger_payload", "datalogger_utils", "site_detail"]:
     exec(import_cmd(components_dir, imp))
 
-# Configure Arguments
-arg_parser = argparse.ArgumentParser(description="Read historical data from the datalogger microservice.")
-arg_parser = add_arguments_environment(arg_parser)
-arg_parser = add_arguments_logging(arg_parser, logging.INFO)
-arg_parser = add_arguments_site(arg_parser)
-arg_parser = add_arguments_auth(arg_parser)
+script_name = os.path.basename(os.path.realpath(__file__))
 
-arg_parser.set_defaults()
-args = arg_parser.parse_args()
+# >> Argument handling  
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id])
+# << Argument handling
 
-# Configure Logging
-logger = logging.getLogger("datalogger")
+# >> Server & logging configuration
+server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
 logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+# << Server & logging configuration
 
-# >> Server settings
-session = requests.Session()
-
-server_https = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
-
-logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server_https.to_url(), args.dc, args.site_id))
-
-headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server_https)
+headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
 logging.debug(headers)
 
 endms = round(time.time() * 1000)
 startms = endms - 86400000 # last 24 hours in ms
 
-dba_url = "{}/dba/v1/sites/{}/updates?startms={}&endms={}&category=low_freq".format(server_https.to_url(), args.site_id, startms, endms)
+dba_url = "{}/dba/v1/sites/{}/updates?startms={}&endms={}&category=low_freq".format(server.to_url(), args.site_id, startms, endms)
 logging.debug("dba_url: {}".format(dba_url))
 
 # get the datalogger data
@@ -57,12 +61,8 @@ resource_definitions = {}
 assets = {}
 mfk = {}
 
-# get site name for output directory
-site_name = site_detail(server_https, headers, args.site_id)["name"]
-
-current_dir = os.path.dirname(os.path.realpath(__file__))
-output_dir = os.path.join(current_dir, args.site_id[0:12] + " [" + site_name + "]")
-os.makedirs(output_dir, exist_ok=True)
+# The output for this example is written to a folder named as a function of the site name and id. Fetch the site name and create the folder here.
+output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
 resources_dir = os.path.join(output_dir, "resources")
 os.makedirs(resources_dir, exist_ok=True)
@@ -87,7 +87,7 @@ for line in response.iter_lines():
         if not rc_uuid in resource_definitions:
 
             logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
-            resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
+            resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
 
             mfk_rc = resource_definitions[rc_uuid]
 
@@ -112,7 +112,7 @@ for line in response.iter_lines():
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
             logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
-            assets[ac_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
+            assets[ac_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
 
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
