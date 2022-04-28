@@ -13,22 +13,17 @@ from imports import *
 for imp in ["args", "utils", "get_token", "events"]:
     exec(import_cmd(components_dir, imp))
 
-logger = logging.getLogger("listen_to_events")
+script_name = os.path.basename(os.path.realpath(__file__))
 
-arg_parser = argparse.ArgumentParser(description="Print out event activity for a site")
-arg_parser = add_arguments_environment(arg_parser)
-arg_parser = add_arguments_logging(arg_parser, logging.INFO)
-arg_parser = add_arguments_auth(arg_parser)
-arg_parser = add_arguments_site(arg_parser)
+# >> Argument handling  
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id])
+# << Argument handling
 
-arg_parser.set_defaults()
-args = arg_parser.parse_args()
+# >> Server & logging configuration
+server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
 logging.basicConfig(format=args.log_format, level=args.log_level)
-
-# >> Server settings
-session = requests.Session()
-
-server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+# << Server & logging configuration
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 

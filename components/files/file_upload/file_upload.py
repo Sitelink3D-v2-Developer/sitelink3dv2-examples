@@ -71,37 +71,23 @@ def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id,
         logging.info("File upload unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Upload a file.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_file_name, arg_file_parent_uuid, arg_rdm_domain_default_filesystem])
+    # << Argument handling
 
-    arg_parser.add_argument("--file_name", default="", required=True)
-    arg_parser.add_argument("--parent_uuid", default=None, help="UUID of parent")
-    arg_parser.add_argument("--domain", default="file_system", help="The purpose of the file - file_system or operator")
-
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-   
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
     file_upload_bean = FileUploadBean(a_upload_uuid=str(uuid.uuid4()), a_file_location=".", a_file_name=os.path.basename(args.file_name))
 
-    file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name=args.file_name, a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.parent_uuid)
+    file_rdm_bean = FileRdmTraits.post_bean_json(a_file_name=args.file_name, a_id=str(uuid.uuid4()), a_upload_uuid=str(file_upload_bean.upload_uuid), a_file_size=file_upload_bean.file_size, a_domain=args.domain, a_parent_uuid=args.file_parent_uuid)
 
     upload_file(a_file_upload_bean=file_upload_bean, a_file_rdm_bean=file_rdm_bean, a_server_config=server, a_site_id=args.site_id, a_domain=args.domain, a_headers=headers)
    

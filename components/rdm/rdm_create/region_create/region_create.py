@@ -37,33 +37,21 @@ def create_region(a_region_name, a_site_id, a_server_config, a_verticies_file, a
 
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Upload a Region.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_rdm_region_name, arg_rdm_region_verticies_file])
+    # << Argument handling
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-    arg_parser.add_argument("--region_name", default="", help="The name of the region", required=True)
-    arg_parser.add_argument("--region_verticies_file", default="", help="A file containing points outlining the region", required=True)
-    
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-   
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-    create_region(a_region_name=args.region_name, a_site_id=args.site_id, a_server_config=server, a_verticies_file=args.region_verticies_file, a_headers=headers)
+    create_region(a_region_name=args.rdm_region_name, a_site_id=args.site_id, a_server_config=server, a_verticies_file=args.rdm_region_verticies_file, a_headers=headers)
 
 if __name__ == "__main__":
     main()    

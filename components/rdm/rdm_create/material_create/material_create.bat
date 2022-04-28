@@ -7,7 +7,7 @@ set dc="us"
 set site_id=""
 
 rem ## Material specifics
-set material_name="API Material"
+set rdm_material_name="API Material"
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -21,7 +21,7 @@ python material_create.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
-    --material_name %material_name% ^
+    --rdm_material_name %rdm_material_name% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 
-# ------------------------------------------------------------------------------
-# Create a site and configure it for material haulage.
-# ------------------------------------------------------------------------------
+# This example demonstrates how a site can be created and subsequently configured in a way typical for material haulage.
+#
+# The following is an overview of this example:
+# 1. Create a site.
+# 2. Create two materials of various complexity (accepted measurements, states, conversions & operator entry settings for haul app automation). Materials are RDM metadata.
+# 3. Create three regions and associate usages to them (discovery for site discovery, load and dump for haul app automation). Regions are RDM metadata.
+# 4. Create five delays so that clients may have something to select to track the source of delays on site. Delays are RDM metadata.
+# 5. Create one Task which is the entity that client software including the haul app presents for user selection when connecting to a site.
+#    Tasks help to filter and descriptively name work on a client. Tasks are RDM Metadata.
+# 6. Create one Auth Code for the site which allows client software to authorize connections. Auth Codes are RDM Metadata.
 
 import sys
 import os
-from datetime       import datetime
+from datetime import datetime
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -19,50 +26,23 @@ from imports import *
 for imp in ["args", "utils", "get_token", "site_create", "delay_create", "material_create", "region_create", "task_create", "auth_code_create"]:
     exec(import_cmd(components_dir, imp))
 
-# >> Arguments
-arg_parser = argparse.ArgumentParser(description="Create a complete site.")
+script_name = os.path.basename(os.path.realpath(__file__))
 
-# script parameters:
-arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+# >> Argument handling  
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_owner_uuid, arg_site_name, arg_site_latitude, arg_site_longitude, arg_site_timezone, arg_site_contact_name, arg_site_contact_email, arg_site_contact_phone, arg_site_auth_code, arg_rdm_region_discovery_verticies_file, arg_rdm_region_load_verticies_file, arg_rdm_region_dump_verticies_file])
+# << Argument handling
 
-# server parameters:
-arg_parser = add_arguments_environment(arg_parser)
-arg_parser = add_arguments_auth(arg_parser)
-
-# site creation parameters
-arg_parser.add_argument("--owner_id", help="Organization ID", required=True)
-arg_parser.add_argument("--site_name", help="Name for the site", required=True)
-arg_parser.add_argument("--site_latitude", help="Site Latitude",  default="-27.4699")
-arg_parser.add_argument("--site_longitude", help="Site Longitude", default="153.0252")
-arg_parser.add_argument("--site_timezone", help="Site Timezone", default="Australia/Brisbane")
-arg_parser.add_argument("--site_contact_name", help="Site Contact Name")
-arg_parser.add_argument("--site_contact_email", help="Site Contact Email")
-arg_parser.add_argument("--site_contact_phone", help="Site Contact Phone")
-arg_parser.add_argument("--site_auth_code", help="PIN used by clients to connect to this site", required=True)
-
-# region creation parameters
-arg_parser.add_argument("--region_discovery_verticies_file", help="A file containing points outlining a region used for site discovery", required=True)
-arg_parser.add_argument("--region_load_verticies_file", help="A file containing points outlining a region used for auto loading haul trucks", required=True)
-arg_parser.add_argument("--region_dump_verticies_file", help="A file containing points outlining a region used for auto dumping haul trucks", required=True)
-
-arg_parser.set_defaults()
-args = arg_parser.parse_args()
-logging.basicConfig(format=args.log_format, level=args.log_level)
-# << Arguments
-
-# >> Server settings
-session = requests.Session()
-
+# >> Server & logging configuration
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_name))
+# << Server & logging configuration
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.owner_id))
-
-
 ###### First create a site
 logging.info("creating site")
-site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.owner_id, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
+site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.site_owner_uuid, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
 logging.info("Site {0} successfully created.".format(site_id, indent=4))
 
 ###### Create some materials that we can reference as haul mixins when we later create regions. One basic material and another with some additional optional configuration.
@@ -95,9 +75,9 @@ dump_waste_region_haul_mixin = RegionRdmTraits.Haul(a_autoload_material_uuid=Non
 
 ###### Now add some regions: Site discovery to allow easy connection, a load region and a dump region for the haul trucks to use.
 logging.info("creating regions")
-create_region(a_region_name="Discovery", a_site_id=site_id, a_server_config=server, a_verticies_file=args.region_discovery_verticies_file, a_headers=headers, a_discoverable=True)
-create_region(a_region_name="Load Waste", a_site_id=site_id, a_server_config=server, a_verticies_file=args.region_load_verticies_file, a_headers=headers, a_discoverable=False, a_color="#088a08", a_coordinate_system="wgs84", a_opacity=50, a_haul_mixin=load_waste_region_haul_mixin)
-create_region(a_region_name="Dump Waste", a_site_id=site_id, a_server_config=server, a_verticies_file=args.region_dump_verticies_file, a_headers=headers, a_discoverable=False, a_color="#ff7f00", a_coordinate_system="wgs84", a_opacity=50, a_haul_mixin=dump_waste_region_haul_mixin)
+create_region(a_region_name="Discovery", a_site_id=site_id, a_server_config=server, a_verticies_file=args.rdm_region_discovery_verticies_file, a_headers=headers, a_discoverable=True)
+create_region(a_region_name="Load Waste", a_site_id=site_id, a_server_config=server, a_verticies_file=args.rdm_region_load_verticies_file, a_headers=headers, a_discoverable=False, a_color="#088a08", a_coordinate_system="wgs84", a_opacity=50, a_haul_mixin=load_waste_region_haul_mixin)
+create_region(a_region_name="Dump Waste", a_site_id=site_id, a_server_config=server, a_verticies_file=args.rdm_region_dump_verticies_file, a_headers=headers, a_discoverable=False, a_color="#ff7f00", a_coordinate_system="wgs84", a_opacity=50, a_haul_mixin=dump_waste_region_haul_mixin)
 
 
 ###### Add some delays to enable auto delay prompts when trucks are stationary

@@ -7,9 +7,9 @@ dc="us"
 site_id=""
 
 ## Operator specifics
-operator_first_name="John"
-operator_last_code="Smith"
-operator_code="JS01"
+rdm_operator_first_name="John"
+rdm_operator_second_name="Smith"
+rdm_operator_code="JS01"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 ## run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -23,9 +23,9 @@ exec python operator_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
-    --operator_first_name "$operator_first_name" \
-    --operator_last_name "$operator_last_code" \
-    --operator_code "$operator_code" \
+    --rdm_operator_first_name "$rdm_operator_first_name" \
+    --rdm_operator_second_name "$rdm_operator_second_name" \
+    --rdm_operator_code "$rdm_operator_code" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

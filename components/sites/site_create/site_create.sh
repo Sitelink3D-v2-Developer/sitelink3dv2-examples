@@ -7,7 +7,7 @@ dc="us"
 
 ## Site creation specifics.
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
-owner_id="" 
+site_owner_uuid="" 
 
 site_name="API Site"
 site_latitude=""
@@ -29,7 +29,7 @@ oauth_scope=""
 exec python site_create.py \
     --env "$env" \
     --dc "$dc" \
-    --owner_id "$owner_id" \
+    --site_owner_uuid "$site_owner_uuid" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

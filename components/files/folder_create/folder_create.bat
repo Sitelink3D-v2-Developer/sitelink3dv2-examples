@@ -8,7 +8,7 @@ set site_id=""
 
 set folder_name="Windows Folder"
 set folder_uuid=""
-set parent_uuid=""
+set folder_parent_uuid=""
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -24,7 +24,7 @@ python folder_create.py ^
     --site_id %site_id% ^
     --folder_name %folder_name% ^
     --folder_uuid %folder_uuid% ^
-    --parent_uuid %parent_uuid% ^
+    --folder_parent_uuid %folder_parent_uuid% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

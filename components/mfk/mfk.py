@@ -6,6 +6,7 @@ from collections import OrderedDict
 from struct import Struct
 import logging
 import math
+import json
 
 def lla_to_ecef(lat, lon, alt):
     a = 6378137.0                   # WGS-84 semi-major axis
@@ -480,14 +481,10 @@ class ResourceConfiguration(object):
         self._json = rc_json
         if "version" in rc_json:
             self.version = float(rc_json["version"])
-            if self.version == 0.1:
-                self.components = list(map(Component, rc_json["components"]))
-            elif self.version == 0.2:
-                self.components = list(map(Component, rc_json["data"]["components"]))
-            else:
-                raise ValueError('unhandled version {0}'.format(self.version))
-        else:
+        if "data" in rc_json:
             self.components = list(map(Component, rc_json["data"]["components"]))
+        else:
+            self.components = list(map(Component, rc_json["components"]))
         self.cache()
         self.update_transforms()
 

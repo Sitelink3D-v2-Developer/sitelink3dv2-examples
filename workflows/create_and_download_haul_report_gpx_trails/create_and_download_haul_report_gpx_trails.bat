@@ -17,6 +17,7 @@ set oauth_scope=""
 rem ## Settings for the reports:
 set report_iso_date_time_start="2020-12-31 17:21:00"
 set report_iso_date_time_end="2021-03-19 17:21:00"
+set report_name=""
 
 python create_and_download_haul_report_gpx_trails.py ^
     --env %env% ^
@@ -27,5 +28,6 @@ python create_and_download_haul_report_gpx_trails.py ^
     --oauth_secret %oauth_secret% ^
     --oauth_scope %oauth_scope% ^
     --report_iso_date_time_start %report_iso_date_time_start% ^
-    --report_iso_date_time_end %report_iso_date_time_end% 
+    --report_iso_date_time_end %report_iso_date_time_end% ^
+    --report_name %report_name%
     

@@ -7,10 +7,10 @@ dc="us"
 site_id=""
 
 # original dozer activity window in ms from epoch
-startms="1646187249000"
-endms="1646187849394"
+datalogger_start_ms="1646187249000"
+datalogger_end_ms="1646187849394"
 
-report_file_name="DozerReport.csv"
+datalogger_output_file_name="DozerReport.csv"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -24,9 +24,9 @@ exec python create_dozer_blade_poi_report_with_state.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
-    --startms "$startms" \
-    --endms "$endms" \
-    --report_file_name "$report_file_name" \
+    --datalogger_start_ms "$datalogger_start_ms" \
+    --datalogger_end_ms "$datalogger_end_ms" \
+    --datalogger_output_file_name "$datalogger_output_file_name" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

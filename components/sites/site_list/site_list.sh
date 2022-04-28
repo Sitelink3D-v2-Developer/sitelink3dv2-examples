@@ -8,7 +8,7 @@ dc="us"
 ## Settings specific to this script.
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 # This parameter is optional.
-owner_id=""
+site_owner_uuid=""
 
 ## optionally sort the results. sort_field may be either "rdm_name" or "create_timestamp_ms".
 # sorted results are ascending by default. ordering can be specified with sort_order="+" for ascending or sort_order="-" for descending. 
@@ -45,7 +45,7 @@ oauth_scope=""
 exec python site_list.py \
     --env "$env" \
     --dc "$dc" \
-    --owner_id "$owner_id" \
+    --site_owner_uuid "$site_owner_uuid" \
     --sort_field "$sort_field" \
     --sort_order "$sort_order" \
     --page_limit "$page_limit" \

@@ -7,10 +7,10 @@ dc="us"
 site_id=""
 
 # original machine activity window in ms from epoch
-startms="1651410000000"
-endms="1659103200000"
+datalogger_start_ms="1651410000000"
+datalogger_end_ms="1659103200000"
 
-report_file_name="ExcavatorReport.csv"
+datalogger_output_file_name="ExcavatorReport.csv"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -24,9 +24,9 @@ exec python create_excavator_bucket_poi_report_with_state.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
-    --startms "$startms" \
-    --endms "$endms" \
-    --report_file_name "$report_file_name" \
+    --datalogger_start_ms "$datalogger_start_ms" \
+    --datalogger_end_ms "$datalogger_end_ms" \
+    --datalogger_output_file_name "$datalogger_output_file_name" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

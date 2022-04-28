@@ -1,4 +1,13 @@
 #!/usr/bin/python
+
+# This is a library file. It contains a static library function that creates, if possible, an object of a type that 
+# represents the data provided to it from a datalogger stream. 
+# 
+# These typed objects allow for easy access to data contained within each payload and provide a human readable string 
+# representation of what the payload is communicating via the format function. 
+# 
+# An example of the JSON payloads that are represented by each class is # provided in comments.
+
 import json
 import logging
 import urllib.parse

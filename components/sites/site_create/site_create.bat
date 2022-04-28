@@ -7,7 +7,7 @@ set dc="us"
 
 rem ## Site creation specifics.
 rem # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
-set owner_id="" 
+set site_owner_uuid="" 
 
 set site_name="API Site"
 set site_latitude=""
@@ -29,7 +29,7 @@ set oauth_scope=""
 python site_create.py ^
     --env %env% ^
     --dc %dc% ^
-    --owner_id %owner_id% ^
+    --site_owner_uuid %site_owner_uuid% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

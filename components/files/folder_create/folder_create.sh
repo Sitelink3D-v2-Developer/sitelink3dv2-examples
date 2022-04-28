@@ -8,7 +8,7 @@ site_id=""
 
 folder_name="Linux Folder"
 folder_uuid=""
-parent_uuid=""
+folder_parent_uuid=""
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
 ## run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -24,7 +24,7 @@ exec python folder_create.py \
     --site_id "$site_id" \
     --folder_name "$folder_name" \
     --folder_uuid "$folder_uuid" \
-    --parent_uuid "$parent_uuid" \
+    --folder_parent_uuid "$folder_parent_uuid" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \

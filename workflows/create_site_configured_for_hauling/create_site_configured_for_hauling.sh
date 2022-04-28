@@ -7,7 +7,7 @@ dc="us"
 
 ## Site creation specifics
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
-owner_id=""
+site_owner_uuid=""
 
 site_name="API Hauling Site"
 site_latitude="-27.979320763437187" 
@@ -21,9 +21,9 @@ site_contact_phone="123-456-7890"
 site_auth_code="123123"
 
 ## Region specifics
-region_discovery_file="regions/discovery_region_verticies.txt"
-region_load_file="regions/load_region_verticies.txt"
-region_dump_file="regions/dump_region_verticies.txt"
+rdm_region_discovery_verticies_file="regions/discovery_region_verticies.txt"
+rdm_region_load_verticies_file="regions/load_region_verticies.txt"
+rdm_region_dump_verticies_file="regions/dump_region_verticies.txt"
 
 ## Authorization.
 # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -36,7 +36,7 @@ oauth_scope=""
 exec python create_site_configured_for_hauling.py \
     --dc "$dc" \
     --env "$env" \
-    --owner_id "$owner_id" \
+    --site_owner_uuid "$site_owner_uuid" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \
@@ -49,7 +49,7 @@ exec python create_site_configured_for_hauling.py \
     --site_contact_email "$site_contact_email" \
     --site_contact_phone "$site_contact_phone" \
     --site_auth_code "$site_auth_code" \
-    --region_discovery_verticies_file "$region_discovery_file" \
-    --region_load_verticies_file "$region_load_file" \
-    --region_dump_verticies_file "$region_dump_file" 
+    --rdm_region_discovery_verticies_file "$rdm_region_discovery_verticies_file" \
+    --rdm_region_load_verticies_file "$rdm_region_load_verticies_file" \
+    --rdm_region_dump_verticies_file "$rdm_region_dump_verticies_file" 
     

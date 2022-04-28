@@ -148,32 +148,21 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
 
 
 def main():
-    # >> Arguments
-    arg_parser = argparse.ArgumentParser(description="Inspect a file for design features.")
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_file_uuid, arg_file_name])
+    # << Argument handling
 
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-    arg_parser.add_argument("--file_uuid", default="", help="UUID of file")
-    arg_parser.add_argument("--file_name", default="", help="File name to interrogate")
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
 
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
-   
+    # >> Authorization
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+    # << Authorization
     
     features_to_import = query_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=args.file_uuid, a_file_name=args.file_name, a_headers=headers)
 

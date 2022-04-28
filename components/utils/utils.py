@@ -4,6 +4,11 @@ import datetime
 import dateutil.parser
 import pytz
 import time
+import os
+import logging
+import requests
+
+session = requests.Session()
 
 # >> Server URL:
 def shp(env, a_scheme):
@@ -59,3 +64,24 @@ def compare_dict(expected, actual):
         elif actual_value != expected_value:
             return False
     return True
+
+    site_name = site_detail(server, headers, args.site_id)["name"]
+
+def site_detail(a_server_config, a_headers, a_site_id): 
+    list_detail_url = "{0}/siteowner/v1/sites/{1}".format(a_server_config.to_url(), a_site_id)
+    logging.debug("Querying Site Owner for details of site {} from {}".format(a_site_id, list_detail_url))
+
+    response = session.get(list_detail_url, headers=a_headers)
+    response.raise_for_status()
+    
+    site_list_json = response.json()
+    return site_list_json
+
+def get_site_name_summary(a_server_config, a_headers, a_site_id):
+    site_name = site_detail(a_server_config, a_headers, a_site_id)["name"]
+    return site_name + " [" + a_site_id[0:12] + "]"
+
+def make_site_output_dir(a_server_config, a_headers, a_current_dir, a_site_id):
+    output_dir = os.path.join(a_current_dir, get_site_name_summary(a_server_config, a_headers, a_site_id))
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
