@@ -45,7 +45,7 @@ class ReportTraitsBase():
 
 class HaulReportTraits(ReportTraitsBase):
     def __init__(self, a_haul_states, a_start_unix_time_millis, a_end_unix_time_millis, a_results_header):
-        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls", ["xlsx","json"]], ["trails",["json", "jsonl"]]])
+        ReportTraitsBase.__init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, "haul_report", [["hauls",["xlsx","json"]], ["trails",["json", "jsonl"]], ["aggregates-dump_region-average",["json"]], ["aggregates-dump_region-total",["json"]], ["aggregates-load_region-average",["json"]], ["aggregates-load_region-total",["json"]], ["aggregates-machine-average",["json"]], ["aggregates-machine-total",["json"]], ["aggregates-material-average",["json"]], ["aggregates-material-total",["json"]], ["aggregates-operator-average",["json"]], ["aggregates-operator-total",["json"]]])
         self.haul_states = a_haul_states
 
     def job_params(self, a_report_name):
