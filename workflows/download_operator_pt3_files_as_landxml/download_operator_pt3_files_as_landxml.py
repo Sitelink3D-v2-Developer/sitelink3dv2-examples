@@ -2,6 +2,7 @@
 import os
 import sys
 import itertools
+from textwrap import indent
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -69,10 +70,15 @@ def main():
     items_list = operator_list["items"]
     for item in items_list:
         operators[item["id"]] = "{} {} {}".format(item["value"]["firstName"], item["value"]["lastName"], item["id"])
+    logging.debug(json.dumps(operators, indent=4))
 
     for fi in operator_domain_file_list:
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        output_dir = os.path.join(current_dir, args.site_id[0:12], operators[fi["value"]["operator"]])
+        try:
+            output_dir = os.path.join(current_dir, args.site_id[0:12], operators[fi["value"]["operator"]])
+        except KeyError:
+            # perhaps the operator is archived, we can continue.
+            continue
         download_dir = os.path.join(output_dir, "downloaded")
         converted_dir = os.path.join(output_dir, "converted")
         rdm_file_name = fi["value"]["name"]

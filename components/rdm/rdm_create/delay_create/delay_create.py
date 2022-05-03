@@ -31,7 +31,9 @@ def create_delay(a_site_id, a_server_config, a_delay_name, a_delay_code, a_heade
     response.raise_for_status()
     if response.status_code == 200:
         logging.info("Delay created.")
-    logging.debug ("create delay returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        logging.debug ("create delay returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    else:  
+        logging.info("Delay creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
 
 def main():

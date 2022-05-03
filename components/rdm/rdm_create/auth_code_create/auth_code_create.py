@@ -34,4 +34,6 @@ def create_auth_code(a_server_config, a_site_id, a_code_name, a_code_pin, a_head
     response.raise_for_status()
     if response.status_code == 200:
         logging.info("Auth Code created.")
-    logging.debug ("create auth code returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        logging.debug ("create auth code returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    else:  
+        logging.info("Auth Code creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
