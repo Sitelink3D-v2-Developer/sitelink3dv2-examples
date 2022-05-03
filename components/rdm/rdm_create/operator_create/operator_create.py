@@ -31,8 +31,9 @@ def create_operator(a_site_id, a_server_config, a_first_name, a_last_name, a_cod
     response.raise_for_status()
     if response.status_code == 200:
         logging.info("Operator created.")
-    logging.debug ("create operator returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
-
+        logging.debug ("create operator returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    else:  
+        logging.info("Operator creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
 def main():
     # >> Arguments

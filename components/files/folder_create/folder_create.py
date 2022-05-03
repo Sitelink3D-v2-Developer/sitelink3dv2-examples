@@ -42,7 +42,9 @@ def make_folder(a_folder_bean, a_server_config, a_site_id, a_headers):
     logging.debug ("make-folder returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
     if response.status_code == 200:
         logging.info("Folder created.")
-    logging.debug ("The new folder uuid = {0}".format(a_folder_bean._id))
+        logging.debug ("The new folder uuid = {0}".format(a_folder_bean._id))
+    else:  
+        logging.info("Folder creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
     # Inserting into RDM is asynchronous so we need to allow for a delay before checking.
     # In production code, you should subscribe to the events service and respond appropriately before proceeding.

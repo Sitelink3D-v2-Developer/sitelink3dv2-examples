@@ -67,6 +67,8 @@ def upload_file(a_file_upload_bean, a_file_rdm_bean, a_server_config, a_site_id,
 
     if response.status_code == 200:
         logging.info("File uploaded.")
+    else:  
+        logging.info("File upload unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
 
 def main():
     # >> Arguments

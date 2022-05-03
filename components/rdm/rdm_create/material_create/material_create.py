@@ -34,7 +34,9 @@ def create_material(a_site_id, a_server_config, a_material_name, a_headers, a_ac
     response.raise_for_status()   
     if response.status_code == 200:
         logging.info("Material created.")
-    logging.debug ("create material returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        logging.debug ("create material returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    else:  
+        logging.info("Material creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
     return material_id 
 
 def main():

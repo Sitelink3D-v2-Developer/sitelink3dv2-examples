@@ -28,6 +28,8 @@ def create_task(a_server_config, a_site_id, a_task_name, a_headers, a_design_set
     response.raise_for_status()    
     if response.status_code == 200:
         logging.info("Task created.")
-    logging.debug ("create task returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        logging.debug ("create task returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+    else:  
+        logging.info("Task creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
     
     return response.json()
