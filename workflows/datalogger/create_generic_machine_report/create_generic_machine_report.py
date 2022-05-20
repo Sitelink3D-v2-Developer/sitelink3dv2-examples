@@ -66,69 +66,6 @@ payload_output_file["sitelink::Event"] = open(event_file_name, "w")
 payload_output_file["sitelink::State"] = open(state_file_name, "w")
 payload_output_file["mfk::Replicate"]  = open(kinematics_file_name, "w")
 
-
-# Callback function to allow the payload processing code to lookup data it
-# needs to log to file when format() is called. This callback means an MFK
-# instance is not needed in the datalogger payload processing code.
-# 
-# The Replicate Interface within the cached Resource Configuration is used
-# to determine the fields to query in the MFK interface. This provides the
-# most recent data from the field for the provided UUID
-def get_replicate_data_for_rc_uuid(a_rc_uuid):
-
-    # Find the Topcon Replicate Interface definition within the Resource Configuration
-    for rc_interface in resource_definitions[a_rc_uuid]["data"]["components"][0]["interfaces"]:
-        if rc_interface["oem"] == "topcon" and rc_interface["name"] == "replicate":
-            
-            mfk_component = mfk[rc_uuid].components[0]
-            vals = {}
-            # The Topcon Replicate Interface manifest contains the field definitions appropriate 
-            # for this RC UUID. These fields are used to query the associated data from the MFK code.
-            # Fields are in the format <node.property> meaning that the following example in the
-            # RC Interface results in a node of "topcon.transform.wgs" and property "lat".
-            #
-            # {
-            #   "value_ref": "topcon.transform.wgs.lat",
-            #   "type": "double"
-            # }
-            # 
-            for val in rc_interface["manifest"]:
-                node_name, prop = val["value_ref"].rsplit(".", 1)
-
-                # We've found a node name so we can obtain the node of that name from the MFK code.
-                node = mfk_component.get_interface_object(node_name)
-                
-                # Nodes are queried differently for the data they contain as a function of their
-                # MFK type. This code handles the following types explicitly:
-                # 1. <class 'mfk.AuxControlData.ControlData'>
-                # 2. <class 'mfk.Nodes.Node'>
-                if node:
-                    if isinstance(node, Nodes.Node):
-                        vals[val["value_ref"]] = getattr(node,prop)
-
-                    elif isinstance(node, AuxControlData.ControlData):
-                        vals[val["value_ref"]] = node.value
-                    
-                    else:
-                        # start subscriptable data access
-                        vals[val["value_ref"]] = node[prop]
-                        # end subscriptable data access
-                
-            logging.debug("Returning values {} for RC UUID {}".format(vals, a_rc_uuid))
-            return vals
-
-# Extract the human readable machine name from the machine asset in the cached Asset Context definition.
-def get_asset_name_for_ac_uuid(a_ac_uuid):
-    machine_name = "Unknown"
-    try:
-        for i, val in enumerate(assets[ac_uuid]["signatures"]):
-            if val["asset_urn"].startswith("urn:X-topcon:machine"):
-                machine_name = urllib.parse.unquote(val["asset_urn"].split(":")[-1])
-                break
-    except KeyError as err:
-        pass
-    return machine_name
-
 # Log formatted payload specific data to the provided file handle.
 def LogPayload(a_payload, a_file):
     a_file.write("\n{}".format(a_payload.format()))
@@ -144,62 +81,69 @@ for line in response.iter_lines():
     #
     # This requires separate calls to the API so the results are cached to avoid the need to 
     # query on every message. 
-
     try:
-        rc_uuid = decoded_json['data']['rc_uuid']
-        if not rc_uuid in resource_definitions:
+        rc_uuid = ""
+        rc_uuid_definition = ""
+        rc_uuid_mfk_component_instance = ""
+        if decoded_json["type"] == "mfk::Replicate":
+            rc_uuid = decoded_json['data']['rc_uuid']
 
-            logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
-            resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
+            if not rc_uuid in resource_definitions:
 
-            mfk_rc = resource_definitions[rc_uuid]
+                logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
+                resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
 
-            # The MFK code expects a slightly differnt JSON structure to that provided by DBA
-            mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
-            mfk_rc.pop("components")
-            logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
+                mfk_rc = resource_definitions[rc_uuid]
 
-            # Instantiate the MFK code for this Resource Configuration and cache it for subsequent queries.
-            rc = ResourceConfiguration(mfk_rc)
-            mfk[rc_uuid] = rc
+                # The MFK code expects a slightly differnt JSON structure to that provided by DBA
+                mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
+                mfk_rc.pop("components")
+                logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
 
-            # Write the Resource Configuration to file for ease of inspection.
-            resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
-            resource_file_name = os.path.join(resources_dir, resource_description + ".json")
-            resource_file = open(resource_file_name, "w")
-            resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))
+                # Instantiate the MFK code for this Resource Configuration and cache it for subsequent queries.
+                rc = ResourceConfiguration(mfk_rc)
+                mfk[rc_uuid] = rc
+
+                # Write the Resource Configuration to file for ease of inspection.
+                resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
+                resource_file_name = os.path.join(resources_dir, resource_description + ".json")
+                resource_file = open(resource_file_name, "w")
+                resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))
+
+            else:
+                logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
+
+            rc_uuid_definition = resource_definitions[rc_uuid]["data"]["components"][0]["interfaces"]
+            rc_uuid_mfk_component_instance = mfk[rc_uuid].components[0]
+    
+        ac_uuid = decoded_json['data']['ac_uuid']
+        if not ac_uuid in assets:
+            logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
+            assets[ac_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
 
         else:
-            logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
-    
+            logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
+        
+        # Now that the Resource Configuration and Asset Context information is available we process each 
+        # message before logging to file with the LogPayload function.
+        # 
+        # State and Event payloads are self contained and can be written to file without extra processing.
+        # 
+        # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
+        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried 
+        # by the LogPayload function for the latest kinematic information which is then written to file. 
+
+        payload = DataloggerPayload.payload_factory(decoded_json, assets, rc_uuid_definition, rc_uuid_mfk_component_instance)
+        if payload is not None:
+            logging.debug("Payload factory found {} {}".format(payload.payload_type(), payload.data_type()))
+            logging.debug(payload.format())
+
+            if payload.payload_type() == "mfk::Replicate":
+                updated_manifest = mfk[rc_uuid].apply_manifest(payload.manifest())
+
+            LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
+
     except KeyError as err:
-        pass    
-
-    ac_uuid = decoded_json['data']['ac_uuid']
-    if not ac_uuid in assets:
-        logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
-        assets[ac_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
-
-    else:
-        logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
-      
-    # Now that the Resource Configuration and Asset Context information is available we process each 
-    # message before logging to file with the LogPayload function.
-    # 
-    # State and Event payloads are self contained and can be written to file without extra processing.
-    # 
-    # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
-    # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried 
-    # by the LogPayload function for the latest kinematic information which is then written to file. 
-
-    payload = DataloggerPayload.payload_factory(decoded_json, get_asset_name_for_ac_uuid, get_replicate_data_for_rc_uuid)
-    if payload is not None:
-        logging.debug("Payload factory found {} {}".format(payload.payload_type(), payload.data_type()))
-        logging.debug(payload.format())
-
-        if payload.payload_type() == "mfk::Replicate":
-            updated_manifest = mfk[rc_uuid].apply_manifest(payload.manifest())
-
-        LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
+        pass   
     
 logging.info("Processed {} lines".format(line_count))

@@ -8,32 +8,33 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "mfk"))
 
 from mfk import *
+from datalogger_utils import *
 
 class DataloggerPayload(object):
 
-    def payload_factory(a_object_value, a_asset_name_lookup_func, a_replicate_data_lookup_func):
+    def payload_factory(a_object_value, a_assets, a_rc_interfaces, a_rc_uuid_mfk_component_instance):
 
         try:
             if a_object_value["type"] == "mfk::Replicate":
                 rc_uuid = a_object_value['data']['rc_uuid']
-                return DataloggerPayloadReplicate(a_object_value, rc_uuid, a_asset_name_lookup_func, a_replicate_data_lookup_func)
+                return DataloggerPayloadReplicate(a_object_value, rc_uuid, a_assets, a_rc_interfaces, a_rc_uuid_mfk_component_instance)
             
             elif a_object_value["type"] == "sitelink::State":
-                return DataloggerPayloadState(a_object_value, a_asset_name_lookup_func)
+                return DataloggerPayloadState(a_object_value, a_assets)
 
             elif a_object_value["type"] == "sitelink::Event":
                 if a_object_value["data"]["type"] == "load":
-                    return DataloggerPayloadLoadEvent(a_object_value, a_asset_name_lookup_func)
+                    return DataloggerPayloadLoadEvent(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "obw_clear":
-                    return DataloggerPayloadOnBoardWeighingClear(a_object_value, a_asset_name_lookup_func)
+                    return DataloggerPayloadOnBoardWeighingClear(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "obw_open":
-                    return DataloggerPayloadOnBoardWeighingOpen(a_object_value, a_asset_name_lookup_func)
+                    return DataloggerPayloadOnBoardWeighingOpen(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "obw_load":
-                    return DataloggerPayloadOnBoardWeighingLoad(a_object_value, a_asset_name_lookup_func)
+                    return DataloggerPayloadOnBoardWeighingLoad(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "obw_lift":
-                    return DataloggerPayloadOnBoardWeighingLift(a_object_value, a_asset_name_lookup_func)
+                    return DataloggerPayloadOnBoardWeighingLift(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "close":
-                    return DataloggerPayloadCloseEvent(a_object_value, a_asset_name_lookup_func)               
+                    return DataloggerPayloadCloseEvent(a_object_value, a_assets)               
             
         except TypeError as err:
             logging.debug("TypeError {}".format(err))
@@ -71,11 +72,12 @@ class DataloggerPayloadBase():
 #     }
 # }
 class DataloggerPayloadReplicate(DataloggerPayloadBase):
-    def __init__(self, a_json, a_rc_uuid, a_asset_name_lookup_func, a_replicate_data_lookup_func):
+    def __init__(self, a_json, a_rc_uuid, a_assets, a_rc_interfaces, a_rc_uuid_mfk_component_instance):
         DataloggerPayloadBase.__init__(self, a_json)
         self.m_rc_uuid = a_rc_uuid
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
-        self.m_replicate_data_lookup_func = a_replicate_data_lookup_func
+        self.m_assets = a_assets
+        self.m_rc_interfaces = a_rc_interfaces
+        self.m_rc_uuid_mfk_component_instance = a_rc_uuid_mfk_component_instance
 
     def data_type(self):
         return "manifest"
@@ -83,10 +85,20 @@ class DataloggerPayloadReplicate(DataloggerPayloadBase):
     def manifest(self):
         return self.m_json["data"]["manifest"]
 
+    def get_machine_name_and_position(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        machine_position = get_replicate_data_for_interface(self.m_rc_interfaces, self.m_rc_uuid_mfk_component_instance)
+        return machine_name, machine_position
+
+    def position(self):
+        machine_name, machine_position = self.get_machine_name_and_position()
+        ret = {machine_name: machine_position}
+        ret[machine_name]["at"] = self.m_json["at"] # add time stamp to returned position
+        return ret
+
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
-        vals = self.m_replicate_data_lookup_func(self.m_rc_uuid)
-        return "{}, machine '{}' sent replicate '{}'".format(self.m_json["at"], machine_name, vals)
+        machine_name, machine_position = self.get_machine_name_and_position()
+        return "{}, machine '{}' sent replicate '{}'".format(self.m_json["at"], machine_name, machine_position)
 
 # DataloggerPayloadState processes payloads of the form
 #
@@ -102,15 +114,15 @@ class DataloggerPayloadReplicate(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadState(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def data_type(self):
         return self.m_json["data"]["ns"]
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         ret = ""
         if len(self.m_json["data"]["value"]) > 0:
             ret = "{}, machine '{}' updated state {} {} to '{}'"\
@@ -144,9 +156,9 @@ class DataloggerPayloadState(DataloggerPayloadBase):
 #     }
 # }  
 class DataloggerPayloadLoadEvent(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
         region_uuid = ""
@@ -163,7 +175,7 @@ class DataloggerPayloadLoadEvent(DataloggerPayloadBase):
         except KeyError:
             logging.debug("No load assignment detected in Load Event payload.")
 
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         log = "{}, machine '{}' confirmed load of {} {} of material '{}' in state '{}' into bin '{}'"\
             .format(self.m_json["at"],urllib.parse.unquote(machine_name),self.m_json["data"]["quantity"],self.m_json["data"]["material_unit"], self.m_json["data"]["material_uuid"], self.m_json["data"]["material_state"], self.m_json["data"]["bin"])
 
@@ -187,12 +199,12 @@ class DataloggerPayloadLoadEvent(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadCloseEvent(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         return "{}, machine '{}' closed haul {}"\
             .format(self.m_json["at"], machine_name, self.m_json["data"]["uuid"])
 
@@ -221,12 +233,12 @@ class DataloggerPayloadCloseEvent(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadOnBoardWeighingClear(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         target_bins = {}
         keys = self.m_json["data"]["hauls"].keys()
         for i, val in enumerate(keys):
@@ -256,12 +268,12 @@ class DataloggerPayloadOnBoardWeighingClear(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadOnBoardWeighingLoad(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         return "{}, machine '{}' loaded weighing job {}"\
             .format(self.m_json["at"], machine_name, self.m_json["data"]["job_uuid"])
 
@@ -286,12 +298,12 @@ class DataloggerPayloadOnBoardWeighingLoad(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadOnBoardWeighingLift(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         return "{}, machine '{}' lifted {} [units] for job {}"\
             .format(self.m_json["at"], machine_name, self.m_json["data"]["weight"], self.m_json["data"]["job_uuid"])
 
@@ -309,11 +321,11 @@ class DataloggerPayloadOnBoardWeighingLift(DataloggerPayloadBase):
 #     }
 # }
 class DataloggerPayloadOnBoardWeighingOpen(DataloggerPayloadBase):
-    def __init__(self, a_json, a_asset_name_lookup_func):
+    def __init__(self, a_json, a_assets):
         DataloggerPayloadBase.__init__(self, a_json)
-        self.m_asset_name_lookup_func = a_asset_name_lookup_func
+        self.m_assets = a_assets
 
     def format(self):
-        machine_name = self.m_asset_name_lookup_func(self.m_json["data"]["ac_uuid"])
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         return "{}, machine '{}' opened weighing job {}"\
             .format(self.m_json["at"], machine_name, self.m_json["data"]["job_uuid"])

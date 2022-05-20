@@ -25,6 +25,7 @@ import_targets = {
     "filtering" : ["utils", "parameters"],
     "site_pagination_traits" : ["sites"],
     "site_create" : ["sites", "site_create"],
+    "site_detail" : ["sites", "site_detail"],
     "report_download" : ["reports", "report_download"],
     "report_pagination_traits" : ["reports"],
     "report_traits" : ["reports"],
