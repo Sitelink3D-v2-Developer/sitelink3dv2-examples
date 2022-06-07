@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import logging
 import os
 import sys
 from dateutil import tz
@@ -11,7 +12,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "mfk"]:
+for imp in ["args", "utils", "get_token", "mfk", "site_detail"]:
     exec(import_cmd(components_dir, imp))
 
 # Configure Arguments
@@ -41,53 +42,70 @@ logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basenam
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server_https)
 
 logging.debug(headers)
+
 dba_url = "{}/dba/v1/sites/{}/updates?startms={}&endms={}&category=low_freq".format(server_https.to_url(), args.site_id, args.startms, args.endms)
 logging.debug("dba_url: {}".format(dba_url))
 
-# get the data
+# get the datalogger data
 response = session.get(dba_url, headers=headers)
 logging.debug(response.text)
 response.raise_for_status()
 
-resources = {}
+resource_definitions = {}
 assets = {}
 state = {}
 
-logging.info("Writing report to {}".format(args.report_file_name))
-report_file = open(args.report_file_name, "w")
+# get site name for output directory
+site_name = site_detail(server_https, headers, args.site_id)["name"]
 
-report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, MC Mode, Speed (km/h), Reverse, Delay Id, Operator Id, Task Id, Left X, Left Y, Left Z, Right X, Right Y, Right Z")
+current_dir = os.path.dirname(os.path.realpath(__file__))
+output_dir = os.path.join(current_dir, args.site_id[0:12] + " [" + site_name + "]")
+os.makedirs(output_dir, exist_ok=True)
+
+resources_dir = os.path.join(output_dir, "resources")
+os.makedirs(resources_dir, exist_ok=True)
+
+logging.info("Writing report to {}".format(args.report_file_name))
+
+report_file_name = os.path.join(output_dir, args.report_file_name)
+report_file = open(report_file_name, "w")
+report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, MC Mode, Reverse, Delay Id, Operator Id, Task Id, Drum Left X, Drum Left Y, Drum Left Z, Drum Right X, Drum Right Y, Drum Right Z")
 
 def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
     
     transform_interface = a_component.interfaces["transform"]
     points_of_interest_interface = a_component.interfaces["points_of_interest"]
 
-    poi = next((sub for sub in points_of_interest_interface.points if sub.id == a_point_of_interest), None)  
-    logging.debug("Using Point {}".format(poi))
-    node = a_component.get_interface_object("topcon.nodes.blade")
-    logging.debug("Using Node {}".format(node))
-    node_transform = node.get_local_transform()
+    poi_local_space = "-"
 
-    # We want to multiple the POI's referenced (and pre-transformed) node by the POI's offset.
-    # In this example, the point is blade left or blade right.
-    # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
-    poi_offset = poi.get_point()
-    transformed_offset_point =  node_transform * poi_offset
+    try:
+        poi = next((sub for sub in points_of_interest_interface.points if sub.id == a_point_of_interest), None)  
+        logging.debug("Using Point {}".format(poi))
+        node = a_component.get_interface_object("topcon.nodes.front")
+        logging.debug("Using Node {}".format(node))
+        node_transform = node.get_local_transform()
 
-    # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
-    # Remember that a point of interest has a parent node (node reference).
-    # That puts the point of interest in the correct local space relative to the root. 
-    machine_to_local_transform = transform_interface.get_transform()
+        # We want to multiply the POI's referenced (and pre-transformed) node by the POI's offset.
+        # In this example, the point is roller drum left or right.
+        # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
+        poi_offset = poi.get_point()
+        transformed_offset_point =  node_transform * poi_offset
 
-    # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
-    poi_local_space = machine_to_local_transform * transformed_offset_point
+        # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
+        # Remember that a point of interest has a parent node (node reference).
+        # That puts the point of interest in the correct local space relative to the root. 
+        machine_to_local_transform = transform_interface.get_transform()
+
+        # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
+        poi_local_space = machine_to_local_transform * transformed_offset_point
+    except KeyError:
+        logging.debug("KeyError")
 
     logging.debug("POI in local space {}".format(poi_local_space))
 
     return poi_local_space
 
-def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_control, a_reverse, a_blade_left, a_blade_right, a_state={}):
+def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_control, a_reverse, a_front_drum_left, a_front_drum_right, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
@@ -129,14 +147,25 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_contro
         position_quality = "RTK Fixed"
     elif a_position_info == 3:
         position_quality = "mm Enhanced"
+
+    front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z = "-", "-", "-", "-", "-", "-"
+    try:
+        front_drum_l_x = a_front_drum_left.getA1()[0]
+        front_drum_l_y = a_front_drum_left.getA1()[1]
+        front_drum_l_z = a_front_drum_left.getA1()[2]
+        front_drum_r_x = a_front_drum_right.getA1()[0]
+        front_drum_r_y = a_front_drum_right.getA1()[1]
+        front_drum_r_z = a_front_drum_right.getA1()[2]
+    except AttributeError:
+        logging.debug("AttributeError")
     
-    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, -, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, a_blade_left.getA1()[0], a_blade_left.getA1()[1], a_blade_left.getA1()[2], a_blade_right.getA1()[0], a_blade_right.getA1()[1], a_blade_right.getA1()[2]))
+    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z))
 
-
+# Main datalogger data processing loop
+line_count = 0
 for line in response.iter_lines():
-    decoded_line = base64.b64decode(line).decode('UTF-8')
-    logging.debug(decoded_line)
-    decoded_json = json.loads(decoded_line)
+    line_count += 1
+    decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
 
     if decoded_json['type'] == "sitelink::State":
         logging.debug("Found state.")
@@ -158,16 +187,22 @@ for line in response.iter_lines():
     if decoded_json['type'] == "mfk::Replicate":
         logging.debug("Found replicate.")
         rc_uuid = decoded_json['data']['rc_uuid']
-        if not rc_uuid in resources:
+        if not rc_uuid in resource_definitions:
             logging.debug("Getting RC_UUID (Resource Configuration).")
             resrouce_url = "{}/dba/v1/sites/{}/resources/{}".format(server_https.to_url(), args.site_id, rc_uuid)
             rc_uuid_response = session.get(resrouce_url, headers=headers)
-            resources[rc_uuid] = rc_uuid_response.json()
-            mfk_rc = resources[rc_uuid]
-            mfk_rc["data"] = { "components": resources[rc_uuid]["components"] }
+            resource_definitions[rc_uuid] = rc_uuid_response.json()
+            mfk_rc = resource_definitions[rc_uuid]
+            mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
             mfk_rc.pop("components")
             logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
             rc = ResourceConfiguration(mfk_rc)
+
+            # Write the Resource Configuration to file for ease of inspection.
+            resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
+            resource_file_name = os.path.join(resources_dir, resource_description + ".json")
+            resource_file = open(resource_file_name, "w")
+            resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))
         else:
             logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
         
@@ -194,7 +229,9 @@ for line in response.iter_lines():
         res = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
         position_info = res.value
         
-        blade_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_l")
-        blade_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_r")
+        front_drum_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_l")
+        front_drum_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_r")
 
-        OutputLineItem(report_file, decoded_json, position_info, auto_grade_control, reverse, blade_l_local_space, blade_r_local_space, state[ac_uuid] if ac_uuid in state else {})
+        OutputLineItem(report_file, decoded_json, position_info, auto_grade_control, reverse, front_drum_l_local_space, front_drum_r_local_space, state[ac_uuid] if ac_uuid in state else {})
+
+logging.info("Processed {} lines".format(line_count))

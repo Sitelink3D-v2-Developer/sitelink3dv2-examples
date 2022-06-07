@@ -50,6 +50,7 @@ logging.debug("dba_url: {}".format(dba_url))
 
 # get the datalogger data
 response = session.get(dba_url, headers=headers)
+logging.debug(response.text)
 response.raise_for_status()
 
 resource_definitions = {}
