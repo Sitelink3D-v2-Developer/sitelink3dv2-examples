@@ -111,8 +111,48 @@ class PointsOfInterest(Interface):
 class AuxControlData(Interface):
     def __init__(self, aux_control_json):
         super(AuxControlData, self).__init__(aux_control_json)
-        self.control_data = list(map(functools.partial(self.ControlData, interface=self), aux_control_json["data"]))
-    
+        self.control_data = list(map(functools.partial(self.ControlDataFactory, interface=self), aux_control_json["data"]))
+
+    class ControlDataBase(object):
+        def __init__(self, control_json, interface):
+            self.id = control_json.get("id", 0)
+            self.description = control_json.get("description", "")
+            self.interface = interface
+            interface[self.id] = self
+
+        def get_id(self):
+            return self.id
+
+    class ControlDataValue(ControlDataBase):
+        def __init__(self, control_json, interface):
+            super(AuxControlData.ControlDataValue, self).__init__(control_json, interface)
+            self.value = control_json.get("value", 0)
+
+        def __setitem__(self, key, value):
+            setattr(self, key, value)
+
+        def __repr__(self):
+            return str((self.id, self.description, self.value))
+
+    class ControlDataPosition(ControlDataBase):
+        def __init__(self, control_json, interface):
+            super(AuxControlData.ControlDataPosition, self).__init__(control_json, interface)
+            self.quality = control_json.get("quality", 0)
+            self.error_horz = control_json.get("error_horz", -1)
+            self.error_vert = control_json.get("error_vert", -1)
+
+        def __setitem__(self, key, value):
+            setattr(self, key, value)
+            
+        def __repr__(self):
+            return str((self.id, self.description, "quality", self.quality, "error_horz", self.error_horz, "error_vert", self.error_vert))
+
+    def ControlDataFactory(self, a_aux_control_json, interface):
+        if a_aux_control_json["id"] == "position_info":
+            return self.ControlDataPosition(a_aux_control_json, interface)
+        else:
+            return self.ControlDataValue(a_aux_control_json, interface)
+
     class ControlData(object):
         def __init__(self, control_json, interface):
             self.id = control_json.get("id", 0)
@@ -126,7 +166,7 @@ class AuxControlData(Interface):
 
         def __setitem__(self, key, value):
             setattr(self, key, value)
-
+            
         def __repr__(self):
             return str((self.id, self.description, self.value))
 
@@ -220,14 +260,13 @@ class Transform(Interface):
         self["wgs"] = self.wgs
 
     def get_transform(self):
-        M = np.matlib.eye(4)
+        M = np.matlib.eye(4) # Return a matrix with ones on the diagonal and zeros elsewhere, 4 rows in output.
         M[:3, :3] = rot_matrix(self.local_rotation.roll,
                                self.local_rotation.pitch,
                                -self.local_rotation.yaw)
         M[0, 3] = self.local_position.northing
         M[1, 3] = self.local_position.easting
-        M[2, 3] = -self.local_position.elevation
-
+        M[2, 3] = self.local_position.elevation
         return M
 
     class LocalRotation(object):

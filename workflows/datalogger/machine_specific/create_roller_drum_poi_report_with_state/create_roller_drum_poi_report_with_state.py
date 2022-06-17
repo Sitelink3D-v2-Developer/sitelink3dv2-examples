@@ -69,7 +69,7 @@ logging.info("Writing report to {}".format(args.report_file_name))
 
 report_file_name = os.path.join(output_dir, args.report_file_name)
 report_file = open(report_file_name, "w")
-report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, MC Mode, Reverse, Delay Id, Operator Id, Task Id, Drum Left X, Drum Left Y, Drum Left Z, Drum Right X, Drum Right Y, Drum Right Z")
+report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay Id, Operator Id, Task Id, Drum Left X, Drum Left Y, Drum Left Z, Drum Right X, Drum Right Y, Drum Right Z")
 
 def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
     
@@ -98,6 +98,7 @@ def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
 
         # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
         poi_local_space = machine_to_local_transform * transformed_offset_point
+
     except KeyError:
         logging.debug("KeyError")
 
@@ -105,7 +106,7 @@ def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
 
     return poi_local_space
 
-def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_control, a_reverse, a_front_drum_left, a_front_drum_right, a_state={}):
+def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, a_front_drum_left, a_front_drum_right, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
@@ -139,11 +140,11 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_contro
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
 
     position_quality = "Unknown"
-    if a_position_info == 0:
-        position_quality = "Simulated"
-    elif a_position_info == 1:
+    if a_position_quality == 0:
+        position_quality = "Unknown"
+    elif a_position_quality == 1:
         position_quality = "GPS Float"
-    elif a_position_info == 2:
+    elif a_position_quality == 2:
         position_quality = "RTK Fixed"
     elif a_position_info == 3:
         position_quality = "mm Enhanced"
@@ -159,7 +160,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_contro
     except AttributeError:
         logging.debug("AttributeError")
     
-    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z))
+    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z))
 
 # Main datalogger data processing loop
 line_count = 0
@@ -227,11 +228,13 @@ for line in response.iter_lines():
         reverse = res.value
 
         res = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
-        position_info = res.value
+        position_quality = res.quality
+        position_error_horz = res.error_horz
+        position_error_vert = res.error_vert
         
         front_drum_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_l")
         front_drum_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_r")
 
-        OutputLineItem(report_file, decoded_json, position_info, auto_grade_control, reverse, front_drum_l_local_space, front_drum_r_local_space, state[ac_uuid] if ac_uuid in state else {})
+        OutputLineItem(report_file, decoded_json, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, front_drum_l_local_space, front_drum_r_local_space, state[ac_uuid] if ac_uuid in state else {})
 
 logging.info("Processed {} lines".format(line_count))
