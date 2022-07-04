@@ -26,6 +26,10 @@ def site_detail(a_server_config, a_headers, a_site_id):
     site_list_json = response.json()
     return site_list_json
 
+def get_site_name_summary(a_server_config, a_headers, a_site_id):
+    site_name = site_detail(a_server_config, a_headers, a_site_id)["name"]
+    return a_site_id[0:12] + " [" + site_name + "]"
+
 def main():
     # >> Arguments
     arg_parser = argparse.ArgumentParser(description="Site Detail.")
