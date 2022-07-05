@@ -56,7 +56,7 @@ state = {}
 logging.info("Writing report to {}".format(args.report_file_name))
 report_file = open(args.report_file_name, "w")
 
-report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, MC Mode, Speed (km/h), Reverse, Delay Id, Operator Id, Task Id, Left X, Left Y, Left Z, Right X, Right Y, Right Z")
+report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Speed (km/h), Reverse, Delay Id, Operator Id, Task Id, Left X, Left Y, Left Z, Right X, Right Y, Right Z")
 
 def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
     
@@ -87,7 +87,7 @@ def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
 
     return poi_local_space
 
-def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_control, a_reverse, a_blade_left, a_blade_right, a_state={}):
+def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, a_blade_left, a_blade_right, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
@@ -121,16 +121,16 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_info, a_auto_grade_contro
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
 
     position_quality = "Unknown"
-    if a_position_info == 0:
-        position_quality = "Simulated"
-    elif a_position_info == 1:
+    if a_position_quality == 0:
+        position_quality = "Unknown"
+    elif a_position_quality == 1:
         position_quality = "GPS Float"
-    elif a_position_info == 2:
+    elif a_position_quality == 2:
         position_quality = "RTK Fixed"
-    elif a_position_info == 3:
+    elif a_position_quality == 3:
         position_quality = "mm Enhanced"
     
-    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, -, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, a_blade_left.getA1()[0], a_blade_left.getA1()[1], a_blade_left.getA1()[2], a_blade_right.getA1()[0], a_blade_right.getA1()[1], a_blade_right.getA1()[2]))
+    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, -, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, a_blade_left.getA1()[0], a_blade_left.getA1()[1], a_blade_left.getA1()[2], a_blade_right.getA1()[0], a_blade_right.getA1()[1], a_blade_right.getA1()[2]))
 
 
 for line in response.iter_lines():
@@ -192,9 +192,11 @@ for line in response.iter_lines():
         reverse = res.value
 
         res = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
-        position_info = res.value
+        position_quality = res.quality
+        position_error_horz = res.error_horz
+        position_error_vert = res.error_vert
         
         blade_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_l")
         blade_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_r")
 
-        OutputLineItem(report_file, decoded_json, position_info, auto_grade_control, reverse, blade_l_local_space, blade_r_local_space, state[ac_uuid] if ac_uuid in state else {})
+        OutputLineItem(report_file, decoded_json, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, blade_l_local_space, blade_r_local_space, state[ac_uuid] if ac_uuid in state else {})
