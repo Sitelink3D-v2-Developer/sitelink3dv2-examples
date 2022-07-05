@@ -23,24 +23,29 @@ def query_rdm_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_hea
     return response.json() 
 
 class RdmListPageQuery():
-    def __init__(self, a_server_config, a_site_id, a_domain, a_view, a_params, a_headers):
+    def __init__(self, a_server_config, a_site_id, a_domain, a_view, a_params, a_headers, a_result_callback=None):
         self.m_server_config = a_server_config
         self.m_site_id = a_site_id
         self.m_domain = a_domain
         self.m_view = a_view
         self.m_params = a_params
         self.m_headers = a_headers
+        self.m_result_callback = a_result_callback
 
     def query(self, a_params):
         params = self.m_params | a_params
         logging.debug("Using parameters:{}".format(json.dumps(params)))
         return query_rdm_by_domain_view(a_server_config=self.m_server_config, a_site_id=self.m_site_id, a_domain=self.m_domain, a_view=self.m_view, a_headers=self.m_headers, a_params=params)
     
-    @staticmethod
-    def result(a_value):
-        obj = Rdm.traits_factory(a_value["value"])
-        if obj is not None:
-            logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))
+    def result(self, a_value):
+        if self.m_result_callback: 
+            # Do some processing work that calling code is interested in.
+            self.m_result_callback(a_value["value"])
+        else: 
+            # Some default result processing in case a callback wasn't specified.
+            obj = Rdm.traits_factory(a_value["value"])
+            if obj is not None:
+                logging.info("Found {} {}".format(obj.class_name(), obj.object_details()))
 
 def main():
     # >> Arguments
