@@ -7,8 +7,8 @@ dc="us"
 site_id=""
 
 # original roller activity window in ms from epoch
-startms="1646187249000"
-endms="1646187849394"
+startms="1654437600000"
+endms="1654696800000"
 
 report_file_name="RollerReport.csv"
 

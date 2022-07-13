@@ -1,16 +1,16 @@
 @echo off
-rem ## Batch file to read position and state information specific to rollers via the datalogger microservice. The output is written to a user specified CSV file.
+rem ## Batch file to read position and state information specific to excavators via the datalogger microservice. The output is written to a user specified CSV file.
 
 rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 set site_id=""
 
-rem original roller activity window in ms from epoch
-set startms="1654437600000"
-set endms="1654696800000"
+rem original machine activity window in ms from epoch
+set startms="1651410000000"
+set endms="1659103200000"
 
-set report_file_name="RollerReport.csv"
+set report_file_name="ExcavatorReport.csv"
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -20,7 +20,7 @@ set oauth_id=""
 set oauth_secret=""
 set oauth_scope=""
 
-python create_roller_drum_poi_report_with_state.py ^
+python create_excavator_bucket_poi_report_with_state.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^

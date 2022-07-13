@@ -10,7 +10,7 @@ rem original dozer activity window in ms from epoch
 set startms="1646187249000"
 set endms="1646187849394"
 
-set report_file_name="MachineUpdateReport.csv"
+set report_file_name="DozerReport.csv"
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
