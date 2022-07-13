@@ -170,29 +170,6 @@ def GetAuxControlDataFromComponent(a_component):
 
     return ret
 
-def GetPointsOfInterestForResourceType(a_resource_description):
-
-    if a_resource_description == "Generic Excavator (3DMC)":
-        return {
-            "transform_component" : "excavator basic",
-            "points_component" : "excavator bucket",
-            "points" : ["bucket_l", "bucket_r"]
-        }
-    elif a_resource_description == "Generic Bulldozer (3DMC)":
-        return {
-            "transform_component" : "Bulldozer with blade allowed full range of motion",
-            "points_component" : "Bulldozer with blade allowed full range of motion",
-            "points" : ["blade_l", "blade_r"]
-        }
-    elif a_resource_description == "Generic Asphalt Compactor (3DMC)":
-        return {
-            "transform_component" : "Asphalt compactor body and rollers",
-            "points_component" : "Asphalt compactor body and rollers",
-            "points" : ["front_drum_l", "front_drum_r"]
-        }
-
-    return None
-
 def FindPointsOfInterestInResourceConfiguration(a_manifest):
     # Iterate over the available components and find an interface with the description "points_of_interest"
     component_point_list = []
