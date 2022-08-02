@@ -240,18 +240,28 @@ class DataloggerPayloadOnBoardWeighingClear(DataloggerPayloadBase):
     def format(self):
         machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         target_bins = {}
-        keys = self.m_json["data"]["hauls"].keys()
-        for i, val in enumerate(keys):
-            target_bin_name = urllib.parse.unquote(val.split(":")[-1])
-            target_bins[target_bin_name] = self.m_json["data"]["hauls"][val]["weight"]
-        
         target_string = ""
-        for target in target_bins.keys():
-            if len(target_string) != 0:
-                target_string += ","
-            target_string += "{} [units] to '{}'".format(target_bins[target],target)
-        return "{}, machine '{}' cleared weighing job '{}' consisting of {}"\
-            .format(self.m_json["at"], machine_name, self.m_json["data"]["job_num"], target_string)
+        try:
+            keys = self.m_json["data"]["hauls"].keys()
+            for i, val in enumerate(keys):
+                target_bin_name = urllib.parse.unquote(val.split(":")[-1])
+                target_bins[target_bin_name] = self.m_json["data"]["hauls"][val]["weight"]
+            
+            for target in target_bins.keys():
+                if len(target_string) != 0:
+                    target_string += ","
+                target_string += "{} [units] to '{}'".format(target_bins[target],target)
+        except KeyError:
+            pass
+
+        return_string = "{}, machine '{}' cleared weighing job '{}'"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["job_num"])
+        return_string += " (trade legal)" if self.m_json["data"]["legal_trade"] else " (not trade legal)"
+        if len(target_string) > 0:
+            return_string += " consisting of {}".format(target_string)
+
+        return return_string
+
    
 # DataloggerPayloadOnBoardWeighingLoad processes payloads of the form
 #
