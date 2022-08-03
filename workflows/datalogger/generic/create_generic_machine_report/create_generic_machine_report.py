@@ -105,7 +105,7 @@ for line in response.iter_lines():
                 mfk[rc_uuid] = rc
 
                 # Write the Resource Configuration to file for ease of inspection.
-                resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
+                resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"][0:8] + "]"
                 resource_file_name = os.path.join(resources_dir, resource_description + ".json")
                 resource_file = open(resource_file_name, "w")
                 resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))

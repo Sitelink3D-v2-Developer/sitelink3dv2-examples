@@ -12,7 +12,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "mfk", "site_detail"]:
+for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_utils"]:
     exec(import_cmd(components_dir, imp))
 
 # Configure Arguments
@@ -71,41 +71,6 @@ report_file_name = os.path.join(output_dir, args.report_file_name)
 report_file = open(report_file_name, "w")
 report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay Id, Operator Id, Task Id, Drum Left X, Drum Left Y, Drum Left Z, Drum Right X, Drum Right Y, Drum Right Z")
 
-def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
-    
-    transform_interface = a_component.interfaces["transform"]
-    points_of_interest_interface = a_component.interfaces["points_of_interest"]
-
-    poi_local_space = "-"
-
-    try:
-        poi = next((sub for sub in points_of_interest_interface.points if sub.id == a_point_of_interest), None)  
-        logging.debug("Using Point {}".format(poi))
-        node = a_component.get_interface_object("topcon.nodes.front")
-        logging.debug("Using Node {}".format(node))
-        node_transform = node.get_local_transform()
-
-        # We want to multiply the POI's referenced (and pre-transformed) node by the POI's offset.
-        # In this example, the point is roller drum left or right.
-        # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
-        poi_offset = poi.get_point()
-        transformed_offset_point =  node_transform * poi_offset
-
-        # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
-        # Remember that a point of interest has a parent node (node reference).
-        # That puts the point of interest in the correct local space relative to the root. 
-        machine_to_local_transform = transform_interface.get_transform()
-
-        # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
-        poi_local_space = machine_to_local_transform * transformed_offset_point
-
-    except KeyError:
-        logging.debug("KeyError")
-
-    logging.debug("POI in local space {}".format(poi_local_space))
-
-    return poi_local_space
-
 def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, a_front_drum_left, a_front_drum_right, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
@@ -120,7 +85,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
         logging.debug("No Operator state found.")
 
     try:
-        operator_id = a_state["topcon.rdm.list"]["delay"]["value"]
+        delay_id = a_state["topcon.rdm.list"]["delay"]["value"]
     except KeyError:
         logging.debug("No Delay state found.")
 
@@ -138,6 +103,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
             device_id = val["asset_urn"].split(":")[-1]
     
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
+    #utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000).replace(tzinfo=timezone.utc).astimezone(tz=None)
 
     position_quality = "Unknown"
     if a_position_quality == 0:
@@ -146,8 +112,8 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
         position_quality = "GPS Float"
     elif a_position_quality == 2:
         position_quality = "RTK Fixed"
-    elif a_position_info == 3:
-        position_quality = "mm Enhanced"
+    elif a_position_quality == 3:
+        position_quality = "mm Enhanced" 
 
     front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z = "-", "-", "-", "-", "-", "-"
     try:
@@ -200,7 +166,7 @@ for line in response.iter_lines():
             rc = ResourceConfiguration(mfk_rc)
 
             # Write the Resource Configuration to file for ease of inspection.
-            resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"] + "]"
+            resource_description = resource_definitions[rc_uuid]["description"] + " [" + resource_definitions[rc_uuid]["uuid"][0:8] + "]"
             resource_file_name = os.path.join(resources_dir, resource_description + ".json")
             resource_file = open(resource_file_name, "w")
             resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))
@@ -216,6 +182,9 @@ for line in response.iter_lines():
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
         
+        if "Generic Asphalt Compactor (3DMC)" != rc._json["description"]:
+            continue
+
         manifest = rc.apply_manifest(decoded_json['data']['manifest'])
 
         component = manifest.components[0]
@@ -232,8 +201,8 @@ for line in response.iter_lines():
         position_error_horz = res.error_horz
         position_error_vert = res.error_vert
         
-        front_drum_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_l")
-        front_drum_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="front_drum_r")
+        front_drum_l_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="front_drum_l")
+        front_drum_r_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="front_drum_r")
 
         OutputLineItem(report_file, decoded_json, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, front_drum_l_local_space, front_drum_r_local_space, state[ac_uuid] if ac_uuid in state else {})
 
