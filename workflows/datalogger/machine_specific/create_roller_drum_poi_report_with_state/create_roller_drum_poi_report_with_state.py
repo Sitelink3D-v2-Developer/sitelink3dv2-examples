@@ -93,7 +93,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
         task_id = a_state["topcon.task"]["id"]["value"]
     except KeyError:
         logging.debug("No Task state found.")
-        
+
 
     for i, val in enumerate(assets[ac_uuid]["signatures"]):
         if val["asset_urn"].startswith("urn:X-topcon:machine"):
@@ -101,7 +101,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
 
         if val["asset_urn"].startswith("urn:X-topcon:device"):
             device_id = val["asset_urn"].split(":")[-1]
-    
+
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
     #utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000).replace(tzinfo=timezone.utc).astimezone(tz=None)
 
@@ -113,19 +113,19 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
     elif a_position_quality == 2:
         position_quality = "RTK Fixed"
     elif a_position_quality == 3:
-        position_quality = "mm Enhanced" 
+        position_quality = "mm Enhanced"
 
     front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z = "-", "-", "-", "-", "-", "-"
     try:
-        front_drum_l_x = a_front_drum_left.getA1()[0]
-        front_drum_l_y = a_front_drum_left.getA1()[1]
-        front_drum_l_z = a_front_drum_left.getA1()[2]
-        front_drum_r_x = a_front_drum_right.getA1()[0]
-        front_drum_r_y = a_front_drum_right.getA1()[1]
-        front_drum_r_z = a_front_drum_right.getA1()[2]
+        front_drum_l_x = a_front_drum_left[1]
+        front_drum_l_y = a_front_drum_left[0]
+        front_drum_l_z = a_front_drum_left[2]
+        front_drum_r_x = a_front_drum_right[1]
+        front_drum_r_y = a_front_drum_right[0]
+        front_drum_r_z = a_front_drum_right[2]
     except AttributeError:
         logging.debug("AttributeError")
-    
+
     a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, front_drum_l_x, front_drum_l_y, front_drum_l_z, front_drum_r_x, front_drum_r_y, front_drum_r_z))
 
 # Main datalogger data processing loop
@@ -143,7 +143,7 @@ for line in response.iter_lines():
         if not decoded_json['data']['ns'] in state[decoded_json['data']['ac_uuid']]:
             state[decoded_json['data']['ac_uuid']][decoded_json['data']['ns']] = {}
 
-        nested_state = { 
+        nested_state = {
             "state" : decoded_json['data']['state'],
             "value" : decoded_json['data']['value']
         }
@@ -172,7 +172,7 @@ for line in response.iter_lines():
             resource_file.write(json.dumps(resource_definitions[rc_uuid], indent=4))
         else:
             logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
-        
+
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
             logging.debug("Getting AC_UUID (Asset Context).")
@@ -181,29 +181,25 @@ for line in response.iter_lines():
             assets[ac_uuid] = ac_uuid_response.json()
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
-        
+
         if "Generic Asphalt Compactor (3DMC)" != rc._json["description"]:
             continue
 
-        manifest = rc.apply_manifest(decoded_json['data']['manifest'])
+        Replicate.load_manifests(rc, decoded_json['data']['manifest'])
 
-        component = manifest.components[0]
-        aux_control_data = component.interfaces["aux_control_data"].control_data
+        component = rc.components[0]
+        aux_control_data = component.interfaces["aux_control_data"]
 
-        res = next((sub for sub in aux_control_data if sub.id == "auto_grade_control"), None)
-        auto_grade_control = res.value
-        
-        res = next((sub for sub in aux_control_data if sub.id == "reverse"), None)
-        reverse = res.value
+        auto_grade_control = aux_control_data["auto_grade_control"]["value"]
 
-        res = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
-        position_quality = res.quality
-        position_error_horz = res.error_horz
-        position_error_vert = res.error_vert
-        
+        reverse = aux_control_data["reverse"]["value"]
+
+        position_quality = aux_control_data["position_info"]["quality"]
+        position_error_horz = aux_control_data["position_info"]["error_horz"]
+        position_error_vert = aux_control_data["position_info"]["error_vert"]
+
         front_drum_l_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="front_drum_l")
         front_drum_r_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="front_drum_r")
-
         OutputLineItem(report_file, decoded_json, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, front_drum_l_local_space, front_drum_r_local_space, state[ac_uuid] if ac_uuid in state else {})
 
 logging.info("Processed {} lines".format(line_count))

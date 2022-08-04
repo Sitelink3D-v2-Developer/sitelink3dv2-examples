@@ -78,10 +78,10 @@ for line in response.iter_lines():
     decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
 
     # Before we intepret the payload, we fetch the Asset Context and Resource Configuration
-    # definitions and initialise the MFK code for the Resource Configuration if required. 
+    # definitions and initialise the MFK code for the Resource Configuration if required.
     #
-    # This requires separate calls to the API so the results are cached to avoid the need to 
-    # query on every message. 
+    # This requires separate calls to the API so the results are cached to avoid the need to
+    # query on every message.
     try:
         rc_uuid = decoded_json['data']['rc_uuid']
         if not rc_uuid in resource_definitions:
@@ -116,13 +116,13 @@ for line in response.iter_lines():
 
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
-        
-        # Now that the Resource Configuration and Asset Context information is available we process each 
+
+        # Now that the Resource Configuration and Asset Context information is available we process each
         # message before cachine machine position before logging to file.
-        # 
+        #
         # Replicate payloads contain updates that must be applied to the MFK code instantiated for the
-        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried 
-        # for the latest kinematic information which is then written to file. 
+        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried
+        # for the latest kinematic information which is then written to file.
 
         rc_uuid_definition = resource_definitions[rc_uuid]["data"]["components"][0]["interfaces"]
         rc_uuid_mfk_component_instance = mfk[rc_uuid].components[0]
@@ -132,12 +132,12 @@ for line in response.iter_lines():
             logging.debug(payload.format())
 
             if payload.payload_type() == "mfk::Replicate":
-                updated_manifest = mfk[rc_uuid].apply_manifest(payload.manifest())
+                Replicate.load_manifests(mfk[rc_uuid], payload.manifest())
                 # log the position
                 positions.update(payload.position())
-    
+
     except KeyError as err:
-        pass    
+        pass
 
 positions_file.write(json.dumps(positions, indent=4))
 logging.info("Processed {} lines".format(line_count))

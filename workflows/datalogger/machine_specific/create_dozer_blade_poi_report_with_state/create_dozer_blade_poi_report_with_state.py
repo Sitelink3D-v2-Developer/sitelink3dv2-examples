@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import json
 from dateutil import tz
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
@@ -11,7 +12,7 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "mfk"]:
+for imp in ["args", "utils", "get_token", "mfk", "datalogger_utils"]:
     exec(import_cmd(components_dir, imp))
 
 # Configure Arguments
@@ -58,35 +59,6 @@ report_file = open(args.report_file_name, "w")
 
 report_file.write("Machine ID, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Speed (km/h), Reverse, Delay Id, Operator Id, Task Id, Left X, Left Y, Left Z, Right X, Right Y, Right Z")
 
-def GetPointOfInterestLocalSpace(a_component, a_point_of_interest):
-    
-    transform_interface = a_component.interfaces["transform"]
-    points_of_interest_interface = a_component.interfaces["points_of_interest"]
-
-    poi = next((sub for sub in points_of_interest_interface.points if sub.id == a_point_of_interest), None)  
-    logging.debug("Using Point {}".format(poi))
-    node = a_component.get_interface_object("topcon.nodes.blade")
-    logging.debug("Using Node {}".format(node))
-    node_transform = node.get_local_transform()
-
-    # We want to multiply the POI's referenced (and pre-transformed) node by the POI's offset.
-    # In this example, the point is blade left or blade right.
-    # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
-    poi_offset = poi.get_point()
-    transformed_offset_point =  node_transform * poi_offset
-
-    # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
-    # Remember that a point of interest has a parent node (node reference).
-    # That puts the point of interest in the correct local space relative to the root. 
-    machine_to_local_transform = transform_interface.get_transform()
-
-    # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
-    poi_local_space = machine_to_local_transform * transformed_offset_point
-
-    logging.debug("POI in local space {}".format(poi_local_space))
-
-    return poi_local_space
-
 def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, a_blade_left, a_blade_right, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
@@ -109,7 +81,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
         task_id = a_state["topcon.task"]["id"]["value"]
     except KeyError:
         logging.debug("No Task state found.")
-        
+
 
     for i, val in enumerate(assets[ac_uuid]["signatures"]):
         if val["asset_urn"].startswith("urn:X-topcon:machine"):
@@ -117,7 +89,7 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
 
         if val["asset_urn"].startswith("urn:X-topcon:device"):
             device_id = val["asset_urn"].split(":")[-1]
-    
+
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
 
     position_quality = "Unknown"
@@ -129,8 +101,8 @@ def OutputLineItem(a_file_ptr, a_replicate, a_position_quality, a_position_error
         position_quality = "RTK Fixed"
     elif a_position_quality == 3:
         position_quality = "mm Enhanced"
-    
-    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, -, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, a_blade_left.getA1()[0], a_blade_left.getA1()[1], a_blade_left.getA1()[2], a_blade_right.getA1()[0], a_blade_right.getA1()[1], a_blade_right.getA1()[2]))
+
+    a_file_ptr.write("\n-, {}, {}, {}, {}, {}, {}, {}, -, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(device_id, machine_name, utc_time, position_quality, a_position_error_horz, a_position_error_vert, a_auto_grade_control, a_reverse, delay_id, operator_id, task_id, a_blade_left[1], a_blade_left[0], a_blade_left[2], a_blade_right[1], a_blade_right[0], a_blade_right[2]))
 
 
 for line in response.iter_lines():
@@ -147,7 +119,7 @@ for line in response.iter_lines():
         if not decoded_json['data']['ns'] in state[decoded_json['data']['ac_uuid']]:
             state[decoded_json['data']['ac_uuid']][decoded_json['data']['ns']] = {}
 
-        nested_state = { 
+        nested_state = {
             "state" : decoded_json['data']['state'],
             "value" : decoded_json['data']['value']
         }
@@ -170,7 +142,7 @@ for line in response.iter_lines():
             rc = ResourceConfiguration(mfk_rc)
         else:
             logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
-        
+
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
             logging.debug("Getting AC_UUID (Asset Context).")
@@ -179,24 +151,21 @@ for line in response.iter_lines():
             assets[ac_uuid] = ac_uuid_response.json()
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
-        
-        manifest = rc.apply_manifest(decoded_json['data']['manifest'])
 
-        component = manifest.components[0]
-        aux_control_data = component.interfaces["aux_control_data"].control_data
+        Replicate.load_manifests(rc, decoded_json['data']['manifest'])
 
-        res = next((sub for sub in aux_control_data if sub.id == "auto_grade_control"), None)
-        auto_grade_control = res.value
-        
-        res = next((sub for sub in aux_control_data if sub.id == "reverse"), None)
-        reverse = res.value
+        component = rc.components[0]
+        aux_control_data = component.interfaces["aux_control_data"]
 
-        res = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
-        position_quality = res.quality
-        position_error_horz = res.error_horz
-        position_error_vert = res.error_vert
-        
-        blade_l_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_l")
-        blade_r_local_space = GetPointOfInterestLocalSpace(a_component=component, a_point_of_interest="blade_r")
+        auto_grade_control = aux_control_data["auto_grade_control"]["value"]
+
+        reverse = aux_control_data["reverse"]["value"]
+
+        position_quality = aux_control_data["position_info"]["quality"]
+        position_error_horz = aux_control_data["position_info"]["error_horz"]
+        position_error_vert = aux_control_data["position_info"]["error_vert"]
+
+        blade_l_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="blade_l")
+        blade_r_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=component, a_transform_component=component, a_point_of_interest="blade_r")
 
         OutputLineItem(report_file, decoded_json, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, blade_l_local_space, blade_r_local_space, state[ac_uuid] if ac_uuid in state else {})

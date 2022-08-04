@@ -77,10 +77,10 @@ for line in response.iter_lines():
     decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
 
     # Before we intepret the payload, we fetch the Asset Context and Resource Configuration
-    # definitions and initialise the MFK code for the Resource Configuration if required. 
+    # definitions and initialise the MFK code for the Resource Configuration if required.
     #
-    # This requires separate calls to the API so the results are cached to avoid the need to 
-    # query on every message. 
+    # This requires separate calls to the API so the results are cached to avoid the need to
+    # query on every message.
     try:
         rc_uuid = ""
         rc_uuid_definition = ""
@@ -115,7 +115,7 @@ for line in response.iter_lines():
 
             rc_uuid_definition = resource_definitions[rc_uuid]["data"]["components"][0]["interfaces"]
             rc_uuid_mfk_component_instance = mfk[rc_uuid].components[0]
-    
+
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
             logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
@@ -123,15 +123,15 @@ for line in response.iter_lines():
 
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
-        
-        # Now that the Resource Configuration and Asset Context information is available we process each 
+
+        # Now that the Resource Configuration and Asset Context information is available we process each
         # message before logging to file with the LogPayload function.
-        # 
+        #
         # State and Event payloads are self contained and can be written to file without extra processing.
-        # 
+        #
         # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
-        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried 
-        # by the LogPayload function for the latest kinematic information which is then written to file. 
+        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried
+        # by the LogPayload function for the latest kinematic information which is then written to file.
 
         payload = DataloggerPayload.payload_factory(decoded_json, assets, rc_uuid_definition, rc_uuid_mfk_component_instance)
         if payload is not None:
@@ -139,11 +139,11 @@ for line in response.iter_lines():
             logging.debug(payload.format())
 
             if payload.payload_type() == "mfk::Replicate":
-                updated_manifest = mfk[rc_uuid].apply_manifest(payload.manifest())
+                Replicate.load_manifests(mfk[rc_uuid], payload.manifest())
 
             LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
 
     except KeyError as err:
-        pass   
-    
+        pass
+
 logging.info("Processed {} lines".format(line_count))

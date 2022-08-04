@@ -3,6 +3,7 @@ import os
 import sys
 import websocket
 import ssl
+import json
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -49,4 +50,4 @@ while True:
     msg_json = json.loads(ws.recv())
     print(json.dumps(msg_json,indent=4))
     if msg_json['type'] == "mfk::Replicate":
-        rc.apply_manifest(msg_json['data']['manifest'])
+        Replicate.load_manifests(rc, msg_json['data']['manifest'])

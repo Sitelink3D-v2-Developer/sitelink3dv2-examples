@@ -62,16 +62,10 @@ def get_replicate_data_for_interface(a_rc_interfaces, rc_uuid_mfk_component_inst
 
                 # Nodes are queried differently for the data they contain as a function of their
                 # MFK type. This code handles the following types explicitly:
-                # 1. <class 'mfk.AuxControlData.ControlDataValue'>
-                # 2. <class 'mfk.AuxControlData.ControlDataPosition'>
-                # 3. <class 'mfk.Nodes.Node'>
+                # <class 'mfk.Nodes.Node'>
                 if node:
-                    if isinstance(node, Nodes.Node) or isinstance(node, AuxControlData.ControlDataPosition):
+                    if isinstance(node, Nodes.Node):
                         vals[val["value_ref"]] = getattr(node,prop)
-
-                    elif isinstance(node, AuxControlData.ControlDataValue):
-                        vals[val["value_ref"]] = node.value
-
                     else:
                         # start subscriptable data access
                         vals[val["value_ref"]] = node[prop]
@@ -97,22 +91,23 @@ def GetPointOfInterestLocalSpace(a_point_of_interest_component, a_transform_comp
         # For excavators this may be the bucket left and right, the drum for rollers, the blade for dozers etc.
         # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
         poi_offset = poi.get_point()
-        transformed_offset_point =  node_transform * poi_offset
+        transformed_offset_point =  poi_offset @ node_transform
 
         # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
         # Remember that a point of interest has a parent node (node reference).
         # That puts the point of interest in the correct local space relative to the root.
-        machine_to_local_transform = transform_interface.get_transform()
+        mfk_to_local_machine_update = Transform.J670ToLocal(1, True, 0, True, 2, True, True)
+        machine_to_local_transform = transform_interface.get_transform(mfk_to_local_machine_update)
 
         # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
-        poi_local_space = machine_to_local_transform * transformed_offset_point
+        poi_local_space = transformed_offset_point @ machine_to_local_transform
 
     except KeyError:
         logging.debug("KeyError")
 
     logging.debug("POI in local space {}".format(poi_local_space))
 
-    return poi_local_space
+    return poi_local_space[0]
 
 def UpdateStateForAssetContext(a_state_msg, a_state_dict):
     if not a_state_msg['data']['ac_uuid'] in a_state_dict:
@@ -155,26 +150,19 @@ def GetAuxControlDataFromComponent(a_component):
     ret = {}
     if a_component==None:
         return ret
-    aux_control_data = a_component.interfaces["aux_control_data"].control_data
-
-    result = next((sub for sub in aux_control_data if sub.id == "auto_grade_control"), None)
-    ret["auto_grade_control"] = result.value
-
-    result = next((sub for sub in aux_control_data if sub.id == "reverse"), None)
-    ret["reverse"] = result.value
-
-    result = next((sub for sub in aux_control_data if sub.id == "position_info"), None)
-    ret["position_quality"] = result.quality
-    ret["position_error_horz"] = result.error_horz
-    ret["position_error_vert"] = result.error_vert
-
+    aux_control_data = a_component.interfaces["aux_control_data"]
+    ret["auto_grade_control"] = aux_control_data["auto_grade_control"]["value"]
+    ret["reverse"] = aux_control_data["reverse"]["value"]
+    ret["position_quality"] = aux_control_data["position_info"]["quality"]
+    ret["position_error_horz"] = aux_control_data["position_info"]["error_horz"]
+    ret["position_error_vert"] = aux_control_data["position_info"]["error_vert"]
     return ret
 
-def FindPointsOfInterestInResourceConfiguration(a_manifest):
+def FindPointsOfInterestInResourceConfiguration(a_resource_configuration):
     # Iterate over the available components and find an interface with the description "points_of_interest"
     component_point_list = []
 
-    for comp in a_manifest.components:
+    for comp in a_resource_configuration.components:
 
         points_of_interest = []
 
@@ -201,12 +189,12 @@ def FindPointsOfInterestInResourceConfiguration(a_manifest):
 
     return component_point_list
 
-def FindWgs84InResourceConfiguration(a_manifest, a_transform_component):
+def FindWgs84InResourceConfiguration(a_resource_configuration, a_transform_component):
     # Iterate over the available components and find an interface with the description "points_of_interest"
     component_point_list = []
     transform_interface = a_transform_component.interfaces["transform"]
 
-    for comp in a_manifest.components:
+    for comp in a_resource_configuration.components:
         try:
             iface = comp.interfaces["replicate"]
         except KeyError:
@@ -223,9 +211,9 @@ def FindWgs84InResourceConfiguration(a_manifest, a_transform_component):
 
     return this_wgs
 
-def FindTransformComponentInResourceConfiguration(a_manifest):
+def FindTransformComponentInResourceConfiguration(a_resource_configuration):
     # Iterate over the available components and find an interface with the description "points_of_interest"
-    for comp in a_manifest.components:
+    for comp in a_resource_configuration.components:
         try:
             iface = comp.interfaces["transform"]
             return comp
@@ -233,9 +221,9 @@ def FindTransformComponentInResourceConfiguration(a_manifest):
             pass
     return None
 
-def FindAuxControlDataComponentInResourceConfiguration(a_manifest):
+def FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration):
     # Iterate over the available components and find an interface with the description "points_of_interest"
-    for comp in a_manifest.components:
+    for comp in a_resource_configuration.components:
         try:
             iface = comp.interfaces["aux_control_data"]
             return comp
