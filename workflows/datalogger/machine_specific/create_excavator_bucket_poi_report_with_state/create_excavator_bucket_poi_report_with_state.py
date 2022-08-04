@@ -218,13 +218,13 @@ for line in response.iter_lines():
 
         if "Generic Excavator (3DMC)" != resource_config_processor._json["description"]:
             continue
-        manifest = resource_config_processor.apply_manifest(decoded_json['data']['manifest'])
+        Replicate.load_manifests(resource_config_processor, decoded_json['data']['manifest'])
 
-        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_manifest=manifest)
+        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
         aux_control_data_dict = GetAuxControlDataFromComponent(a_component=aux_control_data_comp)
 
-        component_point_list = FindPointsOfInterestInResourceConfiguration(a_manifest=manifest)
-        transform_component = FindTransformComponentInResourceConfiguration(a_manifest=manifest)
+        component_point_list = FindPointsOfInterestInResourceConfiguration(a_resource_configuration=resource_config_processor)
+        transform_component = FindTransformComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
 
         object_list = []
         if len(component_point_list) > 0:
@@ -237,24 +237,24 @@ for line in response.iter_lines():
 
                     item_x = {
                         "title" : point["display_name"] + " [x]",
-                        "value" : poi_local_space.getA1()[0]
+                        "value" : poi_local_space[1]
                     }
 
                     item_y = {
                         "title" : point["display_name"] + " [y]",
-                        "value" : poi_local_space.getA1()[1]
+                        "value" : poi_local_space[0]
                     }
 
                     item_z = {
                         "title" : point["display_name"] + " [z]",
-                        "value" : poi_local_space.getA1()[2]
+                        "value" : poi_local_space[2]
                     }
                     obj = {
                         "items" : [item_x,item_y,item_z]
                     }
 
                     object_list.append(obj)
-        
+
         OutputLineObjects(report_file, resource_config_processor._json["description"], decoded_json, aux_control_data_dict, object_list, header_list, state[ac_uuid] if ac_uuid in state else {})
 
 logging.info("Writing report to {}".format(args.report_file_name))

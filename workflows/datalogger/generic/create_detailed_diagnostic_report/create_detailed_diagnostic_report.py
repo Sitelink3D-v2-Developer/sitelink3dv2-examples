@@ -77,15 +77,15 @@ point_of_interest_dict = {}
 
 # Write a variable list of "objects" each of which has a variable list of "items" to a serialised string that can be output to the CSV.
 # The items will each have a "title" property that identifies the CSV header (effectively the column) that the data is to be associated
-# with and written to. An example of an object may be a point of interest on the left of a machine blade or bucket. That point of interest 
+# with and written to. An example of an object may be a point of interest on the left of a machine blade or bucket. That point of interest
 # will then have items # representing the x, y and z coordinate for that point of interest with a title of a form similar to "blade left [x]",
 # "blade left [y]" and "blade left [z]". This function would hence produce 3 outputs for that object before moving to the next. This approach
 # allows objects to be defined outside of this object with no knowledge requried of the structure of what's being serialised. For
 # example another object may represent a single point in space represented by a WGS84 coordinate. That object's item list then may contain
 # 3 items called "lat", "lon" and "height". Objects with shorter or longer item lists are also possible making this function flexible.
-# The algorithm uses the title_list to managed where in the CSV output string each item is written so that data aligns with the comma 
+# The algorithm uses the title_list to managed where in the CSV output string each item is written so that data aligns with the comma
 # separated titles when they're eventually written to file. State is written in a similar way but at fixed (known) column offsets.
-# 
+#
 def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, aux_control_data_dict, a_object_list, a_header_list, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
@@ -123,7 +123,7 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, aux_control_data_
             device_id = urllib.parse.unquote(val["asset_urn"].split(":")[-1])
 
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.gettz('Australia/Brisbane'))
- 
+
     position_quality = "Unknown"
 
     try:
@@ -176,7 +176,7 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, aux_control_data_
                 a_header_list.append(point_name)
                 point_name_header_index = a_header_list.index(point_name)
 
-    # here we populate the value list at the index that matches the POI title for this value in the 
+    # here we populate the value list at the index that matches the POI title for this value in the
     # header list, or None otherwise to correctly space the value list for POIs.
     value_list = [None for _ in range(len(a_header_list))]
     for obj in a_object_list:
@@ -225,31 +225,31 @@ for line in response.iter_lines():
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
 
-        manifest = resource_config_processor.apply_manifest(decoded_json['data']['manifest'])
+        Replicate.load_manifests(resource_config_processor, decoded_json['data']['manifest'])
 
         # Here we need to find the component in the resource configuration that contains the aux_control_data interface.
         # This will contain position quality information if available for this machine. A machine may specify multiple
         # components in its resource configuration but only one of those components will specify aux control data.
-        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_manifest=manifest)
+        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
         aux_control_data_dict = GetAuxControlDataFromComponent(a_component=aux_control_data_comp)
 
-        # Here we need to find the component in the resource configuration that contains the points_of_interest interface. 
+        # Here we need to find the component in the resource configuration that contains the points_of_interest interface.
         # This will contain the machine specific locations on the machine such as "front_drum_l" or "bucket_r" that we will
-        # receive position updates for in replicate messages for logging. A machine may specify multiple components in its 
-        # resource configuration and any number of them may specify a points of interest interface so the following function 
+        # receive position updates for in replicate messages for logging. A machine may specify multiple components in its
+        # resource configuration and any number of them may specify a points of interest interface so the following function
         # returns a list of all components reporting points of interest. Some machines such as haul truck don't specify any.
-        # so the component_point_list may be legitimately empty. 
-        component_point_list = FindPointsOfInterestInResourceConfiguration(a_manifest=manifest)
+        # so the component_point_list may be legitimately empty.
+        component_point_list = FindPointsOfInterestInResourceConfiguration(a_resource_configuration=resource_config_processor)
         # The component specifying the "transform" component is required to apply replicate manifest updates.
-        transform_component = FindTransformComponentInResourceConfiguration(a_manifest=manifest)
+        transform_component = FindTransformComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
 
-        # Here we build our list of objects, each of which contains a list of items. This object list is passed to the 
+        # Here we build our list of objects, each of which contains a list of items. This object list is passed to the
         # OutputLineObjects function to serialise for output. This object list is populated by a combination of two categories.
         # One of either:
         # 1. point of interest
         # 2. WGS 84 location
-        # This is because 3DMC clients will report their positions in terms of (usually multiple) site localised points of 
-        # interest whereas haul truck clients report their positions in terms of a single postition in lat, lon, 
+        # This is because 3DMC clients will report their positions in terms of (usually multiple) site localised points of
+        # interest whereas haul truck clients report their positions in terms of a single postition in lat, lon,
         # height and direction.
         object_list = []
         if len(component_point_list) > 0:
@@ -260,17 +260,17 @@ for line in response.iter_lines():
 
                     item_x = {
                         "title" : point["display_name"] + " [x]",
-                        "value" : poi_local_space.getA1()[0]
+                        "value" : poi_local_space[1]
                     }
 
                     item_y = {
                         "title" : point["display_name"] + " [y]",
-                        "value" : poi_local_space.getA1()[1]
+                        "value" : poi_local_space[0]
                     }
 
                     item_z = {
                         "title" : point["display_name"] + " [z]",
-                        "value" : poi_local_space.getA1()[2]
+                        "value" : poi_local_space[2]
                     }
                     obj = {
                         "items" : [item_x,item_y,item_z]
@@ -280,7 +280,7 @@ for line in response.iter_lines():
         else:
             # This is likely a haul truck, but could be any client that simply wants to report WGS 84 positions rather
             # that site localised points. Look whether we can output lat,lon,alt,dir from the replicate.
-            wgs_point = FindWgs84InResourceConfiguration(manifest, transform_component)
+            wgs_point = FindWgs84InResourceConfiguration(resource_config_processor, transform_component)
             if bool(wgs_point):
                 obj = {
                     "items" : []
