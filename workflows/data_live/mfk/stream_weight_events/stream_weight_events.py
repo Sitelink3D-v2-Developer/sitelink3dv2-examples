@@ -6,7 +6,7 @@ import websocket
 import ssl
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
-    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep) + len(a_last) if a_inclusive else 0)]
 
 components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 
@@ -62,7 +62,7 @@ while True:
         ac_uuid = ""
         try:
             ac_uuid = msg_json['ac_uuid']
-            if not ac_uuid in assets:
+            if ac_uuid not in assets:
                 assets[ac_uuid] = GetDbaResource(a_server_config=server_https, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
         except KeyError:
             pass
@@ -78,7 +78,7 @@ while True:
             jobs[job_uuid]["lifts"] = []
             logging.debug("{}, machine '{}' opened weighing job {}".format(at, machine_name, job_uuid))
 
-        # Cache the weights recorded for each lift as they come off the weighing system. 
+        # Cache the weights recorded for each lift as they come off the weighing system.
         # These will be summed when the job is cleared.
         if msg_json["data"]["type"] == "obw_lift":
             machine_name = get_machine_name_for_ac_uuid(assets, ac_uuid)
@@ -121,7 +121,7 @@ while True:
             try:
                 material_uuid = states[ac_uuid]["material"]
                 page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
-                
+
                 rdm_list = query_rdm_by_domain_view(a_server_config=server_https, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_material_by_name", a_headers=headers, a_params=page_traits.params())
                 for material in rdm_list["items"]:
                     if material["id"] == material_uuid:
@@ -130,7 +130,7 @@ while True:
             except KeyError:
                 pass
 
-            if total_weight > 0: 
+            if total_weight > 0:
                 lift_count = len(jobs[job_uuid]["lifts"])
                 total_weight = '%.3f'%(total_weight)
                 output_string += " totalling {} tonnes {}".format(total_weight, "of {}".format(material_name) if len(material_name) > 0 else "")
@@ -142,7 +142,7 @@ while True:
             try:
                 truck_uuid = states[ac_uuid]["truck"]
                 page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
-                
+
                 rdm_list = query_rdm_by_domain_view(a_server_config=server_https, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_truck_by_name", a_headers=headers, a_params=page_traits.params())
                 for truck in rdm_list["items"]:
                     if truck["id"] == truck_uuid:
@@ -154,13 +154,12 @@ while True:
             except KeyError:
                 pass
 
-            jobs[job_uuid] = {}
+            del jobs[job_uuid]
             logging.info(output_string)
 
     # State information can be sent at any time during a job. We simply track the most recent state
     # for each machine so it can be queried when a clear event is received and processed.
     if msg_json['type'] == "sitelink::State":
-
         if msg_json["data"]["ns"] == "topcon.rdm.list":
             if msg_json["data"]["state"] == "truck":
                 ac_uuid = msg_json["ac_uuid"]
