@@ -141,9 +141,6 @@ def UpdateResourceConfiguration(a_resource_config_uuid, a_resource_config_dict, 
 
 def UpdateResourceConfigurationProcessor(a_resource_config_uuid, a_resource_config_dict):
     mfk_rc = a_resource_config_dict[a_resource_config_uuid]
-    mfk_rc["data"] = { "components": a_resource_config_dict[a_resource_config_uuid]["components"] }
-    if not a_resource_config_uuid in a_resource_config_dict:
-        mfk_rc.pop("components")
     logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
     resource_config_processor = ResourceConfiguration(mfk_rc)
     return resource_config_processor
@@ -356,13 +353,6 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         logging.debug("Found replicate.")
         rc_uuid = a_decoded_json['data']['rc_uuid']
         rc_updated = UpdateResourceConfiguration(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
-        if rc_updated:
-            # Write the Resource Configuration to file for ease of inspection.
-            resource_description = a_resource_config_dict[rc_uuid]["description"] + " [" + a_resource_config_dict[rc_uuid]["uuid"][0:8] + "]"
-            resource_file_name = os.path.join(a_resources_dir, resource_description + ".json")
-            resource_file = open(resource_file_name, "w")
-            resource_file.write(json.dumps(a_resource_config_dict[rc_uuid], indent=4))
-
         resource_config_processor = UpdateResourceConfigurationProcessor(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict)
 
         ac_uuid = a_decoded_json['data']['ac_uuid']
@@ -378,6 +368,13 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         if a_machine_description_filter is not None:
             if a_machine_description_filter != resource_config_processor._json["description"]:
                 return
+
+        # Write the Resource Configuration to file for ease of inspection only if it passes the machine filter above.
+        if rc_updated: 
+            resource_description = a_resource_config_dict[rc_uuid]["description"] + " [" + a_resource_config_dict[rc_uuid]["uuid"][0:8] + "]"
+            resource_file_name = os.path.join(a_resources_dir, resource_description + ".json")
+            resource_file = open(resource_file_name, "w")
+            resource_file.write(json.dumps(a_resource_config_dict[rc_uuid], indent=4))
         Replicate.load_manifests(resource_config_processor, a_decoded_json['data']['manifest'])
 
         # Here we need to find the component in the resource configuration that contains the aux_control_data interface.
