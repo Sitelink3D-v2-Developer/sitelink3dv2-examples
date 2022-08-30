@@ -479,12 +479,7 @@ class Component(object):
 class ResourceConfiguration(object):
     def __init__(self, rc_json):
         self._json = rc_json
-        if "version" in rc_json:
-            self.version = float(rc_json["version"])
-        if "data" in rc_json:
-            self.components = list(map(Component, rc_json["data"]["components"]))
-        else:
-            self.components = list(map(Component, rc_json["components"]))
+        self.components = list(map(Component, rc_json["components"]))
         self.cache()
         self.update_transforms()
 

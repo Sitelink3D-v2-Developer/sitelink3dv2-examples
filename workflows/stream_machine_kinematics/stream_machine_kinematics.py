@@ -13,13 +13,13 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "mfk"]:
+for imp in ["args", "utils", "get_token", "mfk", "datalogger_utils"]:
     exec(import_cmd(components_dir, imp))
 
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id])
+args = handle_arguments(a_description=script_name, a_log_level=logging.DEBUG, a_arg_list=[arg_site_id])
 # << Argument handling
 
 # >> Server & logging configuration
@@ -36,10 +36,18 @@ logging.info("connecting to web socket at {0}".format(mfk_live_url))
 ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
 ws.connect(mfk_live_url)
 
-rc = ResourceConfiguration(json.loads(ws.recv()))
+resource_definitions = {}
 
 while True:
     msg_json = json.loads(ws.recv())
-    print(json.dumps(msg_json,indent=4))
+
+    if msg_json['type'] == "mfk::ResourceConfiguration":
+        ac_uuid = msg_json['ac_uuid']
+        logging.info("Received Resource Configuration for Asset Context {}".format(ac_uuid))
+        resource_definitions[ac_uuid] = msg_json['data']
+
     if msg_json['type'] == "mfk::Replicate":
-        Replicate.load_manifests(rc, msg_json['data']['manifest'])
+        ac_uuid = msg_json['ac_uuid']
+        logging.info("Received Replicate update for Asset Context {}".format(ac_uuid))
+        resource_config_processor = UpdateResourceConfigurationProcessor(a_resource_config_uuid=ac_uuid, a_resource_config_dict=resource_definitions)
+        Replicate.load_manifests(resource_config_processor, msg_json['data']['manifest'])
