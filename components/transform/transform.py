@@ -1,4 +1,20 @@
 import math
+import base64
+import json
+import requests
+
+session = requests.Session()
+
+def GetTransform(a_server, a_site_id, a_headers):
+    start=["transform_gc3"] 
+    end=["transform_gc3", None]
+    rdm_url = "{}/rdm/v1/site/{}/domain/sitelink/view/_head?limit=500".format(a_server.to_url(), a_site_id)
+    params={}
+    params["start"] = base64.urlsafe_b64encode(json.dumps(start).encode('utf-8')).decode('utf-8').rstrip("=")
+    params["end"] = base64.urlsafe_b64encode(json.dumps(end).encode('utf-8')).decode('utf-8').rstrip("=")
+    response = session.get(rdm_url, headers=a_headers, params=params)
+    rdm_view_list = response.json()
+    return rdm_view_list
 
 class Spheroid():
     def __init__(self, a_semi_major_axis, a_flattening):
