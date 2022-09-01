@@ -1,5 +1,4 @@
 #!/usr/bin/python
-from asyncio.windows_events import NULL
 import logging
 import os
 import sys
@@ -51,14 +50,7 @@ def main():
     # version that we will later provide to the transform service in order to convert from local grid (nee) to geodetic (wgs84) space.
     
     # We ask RDM for only the object with id of "transform_gc3" with the following start and end parameters
-    start=["transform_gc3"] 
-    end=["transform_gc3", None]
-    rdm_url = "{}/rdm/v1/site/{}/domain/sitelink/view/_head?limit=500".format(server.to_url(), args.site_id)
-    params={}
-    params["start"] = base64.urlsafe_b64encode(json.dumps(start).encode('utf-8')).decode('utf-8').rstrip("=")
-    params["end"] = base64.urlsafe_b64encode(json.dumps(end).encode('utf-8')).decode('utf-8').rstrip("=")
-    response = session.get(rdm_url, headers=headers, params=params)
-    rdm_view_list = response.json()
+    rdm_view_list = GetTransform(a_server=server, a_site_id=args.site_id, a_headers=headers)
 
     localised = False
     transform_revision = ""
