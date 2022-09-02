@@ -8,10 +8,16 @@ import urllib
 import datetime
 from dateutil import tz
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "mfk"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from mfk import *
-from datalogger_utils import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_utils", "transform", "rdm_pagination_traits", "rdm_list"]:
+    exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
 
@@ -111,7 +117,10 @@ def GetPointOfInterestLocalSpace(a_point_of_interest_component, a_transform_comp
 
     return poi_local_space[0]
 
-def UpdateStateForAssetContext(a_state_msg, a_state_dict):
+# the types of RDM data that are provided to us in UUID form that we can then use to lookup names for
+state_name_lookup_list = ["operator", "delay", "id"] # id is task
+
+def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a_headers):
     if not a_state_msg['data']['ac_uuid'] in a_state_dict:
         a_state_dict[a_state_msg['data']['ac_uuid']] = {}
 
@@ -122,9 +131,22 @@ def UpdateStateForAssetContext(a_state_msg, a_state_dict):
         "state" : a_state_msg['data']['state'],
         "value" : a_state_msg['data']['value']
     }
-    a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']][a_state_msg['data']['state']] = nested_state
 
-    logging.debug("Current state: {}".format(json.dumps(a_state_dict, indent=4)))
+    # For certain states that provide UUID values, we want to also fetch the name for readability
+    #if nested_state["state"] in state_name_lookup_list:
+    page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[nested_state["value"]], a_end=[nested_state["value"], None])
+    rj = query_rdm_by_domain_view(a_server_config=a_server, a_site_id=a_site_id, a_domain="sitelink", a_view="_head", a_headers=a_headers, a_params=page_traits.params())
+    if len(rj["items"]) > 0: # There should be only one entry as we specified a unique ID
+        object_name = "Unknown"
+        if "operator" == nested_state["state"]:
+            object_name = rj["items"][0]["value"]["firstName"] + " " + rj["items"][0]["value"]["lastName"]
+        
+        elif "delay" == nested_state["state"] or "id" == nested_state["state"]:
+            object_name = rj["items"][0]["value"]["name"] 
+
+        nested_state["name"] = object_name
+
+    a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']][a_state_msg['data']['state']] = nested_state
 
 def UpdateResourceConfiguration(a_resource_config_uuid, a_resource_config_dict, a_server, a_site_id, a_headers):
 
@@ -230,38 +252,74 @@ def FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration)
             pass
     return None
 
+def SerialiseObjectList(a_object_list, a_header_list):
+
+    # Dynamically build the output_string as a function of the available columns we've been given to write.
+    output_string = ""
+
+    # Output the columns by iterating over the header list. When we find the headers representing
+    # the object name we're writing, we inject thd data. If we don't find the header names, we add them to
+    # the list. They'll then be in the header list the next time we encounter data for that field.
+    for obj in a_object_list:
+        for item in obj["items"]:
+            object_name = item["title"]
+            try:
+                object_name_header_index = a_header_list.index(object_name)
+            except ValueError:
+                # add to list
+                a_header_list.append(object_name)
+                object_name_header_index = a_header_list.index(object_name)
+
+    # Here we populate the value list at the index that matches the item title for this value in the header list, 
+    # or None otherwise to correctly space the value list.
+    value_list = [None for _ in range(len(a_header_list))]
+    for obj in a_object_list:
+        for item in obj["items"]:
+            object_name = item["title"]
+            object_name_header_index = a_header_list.index(object_name)
+            value_list[object_name_header_index] = "{}, ".format(item["value"])
+
+    for val in value_list:
+        val = "-, " if val is None else val
+        output_string += val    
+    
+    return output_string
+
+def FormatState(a_state):
+    return a_state["name"] + " (" + a_state["value"] + ")"
+
 # Write a variable list of "objects" each of which has a variable list of "items" to a serialised string that can be output to the CSV.
 # The items will each have a "title" property that identifies the CSV header (effectively the column) that the data is to be associated
 # with and written to. An example of an object may be a point of interest on the left of a machine blade or bucket. That point of interest
-# will then have items # representing the x, y and z coordinate for that point of interest with a title of a form similar to "blade left [x]",
+# will then have items representing the x, y and z coordinate for that point of interest with a title of a form similar to "blade left [x]",
 # "blade left [y]" and "blade left [z]". This function would hence produce 3 outputs for that object before moving to the next. This approach
 # allows objects to be defined outside of this object with no knowledge required of the structure of what's being serialised. For
 # example another object may represent a single point in space represented by a WGS84 coordinate. That object's item list then may contain
 # 3 items called "lat", "lon" and "height". Objects with shorter or longer item lists are also possible making this function flexible.
-# The algorithm uses the title_list to managed where in the CSV output string each item is written so that data aligns with the comma
+# The algorithm uses the title_list to manage where in the CSV output string each item is written so that data aligns with the comma
 # separated titles when they're eventually written to file. State is written in a similar way but at fixed (known) column offsets.
 #
 def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, aux_control_data_dict, a_object_list, a_header_list, a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
-    operator_id = "-"
-    task_id = "-"
-    delay_id = "-"
+    operator = "-"
+    task = "-"
+    delay = "-"
     surface_name = "-"
 
     try:
-        operator_id = a_state["topcon.rdm.list"]["operator"]["value"]
+        operator = FormatState(a_state=a_state["topcon.rdm.list"]["operator"])
     except KeyError:
         logging.debug("No Operator state found.")
 
     try:
-        delay_id = a_state["topcon.rdm.list"]["delay"]["value"]
+        delay = FormatState(a_state=a_state["topcon.rdm.list"]["delay"])
     except KeyError:
         logging.debug("No Delay state found.")
 
     try:
-        task_id = a_state["topcon.task"]["id"]["value"]
+        task = FormatState(a_state=a_state["topcon.task"]["id"])
     except KeyError:
         logging.debug("No Task state found.")
 
@@ -318,38 +376,12 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     except:
         pass
 
-    # Dynamically build the output position_string as a function of the available columns we've been given to write.
-    position_string = ""
+    position_string = SerialiseObjectList(a_object_list, a_header_list)
 
-    # Output the position columns by iterating over the header list. when we find the headers representing
-    # the point name we're writing, we inject thd data. If we don't find the header names, we add them to
-    # the list and return. They'll then be in the header list the next time we encounter data for that field.
-    for obj in a_object_list:
-        for item in obj["items"]:
-            point_name = item["title"]
-            try:
-                point_name_header_index = a_header_list.index(point_name)
-            except ValueError:
-                # add to list
-                a_header_list.append(point_name)
-                point_name_header_index = a_header_list.index(point_name)
+    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay, operator, task, surface_name, position_string))
 
-    # Here we populate the value list at the index that matches the POI title for this value in the header list, or None otherwise to correctly space the value list for POIs.
-    # header list, or None otherwise to correctly space the value list for POIs.
-    value_list = [None for _ in range(len(a_header_list))]
-    for obj in a_object_list:
-        for item in obj["items"]:
-            point_name = item["title"]
-            point_name_header_index = a_header_list.index(point_name)
-            value_list[point_name_header_index] = "{}, ".format(item["value"])
 
-    for val in value_list:
-        val = "-, " if val is None else val
-        position_string += val
-
-    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_id, operator_id, task_id, surface_name, position_string))
-
-def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_server, a_site_id, a_headers, a_machine_description_filter=None):
+def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_machine_description_filter=None):
         logging.debug("Found replicate.")
         rc_uuid = a_decoded_json['data']['rc_uuid']
         rc_updated = UpdateResourceConfiguration(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
@@ -403,6 +435,8 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         # interest whereas haul truck clients report their positions in terms of a single postition in lat, lon,
         # height and direction.
         object_list = []
+        geodetic_object_list = []
+        local_position_added = False
         if len(component_point_list) > 0:
 
             for comp in component_point_list:
@@ -425,60 +459,196 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                         "title" : point["display_name"] + " [z]",
                         "value" : poi_local_space[2]
                     }
+
                     obj = {
                         "items" : [item_x,item_y,item_z]
                     }
 
                     object_list.append(obj)
+
+                # As an additional benefit, we also search the Transform interface for a local_position entry. This provides a single point
+                # representation for the machine and is what's used in the Sitelink3D v2 web site machine list and for the machine icon pin
+                # on the map. If available, we extract this local position and then convert it to WGS84 using the transform in use on site
+                # at the time this replicate was produced.
+                transform_interface = transform_component.interfaces["transform"]
+
+                point = {
+                    "z": transform_interface.local_position["elevation"],
+                    "e": transform_interface.local_position["easting"],
+                    "n": transform_interface.local_position["northing"]
+                }
+
+
+                item_z = {
+                    "title" : "local_position [z]",
+                    "value" : transform_interface.local_position["elevation"]
+                }
+
+                item_e = {
+                    "title" : "local_position [e]",
+                    "value" : transform_interface.local_position["easting"]
+                }
+
+                item_n = {
+                    "title" : "local_position [n]",
+                    "value" : transform_interface.local_position["northing"]
+                }
+
+                obj = {
+                    "items" : [item_z,item_e,item_n]
+                }
+
+                object_list.append(obj)
+
+                # We now use our transform list to find the transform that was in place at the time this replicate was produced.
+                # Subsequently we'll convert to WGS84 using that approximation matrix.
+                transform_info = get_transform_info_for_time(a_ms_since_epoch=a_decoded_json["at"], a_transform_list=a_transform_list)
+
+                # Record the transform information for output to file
+                object_list.append({
+                        "items": [
+                            {
+                                "title": "Transform",
+                                "value": "revision {} (file {})".format(transform_info["revision"], transform_info["file_name"])
+                            }
+                        ]  })
+
+                # For efficiency we cache all local points and run WGS84 transformations on them all at the end of data processing. Otherwise
+                # the need to lookup an approximation matrices for every replicate would make execution very slow.
+                if not local_position_added:
+                    a_geodetic_coordinate_manager.add_local_point(point, transform_info)
+                    local_position_added = True
+
         else:
             # This is likely a haul truck, but could be any client that simply wants to report WGS 84 positions rather
             # that site localised points. Look whether we can output lat,lon,alt,dir from the replicate.
             wgs_point = FindWgs84InResourceConfiguration(resource_config_processor, transform_component)
             if bool(wgs_point):
-                obj = {
-                    "items" : []
-                }
-                try:
-                    lat = wgs_point["lat"]
-                    item_lat = {
-                            "title" : "latitude",
-                            "value" : lat
-                        }
-                    obj["items"].append(item_lat)
-                except KeyError:
-                    pass
-
-                try:
-                    lon = wgs_point["lon"]
-                    item_lon = {
-                            "title" : "longitude",
-                            "value" : lon
-                        }
-                    obj["items"].append(item_lon)
-                except KeyError:
-                    pass
-
-                try:
-                    alt = wgs_point["alt"]
-                    item_alt = {
-                            "title" : "altitude",
-                            "value" : alt
-                        }
-                    obj["items"].append(item_alt)
-                except KeyError:
-                    pass
-
-                try:
-                    dir = wgs_point["dir"]
-                    item_dir = {
-                            "title" : "direction",
-                            "value" : dir
-                        }
-                    obj["items"].append(item_dir)
-                except KeyError:
-                    pass
-
-                object_list.append(obj)
+                obj = wgs84_coord_to_object_list_item(a_wgs_point=wgs_point)
+                geodetic_object_list.append(obj)
+                a_geodetic_coordinate_manager.add_geodetic_point(obj)
 
         OutputLineObjects(a_report_file, resource_config_processor._json["description"], a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
+def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_current_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
+
+    # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
+    # MFK replicate packets will be converted into WGS84 so that lat, lon and height information can also be output to the report making map plotting easy. As transforms
+    # chage at the site the localized coordinates may also change so the WGS84 conversion must be performed using the site transform that was in use at the site at the
+    # time the data was collected. For more information on the process of extracting localization history for a site see the workflow example called 
+    # list_site_localization_history in this repository.
+    localised, transform_revision = get_current_site_localisation(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    transform_list = []
+    if localised:
+
+        output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_current_dir=a_current_dir, a_site_id=a_site_id)
+
+        # Query and cache all versions of the localization history at this site.
+        transform_list = query_and_download_site_localization_file_history(a_server_config=a_server, a_site_id=a_site_id, a_headers=a_headers, a_target_dir=output_dir)
+
+    else:
+        logging.info("Site not localized.")
+
+
+    dba_url = "{}/dba/v1/sites/{}/updates?startms={}&endms={}&category=low_freq".format(a_server.to_url(), a_site_id, a_datalogger_start_ms, a_datalogger_end_ms)
+
+    # get the datalogger data
+    response = session.get(dba_url, headers=a_headers)
+    response.raise_for_status()
+
+    resource_definitions = {}
+    assets = {}
+    state = {}
+
+    output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_current_dir=a_current_dir, a_site_id=a_site_id)
+    resources_dir = os.path.join(output_dir, "resources")
+    os.makedirs(resources_dir, exist_ok=True)
+
+    report_file_name_temp = os.path.join(output_dir, a_datalogger_output_file_name + ".tmp")
+    report_file_temp = open(report_file_name_temp, "w")
+
+    geodetic_file_name_temp = os.path.join(output_dir, a_datalogger_output_file_name + ".geo.tmp")
+    geodetic_file_temp = open(geodetic_file_name_temp, "w")
+
+    # We need to buffer the points of interest we receive from each component of each machine we encounter. This will be output
+    # at the end of iteration over the full dataset so that the dynamic column titles can be fully identified over the entire dataset.
+
+    point_of_interest_dict = {}
+
+    geodetic_coordinate_manager = GeodeticCoordinateManager()
+
+    # Main datalogger data processing loop
+    header_list = []
+    geodetic_header_list = []
+    line_count = 0
+
+    logging.info("Processing Data Logger output.")
+    # record start of report execution to measure execution time
+    start_time = time.time()
+
+    for line in response.iter_lines():
+        decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
+
+        if decoded_json['type'] == "sitelink::State":
+            UpdateStateForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
+
+        if decoded_json['type'] == "mfk::Replicate":
+            ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            geodetic_point_list = geodetic_coordinate_manager.calculate_geodetic_points(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            print(">>> after replicate conversion is {}".format(json.dumps(geodetic_point_list,indent=4)))
+        line_count += 1
+
+    logging.info("Writing report to {}".format(a_datalogger_output_file_name))
+
+    report_file_temp.close()
+    geodetic_file_temp.close()
+
+    # batch process transform to wgs84 and to file
+    geodetic_point_list = geodetic_coordinate_manager.calculate_geodetic_points(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    geodetic_file_temp = open(geodetic_file_name_temp, "w")
+    for i, geodetic_point in enumerate(geodetic_point_list):
+        geodetic_file_temp.write(SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n')
+    geodetic_file_temp.close()
+
+    report_file_name = os.path.join(output_dir, a_datalogger_output_file_name)
+    report_file = open(report_file_name, "w")
+    column_count=13 # initial number of fixed columns as below
+    report_file.write("Machine Type, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay (ID), Operator (ID), Task (ID), Surface")
+    for point_of_interest_name in header_list:
+        report_file.write(", {}".format(point_of_interest_name))
+        column_count += 1 # we use this to space out the geodetic columns later - each line has a variable number of columns from the temp file.
+
+    for object_name in geodetic_header_list:
+        report_file.write(", {}".format(object_name))
+        
+    first_line = True # The first line of the temp file is blank so we skip this
+    geodetic_file_temp = open(geodetic_file_name_temp, "r")
+    with open(report_file_name_temp, 'r') as report_file_temp:
+        for line in report_file_temp:
+            if first_line:
+                first_line = False
+                continue
+            
+            geo_line = geodetic_file_temp.readline()
+            line_column_count = len(line.split(","))
+            pad_string = " "
+            line_diff = column_count - line_column_count
+            
+            while line_diff >= 0:
+                pad_string += " -,"
+                line_diff -= 1
+
+            aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()
+            report_file.write(aggregate_line)
+
+    report_file_temp.close()
+    geodetic_file_temp.close()
+    os.remove(report_file_name_temp)
+    os.remove(geodetic_file_name_temp)
+
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+
+    logging.info("Processed {} lines in {} seconds".format(line_count + 1, elapsed_time)) # convert line_count from zero based indexing
