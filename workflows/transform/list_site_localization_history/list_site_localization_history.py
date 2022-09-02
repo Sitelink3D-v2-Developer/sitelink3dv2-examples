@@ -32,45 +32,20 @@ def main():
     logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
     # << Server & logging configuration
 
+    # >> Authorization
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
- 
-    # First we determine whether this site is localised by searching for an RDM object with id "transform_gc3". This is
-    # achieved by querying the _head of RDM rather than relying on a specific RDM view.
-    rdm_view_list = GetTransform(a_server=server, a_site_id=args.site_id, a_headers=headers)
+    # << Authorization
 
-    localised = False
-    transform_revision = ""
-    for obj in rdm_view_list["items"]:
-        try:
-            if obj["id"] == "transform_gc3":
-                localised = True
-                transform_revision = obj["value"]["_rev"]
-                logging.info("Found current site localisation file {} (version {})".format(obj["value"]["file"]["name"],transform_revision))
-                break
-        except KeyError:
-            continue
+    # First we determine whether this site is localised. If so, the result will also contain the transform
+    # version that we will later provide to the transform service in order to convert from local grid (nee) to geodetic (wgs84) space.
+    localised, transform_revision = get_current_site_localisation(a_server=server, a_site_id=args.site_id, a_headers=headers)
     
     if localised:
 
         output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
-        logging.debug(json.dumps(obj,indent=4))
 
         # Query and download all versions of the localization history at this site to a directory named as a function of the time the file was the active localization.
-        page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=["transform_gc3"], a_end=["transform_gc3",None])     
-        ret = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="_hist", a_headers=headers, a_params=page_traits.params())
-
-        logging.info("{} localization objects have been used at this site.".format(len(ret["items"])))
-        for loc in ret["items"]:
-            file_description = "transform file effective from timestamp {}".format(loc["value"]["_at"])
-            logging.info("Downloading {}".format(file_description))
-            target_dir = os.path.join(output_dir, file_description)
-            os.makedirs(target_dir, exist_ok=True)
-            with open(os.path.join(target_dir, "metadata.json"),"w") as metadata_file:
-                metadata_file.write(json.dumps(loc["value"], indent=4))
-            download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=loc["value"]["file"]["uuid"], a_headers=headers, a_target_dir=target_dir, a_target_name=loc["value"]["file"]["name"])
-
-            for other_file in loc["value"]["other_files"]:
-                download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=other_file["uuid"], a_headers=headers, a_target_dir=target_dir, a_target_name=other_file["name"])
+        query_and_download_site_localization_file_history(a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=output_dir)
 
     else:
         logging.info("Site not localized.")
