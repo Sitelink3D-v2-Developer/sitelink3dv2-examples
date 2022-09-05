@@ -91,6 +91,13 @@ arg_file_uuid = {
         "required" : True
     }
 
+arg_file_id = {
+        "arg" : "--file_id",
+        "default" : "",
+        "help" : "The RDM ID of the file as a string.",
+        "required" : True
+    }
+
 arg_file_parent_uuid = {
         "arg" : "--file_parent_uuid",
         "default" : None,

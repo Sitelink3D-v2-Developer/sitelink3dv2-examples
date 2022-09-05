@@ -3,12 +3,17 @@ import os
 import sys
 from tqdm import tqdm
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "tokens"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "utils"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from get_token import *
-from utils import *
-from args import *
+components_dir = path_up_to_last("components")
+
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "rdm_traits", "rdm_list", "rdm_pagination_traits"]:
+    exec(import_cmd(components_dir, imp))
+
 
 session = requests.Session()
 
@@ -42,8 +47,7 @@ def download_file(a_server_config, a_site_id, a_file_uuid, a_headers, a_target_d
 
     output_dir = a_target_dir
     if len(output_dir) == 0:
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        output_dir = os.path.join(current_dir, a_site_id)
+        output_dir = make_site_output_dir(a_server_config=a_server_config, a_headers=a_headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=a_site_id)
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -58,7 +62,7 @@ def main():
     script_name = os.path.basename(os.path.realpath(__file__))
     
     # >> Argument handling  
-    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_file_uuid])
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_file_uuid, arg_file_id])
     # << Argument handling
 
     # >> Server & logging configuration
@@ -71,7 +75,18 @@ def main():
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
     # << Authorization
 
-    download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=args.file_uuid, a_headers=headers)
+    # Fetch the name of the file in RDM if we've been provided a file_id parameter so that we can name the file we download to the local file system as it is named in RDM
+    target_name = args.file_uuid
+    if len(args.file_id) > 0:
+
+        page_traits = RdmPaginationTraits(a_page_size="500", a_start=[args.file_id], a_end=[args.file_id, None])
+        rj = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_head", a_headers=headers, a_params=page_traits.params())
+        if len(rj["items"]) > 0:
+            target_name = rj["items"][0]["value"]["name"] # There should be only one entry as we specified a unique ID
+                
+    target_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+    download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=args.file_uuid, a_headers=headers, a_target_dir=target_dir, a_target_name=target_name)
+
 
 if __name__ == "__main__":
     main()    
