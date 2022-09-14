@@ -51,3 +51,4 @@ while True:
         logging.info("Received Replicate update for Asset Context {}".format(ac_uuid))
         resource_config_processor = UpdateResourceConfigurationProcessor(a_resource_config_uuid=ac_uuid, a_resource_config_dict=resource_definitions)
         Replicate.load_manifests(resource_config_processor, msg_json['data']['manifest'])
+        resource_config_processor.update_transforms()

@@ -7,6 +7,7 @@ set dc="us"
 set site_id=""
 
 rem original machine activity window in ms from epoch
+rem https://currentmillis.com/ is a convenient site to convert to and from "milliseconds since epoch".
 set datalogger_start_ms="1617163200000"
 set datalogger_end_ms="1661293119118"
 

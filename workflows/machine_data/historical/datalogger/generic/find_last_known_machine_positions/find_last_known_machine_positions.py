@@ -86,14 +86,10 @@ for line in response.iter_lines():
         rc_uuid = decoded_json['data']['rc_uuid']
         if not rc_uuid in resource_definitions:
 
-            logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
+            logging.debug("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
             resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
 
             mfk_rc = resource_definitions[rc_uuid]
-
-            # The MFK code expects a slightly differnt JSON structure to that provided by DBA
-            mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
-            mfk_rc.pop("components")
             logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
 
             # Instantiate the MFK code for this Resource Configuration and cache it for subsequent queries.
@@ -111,7 +107,7 @@ for line in response.iter_lines():
 
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
-            logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
+            logging.debug("Getting Asset Context for AC_UUID {}".format(ac_uuid))
             assets[ac_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
 
         else:
@@ -124,7 +120,7 @@ for line in response.iter_lines():
         # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried
         # for the latest kinematic information which is then written to file.
 
-        rc_uuid_definition = resource_definitions[rc_uuid]["data"]["components"][0]["interfaces"]
+        rc_uuid_definition = resource_definitions[rc_uuid]["components"][0]["interfaces"]
         rc_uuid_mfk_component_instance = mfk[rc_uuid].components[0]
         payload = DataloggerPayload.payload_factory(decoded_json, assets, rc_uuid_definition, rc_uuid_mfk_component_instance)
         if payload is not None:
@@ -133,6 +129,7 @@ for line in response.iter_lines():
 
             if payload.payload_type() == "mfk::Replicate":
                 Replicate.load_manifests(mfk[rc_uuid], payload.manifest())
+                mfk[rc_uuid].update_transforms()
                 # log the position
                 positions.update(payload.position())
 
