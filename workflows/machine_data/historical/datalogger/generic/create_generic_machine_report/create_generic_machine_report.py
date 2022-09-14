@@ -80,23 +80,19 @@ for line in response.iter_lines():
     #
     # This requires separate calls to the API so the results are cached to avoid the need to
     # query on every message.
-    try:
-        rc_uuid = ""
-        rc_uuid_definition = ""
-        rc_uuid_mfk_component_instance = ""
+    rc_uuid = ""
+    rc_uuid_definition = None
+    rc_uuid_mfk_component_instance = None
+    try:    
         if decoded_json["type"] == "mfk::Replicate":
             rc_uuid = decoded_json['data']['rc_uuid']
 
             if not rc_uuid in resource_definitions:
 
-                logging.info("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
+                logging.debug("Getting Resource Configuration for RC_UUID {}".format(rc_uuid))
                 resource_definitions[rc_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=rc_uuid, a_headers=headers)
 
                 mfk_rc = resource_definitions[rc_uuid]
-
-                # The MFK code expects a slightly differnt JSON structure to that provided by DBA
-                mfk_rc["data"] = { "components": resource_definitions[rc_uuid]["components"] }
-                mfk_rc.pop("components")
                 logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
 
                 # Instantiate the MFK code for this Resource Configuration and cache it for subsequent queries.
@@ -112,26 +108,32 @@ for line in response.iter_lines():
             else:
                 logging.debug("Already have Resource Configuration for RC_UUID {}".format(rc_uuid))
 
-            rc_uuid_definition = resource_definitions[rc_uuid]["data"]["components"][0]["interfaces"]
+            rc_uuid_definition = resource_definitions[rc_uuid]["components"][0]["interfaces"]
             rc_uuid_mfk_component_instance = mfk[rc_uuid].components[0]
-
+    except KeyError as err:
+        logging.error("Error processing replicate resource configuration.")
+        pass
+    try:   
         ac_uuid = decoded_json['data']['ac_uuid']
         if not ac_uuid in assets:
-            logging.info("Getting Asset Context for AC_UUID {}".format(ac_uuid))
+            logging.debug("Getting Asset Context for AC_UUID {}".format(ac_uuid))
             assets[ac_uuid] = GetDbaResource(a_server_config=server, a_site_id=args.site_id, a_uuid=ac_uuid, a_headers=headers)
 
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
+    except KeyError as err:
+        logging.error("Error processing replicate asset context.")
+        pass
 
-        # Now that the Resource Configuration and Asset Context information is available we process each
-        # message before logging to file with the LogPayload function.
-        #
-        # State and Event payloads are self contained and can be written to file without extra processing.
-        #
-        # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
-        # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried
-        # by the LogPayload function for the latest kinematic information which is then written to file.
-
+    # Now that the Resource Configuration and Asset Context information is available we process each
+    # message before logging to file with the LogPayload function.
+    #
+    # State and Event payloads are self contained and can be written to file without extra processing.
+    #
+    # Replicate payloads however contain updates that must be applied to the MFK code instantiated for the
+    # associated UUID. Once the replicate manifest is applied to the MFK code, the latter can be queried
+    # by the LogPayload function for the latest kinematic information which is then written to file.
+    try:
         payload = DataloggerPayload.payload_factory(decoded_json, assets, rc_uuid_definition, rc_uuid_mfk_component_instance)
         if payload is not None:
             logging.debug("Payload factory found {} {}".format(payload.payload_type(), payload.data_type()))
@@ -139,10 +141,12 @@ for line in response.iter_lines():
 
             if payload.payload_type() == "mfk::Replicate":
                 Replicate.load_manifests(mfk[rc_uuid], payload.manifest())
+                mfk[rc_uuid].update_transforms()
 
             LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
 
     except KeyError as err:
+        logging.error("Error processing replicate payload.")
         pass
 
 logging.info("Processed {} lines".format(line_count))

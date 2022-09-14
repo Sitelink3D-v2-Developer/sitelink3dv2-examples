@@ -376,6 +376,7 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
             resource_file = open(resource_file_name, "w")
             resource_file.write(json.dumps(a_resource_config_dict[rc_uuid], indent=4))
         Replicate.load_manifests(resource_config_processor, a_decoded_json['data']['manifest'])
+        resource_config_processor.update_transforms()
 
         # Here we need to find the component in the resource configuration that contains the aux_control_data interface.
         # This will contain position quality information if available for this machine. A machine may specify multiple

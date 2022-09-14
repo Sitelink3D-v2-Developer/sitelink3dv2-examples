@@ -3,10 +3,8 @@ import functools
 import base64
 import uuid
 from collections import OrderedDict
-from struct import Struct
-import logging
+import struct
 import math
-import json
 
 def lla_to_ecef(lat, lon, alt):
     a = 6378137.0                   # WGS-84 semi-major axis
@@ -110,6 +108,23 @@ class SpaceConverter(object):
     def get_matrix(self):
         return self.space_convert
 
+def setvalueref(interface_object, key, value):
+    is_number = lambda x : isinstance(x, int) or isinstance(x, float)
+    is_list = lambda x : isinstance(x, list)
+
+    if key in interface_object.__dict__:
+        current_value = interface_object.__dict__[key]
+        if is_number(current_value) and not is_number(value):
+            raise TypeError("set value is not a number type (int|float)")
+        elif is_list(current_value):
+            if not is_list(value):
+                raise TypeError("set value is not a list type")
+            elif len(value) != len(current_value):
+                raise AssertionError("set value size does not match")
+            elif not all([is_number(item) for item in value]):
+                raise TypeError("set value contains types other than number (int|float)")
+        setattr(interface_object, key, value)
+
 class Interface(object):
     oem = "topcon"
     name = "interface"
@@ -138,47 +153,130 @@ class Interface(object):
 class Replicate(Interface):
     def __init__(self, replicate_json):
         super(Replicate, self).__init__(replicate_json)
-        self.manifest_items = list(map(self.ManifestItem, replicate_json["manifest"]))
-        self.struct = Struct("<{0}".format("".join(list(m.code for m in self.manifest_items))))
+        self.manifest = list(map(self.Value, replicate_json["manifest"]))
 
-    def decode_manifest(self, manifest):
-        manifest_binary = base64.b64decode(manifest)
-        items = self.struct.unpack(manifest_binary)
-        logging.debug("Replicate interface object has decoded the binary manifest to produce the following items: {0}".format(items))
-        return dict(zip(list(m.ref for m in self.manifest_items), items))
+    def write_manifest(self):
+        binary = b''
+        for replicate_value in self.manifest:
+            binary += replicate_value.write()
+        return binary
+
+    def read_manifest(self, binary_manifest):
+        offset = 0
+        for replicate_value in self.manifest:
+            offset += replicate_value.read(binary_manifest, offset)
+        remaining_bytes = len(binary_manifest) - offset
+        return remaining_bytes
+
+    def cache(self, component):
+        for replicate_value in self.manifest:
+            key, value_id = replicate_value.ref.rsplit(".", 1)
+            replicate_value.object = component.get_interface_object(key)
+            replicate_value.value_id = value_id
+
+    def save_manifests(resource_configuration):
+        manifests = []
+        for component in resource_configuration.components:
+            replicate_interface = component.interfaces["replicate"]
+            binary = replicate_interface.write_manifest()
+            b64_manifest = base64.b64encode(binary)
+            manifests.append(b64_manifest)
+        return manifests
 
     def load_manifests(resource_configuration, manifests):
         if len(manifests) != len(resource_configuration.components):
             raise Exception("number of components mismatch")
         for i, component in enumerate(resource_configuration.components):
             replicate_interface = component.interfaces["replicate"]
-            values = replicate_interface.decode_manifest(manifests[i])
-            for key,value in values.items():
-                node_name, prop = key.rsplit(".", 1)
-                logging.debug("Updating node name {} and property {} to value {}".format(node_name, prop, value))
-                node = component.get_interface_object(node_name)
-                node[prop] = value
-        resource_configuration.update_transforms()
+            binary_manifest = base64.b64decode(manifests[i])
+            remaining_bytes = replicate_interface.read_manifest(binary_manifest)
+            if remaining_bytes > 0:
+                raise AssertionError("too much manifest data")
 
-    class ManifestItem(object):
-        FORMATS = {
-            "int8": (int, "b"),
-            "int16": (int, "h"),
-            "int32": (int, "i"),
-            "float": (float, "f"),
-            "double": (float, "d"),
-        }
+
+    class Value(object):
         def __init__(self, manifest_json):
+            self.object = None
+            self.value_id = None
             self.ref = manifest_json["value_ref"]
+            self.type = manifest_json["type"]
             if "discrete" in manifest_json:
                 d = manifest_json["discrete"]
                 self.discrete = (d["min"], d["max"], d["discrete_min"], d["discrete_max"])
-            self.type_ = None
-            self.code = None
-            self.set_binary_format(manifest_json["type"])
 
-        def set_binary_format(self, value_type):
-            self.type_, self.code = self.FORMATS[value_type]
+        def write(self):
+            if self.object == None or self.object[self.value_id] == None:
+                raise AttributeError("cannot write manifest with null object reference")
+
+            value = self.object[self.value_id]
+
+            if self.type == "int8":
+                data = struct.pack("<b", value)
+            elif self.type == "int16":
+                data = struct.pack("<h", value)
+            elif self.type == "int32":
+                data = struct.pack("<i", value)
+            elif self.type == "float":
+                data = struct.pack("<f", value)
+            elif self.type == "double":
+                data = struct.pack("<d", value)
+            elif self.type == "int8[]":
+                data = struct.pack("<{}b".format(len(value)), *value)
+            elif self.type == "int16[]":
+                data = struct.pack("<{}h".format(len(value)), *value)
+            elif self.type == "int32[]":
+                data = struct.pack("<{}i".format(len(value)), *value)
+            elif self.type == "float[]":
+                data = struct.pack("<{}f".format(len(value)), *value)
+            elif self.type == "double[]":
+                data = struct.pack("<{}d".format(len(value)), *value)
+            else:
+                raise KeyError("unknown type")
+
+            return data
+
+        def read(self, binary_manifest, offset):
+            if self.object == None or self.object[self.value_id] == None:
+                raise AttributeError("cannot read manifest with null object reference")
+
+            fmt = "<"
+
+            if self.type == "int8":
+                fmt += "b"
+                value = struct.unpack_from(fmt, binary_manifest, offset)[0]
+            elif self.type == "int16":
+                fmt += "h"
+                value = struct.unpack_from(fmt, binary_manifest, offset)[0]
+            elif self.type == "int32":
+                fmt += "i"
+                value = struct.unpack_from(fmt, binary_manifest, offset)[0]
+            elif self.type == "float":
+                fmt += "f"
+                value = struct.unpack_from(fmt, binary_manifest, offset)[0]
+            elif self.type == "double":
+                fmt += "d"
+                value = struct.unpack_from(fmt, binary_manifest, offset)[0]
+            elif self.type == "int8[]":
+                fmt += str(len(self.object[self.value_id])) + "b"
+                value = list(struct.unpack_from(fmt, binary_manifest, offset))
+            elif self.type == "int16[]":
+                fmt += str(len(self.object[self.value_id])) + "h"
+                value = list(struct.unpack_from(fmt, binary_manifest, offset))
+            elif self.type == "int32[]":
+                fmt += str(len(self.object[self.value_id])) + "i"
+                value = list(struct.unpack_from(fmt, binary_manifest, offset))
+            elif self.type == "float[]":
+                fmt += str(len(self.object[self.value_id])) + "f"
+                value = list(struct.unpack_from(fmt, binary_manifest, offset))
+            elif self.type == "double[]":
+                fmt += str(len(self.object[self.value_id])) + "d"
+                value = list(struct.unpack_from(fmt, binary_manifest, offset))
+            else:
+                raise KeyError("unknown type")
+
+            self.object[self.value_id] = value
+
+            return struct.calcsize(fmt)
 
 class PointsOfInterest(Interface):
     def __init__(self, poi_json):
@@ -200,6 +298,9 @@ class PointsOfInterest(Interface):
             self.description = pt_json["description"]
             self.interface = interface
             interface[self.id] = self
+
+        def __setitem__(self, key, value):
+            setvalueref(self, key, value)
 
         def get_point(self):
             return np.array([(self.tx, self.ty, self.tz, 1.)])
@@ -227,6 +328,7 @@ class Attach(Interface):
         component_list = list(resource_configuration.components)
         self.parent_component = component_list[self._parent_component_index]
         self.parent_node = self.parent_component.get_interface_object(self._parent_node_ref)
+
 class Nodes(Interface):
     def __init__(self, nodes_json):
         super(Nodes, self).__init__(nodes_json)
@@ -259,8 +361,12 @@ class Nodes(Interface):
         def __setitem__(self, key, value):
             if len(key) != 2 or key[0] not in "rt" or key[1] not in "xyz":
                 raise KeyError("{0} not in Node".format(key))
-            setattr(self, key, value)
+            setvalueref(self, key, value)
             self._dirty = True
+
+        def __getitem__(self, key):
+            if key in self.__dict__:
+                return getattr(self, key)
 
         def get_id(self):
             return self.id
@@ -296,6 +402,7 @@ class Nodes(Interface):
                 parent_transform = parent_transform * node.parent.get_local_transform()
 
             node.transform = parent_transform * node.get_local_transform()
+
 class Transform(Interface):
     def __init__(self, xf_json):
         super(Transform, self).__init__(xf_json)
@@ -306,6 +413,7 @@ class Transform(Interface):
         self["local_rotation"] = self.local_rotation
         self["local_position"] = self.local_position
         self["wgs"] = self.wgs
+
     class LocalRotation(object):
         yaw = 0.
         pitch = 0.
@@ -313,9 +421,8 @@ class Transform(Interface):
         def __init__(self, lr_json):
             for k in ("yaw", "pitch", "roll"):
                 setattr(self, k, lr_json.get(k, 0.))
-        def __setitem__(self, key, item):
-            if key in self.__dict__:
-                setattr(self, key, item)
+        def __setitem__(self, key, value):
+            setvalueref(self, key, value)
         def __getitem__(self, key):
             if key in self.__dict__:
                 return getattr(self, key)
@@ -327,12 +434,12 @@ class Transform(Interface):
         def __init__(self, lr_json):
             for k in ("northing", "easting", "elevation"):
                 setattr(self, k, lr_json.get(k, 0.))
-        def __setitem__(self, key, item):
-            if key in self.__dict__:
-                setattr(self, key, item)
+        def __setitem__(self, key, value):
+            setvalueref(self, key, value)
         def __getitem__(self, key):
             if key in self.__dict__:
                 return getattr(self, key)
+
     class WGS(object):
         lat = 0.
         lon = 0.
@@ -341,9 +448,8 @@ class Transform(Interface):
         def __init__(self, lr_json):
             for k in ("lat", "lon", "alt", "dir"):
                 setattr(self, k, lr_json.get(k, 0.))
-        def __setitem__(self, key, item):
-            if key in self.__dict__:
-                setattr(self, key, item)
+        def __setitem__(self, key, value):
+            setvalueref(self, key, value)
         def __getitem__(self, key):
             if key in self.__dict__:
                 return getattr(self, key)
@@ -418,6 +524,7 @@ class Transform(Interface):
         resource[3, 1] = local[1]
         resource[3, 2] = local[2]
 
+
         # TODO: add matrix rotation for wgs
         return a_local.get_j670_to_local_transform() @ resource
 
@@ -436,11 +543,12 @@ class Unknown(Interface):
                 self[value] = Unknown.Object(json)
     class Object(object):
         def __init__(self, json):
-            for k, v in json.items():
-                setattr(self, k, v)
-        def __setitem__(self, key, item):
-            if key in self.__dict__:
-                setattr(self, key, item)
+            for key, value in json.items():
+                setattr(self, key, value)
+
+        def __setitem__(self, key, value):
+            setvalueref(self, key, value)
+
         def __getitem__(self, key):
             if key in self.__dict__:
                 return getattr(self, key)

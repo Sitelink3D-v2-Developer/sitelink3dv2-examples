@@ -7,6 +7,7 @@ dc="us"
 site_id=""
 
 # original dozer activity window in ms from epoch
+# https://currentmillis.com/ is a convenient site to convert to and from "milliseconds since epoch".
 datalogger_start_ms="1646187249000"
 datalogger_end_ms="1646187849394"
 
