@@ -4,13 +4,14 @@ import json
 
 class PaginationTraitsBase():
 
-    def __init__(self, a_page_size, a_page_start, a_fetch_size_key_field, a_start_key_field, a_next_key_field):
+    def __init__(self, a_page_size, a_page_start, a_fetch_size_key_field, a_start_key_field, a_next_key_field, a_data_page_key_field):
         self.m_page_size = a_page_size
         self.m_page_start_value = a_page_start
         self.m_page_number = 0
         self.m_fetch_size_key_field = a_fetch_size_key_field
         self.m_start_key_field = a_start_key_field
         self.m_next_key_field = a_next_key_field
+        self.m_data_page_key_field = a_data_page_key_field
 
     def more_data(self, a_json):
         more = a_json is not None and a_json[self.m_next_key_field] is not None
@@ -49,12 +50,16 @@ def process_pages(a_page_traits, a_page_query):
         while more_data:
             params=a_page_traits.params({})
             data_page = a_page_query.query(a_params=params)
-            more_data = a_page_traits.more_data(data_page)
-            data_items = data_page["items"]
-            logging.info ("Found {} items {}".format(len(data_items), "({})".format("unpaginated" if a_page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(a_page_traits.page_number())))
+            if data_page == None:
+                # Possible 204 returned by the query call. If we have no data page then clearly we have no "more_data".
+                more_data = False
+            else:
+                more_data = a_page_traits.more_data(data_page)
+                data_items = data_page[a_page_traits.m_data_page_key_field]
+                logging.info ("Found {} items {}".format(len(data_items), "({})".format("unpaginated" if a_page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(a_page_traits.page_number())))
 
-            for da in data_items:
-                cnt+=1
-                a_page_query.result(da)
-                logging.debug (json.dumps(da, sort_keys=True, indent=4))
+                for da in data_items:
+                    cnt+=1
+                    a_page_query.result(da)
+                    logging.debug (json.dumps(da, sort_keys=True, indent=4))
                 

@@ -79,7 +79,7 @@ def main():
     target_name = args.file_uuid
     if len(args.file_id) > 0:
 
-        page_traits = RdmPaginationTraits(a_page_size="500", a_start=[args.file_id], a_end=[args.file_id, None])
+        page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[args.file_id], a_end=[args.file_id, None])
         rj = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_head", a_headers=headers, a_params=page_traits.params())
         if len(rj["items"]) > 0:
             target_name = rj["items"][0]["value"]["name"] # There should be only one entry as we specified a unique ID

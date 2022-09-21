@@ -56,7 +56,7 @@ def main():
         logging.debug(json.dumps(obj,indent=4))
 
         # Query and download all versions of the localization history at this site to a directory named as a function of the time the file was the active localization.
-        page_traits = RdmPaginationTraits(a_page_size="500", a_start=["transform_gc3"], a_end=["transform_gc3",None])     
+        page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=["transform_gc3"], a_end=["transform_gc3",None])     
         ret = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="sitelink", a_view="_hist", a_headers=headers, a_params=page_traits.params())
 
         logging.info("{} localization objects have been used at this site.".format(len(ret["items"])))

@@ -79,14 +79,14 @@ time.sleep(0.5)
 logging.info("Listing all files with more than one version...")
 # ------------------------------------------------------------------------------
 
-page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+page_traits = RdmViewPaginationTraits(a_page_size="500", a_start="")
 rj = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=headers, a_params=page_traits.params())
 
 for fi in rj["items"]:
     if fi["value"]["_type"] == "fs::file":
 
         # query the revision history for this file  
-        page_traits = RdmPaginationTraits(a_page_size="500", a_start=[fi["id"]], a_end=[fi["id"],None])     
+        page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[fi["id"]], a_end=[fi["id"],None])     
         ret = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="_hist", a_headers=headers, a_params=page_traits.params())
 
         if len(ret["items"]) > 1:
