@@ -116,7 +116,7 @@ while True:
                 lift_material_uuid = states[ac_uuid]["material"]
                 if len(lift_material_uuid) > 0:
                     lift_json["material_uuid"] = lift_material_uuid
-                page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+                page_traits = RdmViewPaginationTraits(a_page_size="500", a_start="")
                 rdm_list = query_rdm_by_domain_view(a_server_config=server_https, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_material_by_name", a_headers=headers, a_params=page_traits.params())
                 for material in rdm_list["items"]:
                     if material["id"] == lift_material_uuid:
@@ -192,7 +192,7 @@ while True:
             target_weight = ""
             try:
                 truck_uuid = states[ac_uuid]["truck"]
-                page_traits = RdmPaginationTraits(a_page_size="500", a_start="")
+                page_traits = RdmViewPaginationTraits(a_page_size="500", a_start="")
                 rdm_list = query_rdm_by_domain_view(a_server_config=server_https, a_site_id=args.site_id, a_domain="sitelink", a_view="v_sl_truck_by_name", a_headers=headers, a_params=page_traits.params())
                 for truck in rdm_list["items"]:
                     if truck["id"] == truck_uuid:

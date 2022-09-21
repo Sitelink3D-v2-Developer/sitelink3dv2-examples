@@ -47,7 +47,7 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
     
-    page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+    page_traits = RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
     logging.info("{} objects in RDM view {}".format("Archiving" if args.operation == "archive" else "Restoring", args.rdm_view))
 

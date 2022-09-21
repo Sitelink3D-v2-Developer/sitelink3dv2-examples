@@ -18,7 +18,7 @@ session = requests.Session()
 def query_nested_files_and_folders(a_server_config, a_site_id, a_parent_folder_uuid, a_headers):
 
     files_and_folders = []
-    page_traits = RdmPaginationTraits(a_page_size="500", a_start=[a_parent_folder_uuid], a_end=[a_parent_folder_uuid, None])
+    page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[a_parent_folder_uuid], a_end=[a_parent_folder_uuid, None])
     rj = query_rdm_by_domain_view(a_server_config=a_server_config, a_site_id=a_site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_headers=a_headers, a_params=page_traits.params())
 
     for fi in rj["items"]:
@@ -46,7 +46,7 @@ def main():
     
     for state in [{"archived":False},{"archived":True}]:
         
-        page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+        page_traits = RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
         logging.info("Listing file_system domain entries")
         file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_params=state, a_headers=headers)

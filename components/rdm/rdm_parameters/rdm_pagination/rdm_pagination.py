@@ -47,7 +47,7 @@ def main():
 
     logging.info("Querying view {}".format(args.rdm_view))
 
-    page_traits = RdmPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
+    page_traits = RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
     more_data = True
     while more_data:
         rdm_list = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
