@@ -31,8 +31,8 @@ def poll_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
 
 def create_report(a_server_config, a_site_id,a_report_name, a_report_traits, a_report_term, a_headers):
     frame = {
-        "_id"        : str(uuid.uuid1()),
         "site_id"    : a_site_id,
+        "source"     : "API",
         "job_type"   : "rpt::{}".format(a_report_traits.report_type()),
         "issued_by"  : "{} via API".format(getpass.getuser()),
         "params": a_report_traits.job_params(a_report_name=a_report_name),
@@ -57,8 +57,8 @@ def create_and_download_report(a_server_config, a_site_id, a_report_name, a_repo
     
     for target in targets:
         if None == target:
-            print("No results.")
+            logging.info("No results.")
         else:
             url, name = target
-            logging.debug(url)
+            logging.debug("downloading report at URL {}".format(url))
             download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=a_target_dir, a_report_name=name) 
