@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import re
 import requests
+import uuid
 
 session = requests.Session()
 
@@ -89,16 +90,23 @@ class ReportTraitsMultiResultBase(ReportTraitsBase):
         return download_urls
 
 class HaulReportTraits(ReportTraitsMultiResultBase, ReportRangeBase):
-    def __init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, a_haul_states):
+    def __init__(self, a_results_header, a_start_unix_time_millis, a_end_unix_time_millis, a_haul_states, a_sub_type, a_converted_units):
         ReportTraitsMultiResultBase.__init__(self, a_results_header, "haul_report", [["hauls",["xlsx","json"]], ["trails",["json", "jsonl"]], ["aggregates-dump_region-average",["json"]], ["aggregates-dump_region-total",["json"]], ["aggregates-load_region-average",["json"]], ["aggregates-load_region-total",["json"]], ["aggregates-machine-average",["json"]], ["aggregates-machine-total",["json"]], ["aggregates-material-average",["json"]], ["aggregates-material-total",["json"]], ["aggregates-operator-average",["json"]], ["aggregates-operator-total",["json"]]])
         ReportRangeBase.__init__(self, a_start_unix_time_millis, a_end_unix_time_millis)
         self.haul_states = a_haul_states
+        self.sub_type = a_sub_type
+        self.converted_units = a_converted_units
 
     def job_params(self, a_report_name):
         params = {}
         ReportTraitsBase.add_name_params(self, params, a_report_name)
         ReportRangeBase.add_time_range_params(self, params)
         params["status"] = self.haul_states
+        params["_type"] = "rpt::{}".format(self.report_type())
+        params["_rev"] = str(uuid.uuid1())
+        params["_id"] = None
+        params["subtype"] = self.sub_type
+        params["converted_units"] = self.converted_units
         return params       
 
 class DelayReportTraits(ReportTraitsMultiResultBase, ReportRangeBase):

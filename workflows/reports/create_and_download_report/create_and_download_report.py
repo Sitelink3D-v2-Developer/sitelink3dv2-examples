@@ -62,7 +62,7 @@ report_epoch_name = args.report_name or "Report for Epoch {} run {}".format(repo
 output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
        
 # create reports spanning the configured time range
-haul_report_traits = HaulReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_haul_states=["CYCLED"])
+haul_report_traits = HaulReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_haul_states=["CYCLED"], a_sub_type="cycles", a_converted_units={"axis":"volume","volume":"cubic_metres"})
 create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_range_name), a_report_traits=haul_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
 
 delay_report_traits = DelayReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)

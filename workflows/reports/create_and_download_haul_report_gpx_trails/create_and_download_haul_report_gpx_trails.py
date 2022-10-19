@@ -46,7 +46,11 @@ end_unix_time_millis   = datetime_to_unix_time_millis(report_end_datetime)
 report_name = args.report_name or "run {}".format(datetime.datetime.utcnow().replace(microsecond=0).isoformat())
 
 # create haul report spanning the configured time range
-haul_report_traits = HaulReportTraits(a_haul_states=["CYCLED"], a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
+converted_units= {
+    "axis":"volume",
+    "volume":"cubic_metres"
+}
+haul_report_traits = HaulReportTraits(a_haul_states=["CYCLED"], a_sub_type="cycles", a_converted_units=converted_units, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_results_header=headers)
 
 report_job_id = create_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_name), a_report_traits=haul_report_traits, a_report_term=args.report_term, a_headers=headers)
 logging.info("Submitted [{}] called [{}] with job identifier [{}]".format(haul_report_traits.report_type(), report_name, report_job_id))
@@ -56,6 +60,9 @@ url = "{}/reporting/v1/{}/{}/{}".format(server.to_url(), args.site_id, "longterm
 result = json_from(requests.get(url, headers=headers))
 
 output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+
+report_output_dir = ""
+report_name_base = ""
 
 if "hauls" in result["results"] and "json" in result["results"]["hauls"]:
     download_url = result["results"]["hauls"]["json"] 
