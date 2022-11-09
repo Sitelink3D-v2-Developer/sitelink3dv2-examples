@@ -64,9 +64,9 @@ def main():
     logging.info("Running {0} for server={1} dc={2} owner={3}".format(script_name, server.to_url(), args.dc, args.site_owner_uuid))
     # << Server & logging configuration
 
+    # >> Authorization
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-
-    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_owner_uuid))
+    # << Authorization
 
     sort_traits = SortTraits(a_sort_field=args.sort_field, a_sort_order=args.sort_order)
     
