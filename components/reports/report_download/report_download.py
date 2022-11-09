@@ -41,7 +41,7 @@ def download_report_binary(a_report_url, a_headers, a_target_dir, a_report_name)
         f.write(response.content)
         logging.info("Saved report {}".format(output_file))    
 
-def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
+def download_report(a_report_url, a_headers, a_target_dir, a_report_name, a_page_size="500"):
     
     paginate_report = a_report_url.startswith("https") and a_report_url.endswith("hauls") # reports of this format are the only ones to paginate
     if not os.path.exists(a_target_dir):
@@ -49,7 +49,7 @@ def download_report(a_report_url, a_headers, a_target_dir, a_report_name):
 
     if paginate_report:
         logging.info("Downloading paginated report.")
-        page_traits = ReportDataPaginationTraits(a_page_size="500", a_start="0")
+        page_traits = ReportDataPaginationTraits(a_page_size=a_page_size, a_start="0")
         more_data = True
 
         output_list = []
@@ -87,7 +87,7 @@ def main():
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
     output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
-    download_report(a_report_url=args.report_url, a_headers=headers, a_target_dir=output_dir, a_report_name=args.report_name)       
+    download_report(a_report_url=args.report_url, a_headers=headers, a_target_dir=output_dir, a_report_name=args.report_name, a_page_size=args.page_limit)       
 
 if __name__ == "__main__":
     main()    
