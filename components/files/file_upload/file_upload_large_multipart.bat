@@ -13,7 +13,7 @@ rem ## There are two domains within which files are stored in Sitelink3D v2.
 rem # set domain="file_system" to access general files that are visible on the "Site Files" tab in the File Manager.
 rem # set domain="operator" to access topo data files from machines that are visible on the "Operator Files" tab in the File Manager.
 rem # See the file_operator_upload.bat file for an example of uploading to the operator domain.
-set domain="file_system" 
+set rdm_domain="file_system" 
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -29,7 +29,7 @@ python file_upload.py ^
     --site_id %site_id% ^
     --file_name %file_name% ^
     --file_parent_uuid %file_parent_uuid% ^
-    --domain %domain% ^
+    --rdm_domain %rdm_domain% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

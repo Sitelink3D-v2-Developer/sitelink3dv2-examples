@@ -308,8 +308,15 @@ arg_smartview_args = {
 }
 
 # RDM related arguments
+arg_rdm_view_name = {
+        "arg" : "--rdm_view",
+        "default" : "",
+        "help" : "The view to query RDM by",
+        "required" : True
+}
+
 arg_rdm_domain_default_filesystem = {
-        "arg" : "--domain",
+        "arg" : "--rdm_domain",
         "default" : "file_system",
         "help" : "The partition within RDM that contains data and associated views. Defaults to the storage of file and folder objects.",
         "required" : False
@@ -390,4 +397,12 @@ arg_rdm_region_dump_verticies_file = {
         "default" : "",
         "help" : "A file containing points outlining a region used for auto dumping haul trucks.",
         "required" : True
+}
+
+# State related artuments 
+arg_operation = {
+        "arg" : "--operation",
+        "default" : "",
+        "help" : "An optional string to direct the execution of an example. This could mean 'archive' or 'restore' for RDM or site related archival contexts for example.",
+        "required" : False
 }
