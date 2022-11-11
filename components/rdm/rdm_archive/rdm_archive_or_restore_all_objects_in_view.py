@@ -16,37 +16,23 @@ for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "rdm_list"]:
 
 session = requests.Session()
 
-
 def main():
-    # >> Arguments
-
-    arg_parser = argparse.ArgumentParser(description="Archive and Restore RDM Objects")
-
-    # script parameters:
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
-
-    # server parameters:
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_auth(arg_parser)
-    arg_parser = add_arguments_pagination(arg_parser)
-
-    # request parameters:
-    arg_parser.add_argument("--site_id", default="", help="Site Identifier", required=True)
-    arg_parser.add_argument("--rdm_view", help="The view to query RDM by", required=True)
-    arg_parser.add_argument("--rdm_domain", default="sitelink", help="The domain that the view exists in")
-    arg_parser.add_argument("--operation", default="archive", help="can be archive or restore")
-
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
-    server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
-
-    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+    script_name = os.path.basename(os.path.realpath(__file__))
     
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_operation, arg_rdm_view_name, arg_rdm_domain_default_filesystem, arg_pagination_page_limit, arg_pagination_start])
+    # << Argument handling
+
+    # >> Server & logging configuration
+    server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
+
+    # >> Authorization
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+    # << Authorization
+
     page_traits = RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
 
     logging.info("{} objects in RDM view {}".format("Archiving" if args.operation == "archive" else "Restoring", args.rdm_view))
