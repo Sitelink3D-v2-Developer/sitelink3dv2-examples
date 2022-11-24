@@ -36,7 +36,8 @@ import_targets = {
     "datalogger_utils" : ["datalogger"],
     "events" : ["utils"],
     "smartview" : ["smartview"],
-    "transform" : ["transform"]
+    "transform" : ["transform"],
+    "events" : ["events"]
 }
 
 def import_cmd(a_component_root, a_target):

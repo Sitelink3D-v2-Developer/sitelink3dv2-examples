@@ -406,3 +406,11 @@ arg_operation = {
         "help" : "An optional string to direct the execution of an example. This could mean 'archive' or 'restore' for RDM or site related archival contexts for example.",
         "required" : False
 }
+
+# Data update related arguments
+arg_data_update_method = {
+        "arg" : "--data_update_method",
+        "default" : "event",
+        "help" : "A required field that specifies whether data updates (for example the status of reporting jobs) should be polled for or accessed using an event subscription and callback. Options are 'poll' or 'event'.",
+        "required" : True
+}

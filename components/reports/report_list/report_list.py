@@ -41,7 +41,7 @@ def main():
     script_name = os.path.basename(os.path.realpath(__file__))
 
     # >> Argument handling  
-    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_sort_field, arg_sort_order, arg_pagination_page_limit, arg_pagination_start], a_arg_filter_list=["issued_since_epoch","job_type","name","issued_by","status"])
+    args = handle_arguments(a_description=script_name, a_log_level=logging.DEBUG, a_arg_list=[arg_site_id, arg_sort_field, arg_sort_order, arg_pagination_page_limit, arg_pagination_start], a_arg_filter_list=["issued_since_epoch","job_type","name","issued_by","status"])
     # << Argument handling
 
     # >> Server & logging configuration
