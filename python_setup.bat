@@ -6,4 +6,5 @@ pip install ^
   pytz ^
   websockets ^
   websocket-client ^
-  numpy
+  numpy ^
+  queuelib

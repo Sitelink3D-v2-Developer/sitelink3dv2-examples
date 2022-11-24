@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import json
 import time
 import websocket
@@ -7,15 +8,23 @@ import threading
 import signal
 from enum import Enum
 import logging
-import requests
-import sys
+
+
 import os
+import sys
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "components", "utils"))
+def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
+    return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
 
-from utils import *
+components_dir = path_up_to_last("components")
 
-session = requests.Session()
+sys.path.append(os.path.join(components_dir, "utils"))
+from imports import *
+
+for imp in ["args", "utils", "get_token", "rdm_pagination_traits", "rdm_list"]:
+    exec(import_cmd(components_dir, imp))
+
+
 
 def get_dc_from_event(a_event_json):
     if("us;eu;ap" == a_event_json["dc"]):
@@ -30,29 +39,30 @@ class EventManagerException(Exception):
     pass
 
 class HttpEventManager:
-    def __init__(self, a_server_config, a_identifier, a_source, a_headers):
+    def __init__(self, a_server_config, a_identifier, a_headers, a_subscription_timeout_seconds=5, a_source=EventSource.Owner):
+        self.headers = a_headers
         self.server = a_server_config
         self.identifier = a_identifier
         self.data_queue = queue.Queue()
         self.event_source = a_source
-        self.headers = a_headers
         t = threading.Thread(target=self.event_stream_processor)
         t.daemon = True
         t.start()
         self.connected = False
         try:
             if(EventSource.Owner == self.event_source):
-                self.wait_for_owner_subscription()
+                self.wait_for_owner_subscription(a_timeout_seconds=a_subscription_timeout_seconds)
             else:
-                self.wait_for_site_subscription()
-        except EventManagerException:
+                self.wait_for_site_subscription(a_timeout_seconds=a_subscription_timeout_seconds)
+        except EventManagerException as e:
+            logging.info("Exception: {}".format(e))
             pass
 
     def wait_for_owner_subscription(self, a_timeout_seconds=None):
-        return self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "subscribe", a_timeout_seconds)
+        return self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "subscribe", None, a_timeout_seconds)
 
     def wait_for_site_subscription(self, a_timeout_seconds=None):
-        return self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "subscribe", a_timeout_seconds)
+        return self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "subscribe", None, a_timeout_seconds)
 
     def wait_for_owner_key(self, a_timeout_seconds=None):
         expected_event_json = {
@@ -63,7 +73,7 @@ class HttpEventManager:
                 "service": "siteowner"
             }
         while True:
-            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -77,7 +87,7 @@ class HttpEventManager:
                 "service": a_service
             }
         while True:
-            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -91,7 +101,11 @@ class HttpEventManager:
             "service": a_service
             }
         while True:
-            item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = None
+            try:
+                item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
+            except (EventManagerException):
+                return item
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -107,7 +121,7 @@ class HttpEventManager:
                 "service": "siteowner"
             }
         while True:
-            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -123,7 +137,11 @@ class HttpEventManager:
                 "service": "rdm"
             }
         while True:
-            item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = None
+            try:
+                item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
+            except (EventManagerException):
+                return item
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -139,7 +157,7 @@ class HttpEventManager:
                 "service": "siteowner"
             }
         while True:
-            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = self.wait_for_data({"scope":"owner", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -156,7 +174,7 @@ class HttpEventManager:
                 "service": "designfile"
             }
         while True:
-            item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", a_timeout_seconds)
+            item = self.wait_for_data({"scope":"site", "id":str(self.identifier)}, "message", None, a_timeout_seconds)
             try:
                 if( compare_dict(expected_event_json, item["event"])):
                     return item
@@ -177,15 +195,15 @@ class HttpEventManager:
             },
         }
         while True:
-            item = self.wait_for_data(expected_topic, "message", a_timeout_seconds)
+            item = self.wait_for_data(expected_topic, "message", None, a_timeout_seconds)
             try:
                 if not compare_dict(expected_event, item["event"]):
                     continue
                 return item
-            except (KeyError, AttributeError) as e:
+            except (KeyError, AttributeError, EventManagerException) as e:
                 continue
 
-    def wait_for_data(self, a_topic_json, a_type, a_timeout_seconds=None):
+    def wait_for_data(self, a_topic_json, a_type, a_event_list=None, a_timeout_seconds=None):
         t0 = time.time()
         while True:
             elapsed_time = time.time() - t0
@@ -197,13 +215,17 @@ class HttpEventManager:
 
             try:
                 item = self.data_queue.get(timeout = timeout)
-                print(json.dumps(item))
             except (queue.Empty):
                 raise EventManagerException("Event Manager operation has timed out")
 
             try:
                 if( self.topic_compare_equal(a_topic_json, item["topic"]) and a_type == item["type"] ):
-                    return item
+                    if a_event_list is None:
+                        return item
+                    else: # further check for whether the supplied event details match this message and discard if not. This filters the wait further.
+                        for i, expected_event in enumerate(a_event_list):
+                            if compare_dict(a_expected=expected_event, a_actual=item["event"]):
+                                return item
             except (KeyError, AttributeError) as e:
                 continue # this is no drama, we simply don't yet have the msg we want
             finally:
@@ -215,13 +237,42 @@ class HttpEventManager:
 
     def event_stream_processor(self):
         url = "{}/events/v1/{}/{}/subscribe".format(self.server.to_url(), self.event_source.value, self.identifier)
+
         data_tag = "data: "
         with session.get(url, headers=self.headers, stream=True) as r:
             if(200 != r.status_code):
                 return
             self.connected = True
             for line in r.iter_lines():
-                if line:
-                    if line.startswith(bytes(data_tag, 'utf-8')):
-                        resp = json.loads(line[len(data_tag):])
+                text = line.decode('ascii')
+                if text:
+                    if text.startswith(data_tag):
+                        resp = json.loads(text[len(data_tag):])
                         self.data_queue.put(resp)
+
+def main():
+    script_name = os.path.basename(os.path.realpath(__file__))
+
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_log_level=logging.DEBUG, a_arg_list=[arg_site_id])
+    # << Argument handling
+
+    # >> Server & logging configuration
+    server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
+    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
+    # << Server & logging configuration
+
+    headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
+    
+    ev_mgr_site = HttpEventManager(a_server_config=server, a_identifier=args.site_id, a_headers=headers, a_subscription_timeout_seconds=None, a_source=EventSource.Site)
+
+    while True:
+        event = ev_mgr_site.wait_for_data({"scope":"site", "id":args.site_id}, "message", None, None)
+
+        if event is not None:
+            logging.info(json.dumps(event,indent=4))
+
+
+if __name__ == "__main__":
+    main()    

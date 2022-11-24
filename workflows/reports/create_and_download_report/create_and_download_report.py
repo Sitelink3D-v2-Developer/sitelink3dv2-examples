@@ -31,13 +31,13 @@ components_dir = os.path.join(path_up_to_last("workflows", False), "components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "site_detail", "get_token", "report_traits", "report_create", "report_download"]:
+for imp in ["args", "utils", "site_detail", "get_token", "report_traits", "report_create", "report_download", "events"]:
     exec(import_cmd(components_dir, imp))
 
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end, arg_report_mask_region_uuid, arg_report_task_uuid, arg_report_sequence_instance])
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end, arg_report_mask_region_uuid, arg_report_task_uuid, arg_report_sequence_instance, arg_data_update_method])
 # << Argument handling
 
 # >> Server & logging configuration
@@ -61,24 +61,36 @@ report_epoch_name = args.report_name or "Report for Epoch {} run {}".format(repo
 
 output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
        
+
+report_job_monitor = report_job_monitor_factory(a_data_method=args.data_update_method, a_server_config=server, a_site_id=args.site_id, a_report_term=args.report_term, a_headers=headers)
+report_job_monitor_callback = report_job_monitor.monitor_job
+
+# recorde start of report execution to measure execution time
+start_time = time.time()
+
 # create reports spanning the configured time range
 haul_report_traits = HaulReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis, a_haul_states=["CYCLED"], a_sub_type="cycles", a_converted_units={"axis":"volume","volume":"cubic_metres"})
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_range_name), a_report_traits=haul_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_range_name), a_report_traits=haul_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 delay_report_traits = DelayReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Delay {}".format(report_range_name), a_report_traits=delay_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Delay {}".format(report_range_name), a_report_traits=delay_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 weight_report_traits = WeightReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Weight {}".format(report_range_name), a_report_traits=weight_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Weight {}".format(report_range_name), a_report_traits=weight_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 activity_report_traits = ActivityReportTraits(a_results_header=headers, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Activity {}".format(report_range_name), a_report_traits=activity_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 tds_report_traits = TdsReportTraits(a_results_header=headers, a_server_config=server, a_site_id=args.site_id, a_start_unix_time_millis=start_unix_time_millis, a_end_unix_time_millis=end_unix_time_millis)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="TDS {}".format(report_range_name), a_report_traits=tds_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="TDS {}".format(report_range_name), a_report_traits=tds_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 xyz_heigh_map_report_traits = XyzHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=end_unix_time_millis, a_mask_region_uuid=args.report_mask_region_uuid, a_task_uuid=args.report_task_uuid, a_seqence_instance=args.report_sequence_instance)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="XYZ Height Map {}".format(report_epoch_name), a_report_traits=xyz_heigh_map_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="XYZ Height Map {}".format(report_epoch_name), a_report_traits=xyz_heigh_map_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
 
 ply_heigh_map_report_traits = PlyHeightMapReportTraits(a_server_config=server, a_site_id=args.site_id, a_date_unix_time_millis=end_unix_time_millis, a_mask_region_uuid=args.report_mask_region_uuid, a_task_uuid=args.report_task_uuid, a_seqence_instance=args.report_sequence_instance)
-create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="PLY Height Map {}".format(report_epoch_name), a_report_traits=ply_heigh_map_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_headers=headers)
+create_and_download_report(a_server_config=server, a_site_id=args.site_id, a_report_name="PLY Height Map {}".format(report_epoch_name), a_report_traits=ply_heigh_map_report_traits, a_report_term=args.report_term, a_target_dir=output_dir, a_job_report_monitor_callback=report_job_monitor_callback, a_headers=headers)
+
+end_time = time.time()
+
+elapsed_time = end_time - start_time
+logging.info("Execution time using data monitor method ({}): {} seconds.".format(args.data_update_method, elapsed_time))

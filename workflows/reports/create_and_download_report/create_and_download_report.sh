@@ -17,7 +17,10 @@ oauth_scope=""
 ## Settings for the reports:
 report_iso_date_time_start="2020-12-31 09:21:00"
 report_iso_date_time_end="2021-11-30 17:21:00"
-report_name
+report_name=""
+
+## Specify whether report job status should be determined via polling or event handling. Options are "event" or "poll".
+data_update_method="event"
 
 ## Optional settings specific to height map reports
 report_mask_region_uuid=""
@@ -38,4 +41,5 @@ exec python create_and_download_report.py \
     --report_mask_region_uuid "$report_mask_region_uuid" \
     --report_task_uuid "$report_task_uuid" \
     --report_sequence_instance "$report_sequence_instance" \
-    --report_name "$report_name"
+    --report_name "$report_name" \
+    --data_update_method "$data_update_method"
