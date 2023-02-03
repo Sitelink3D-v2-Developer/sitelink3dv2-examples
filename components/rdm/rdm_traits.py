@@ -434,6 +434,51 @@ class DesignObjectSetRdmTraits(RdmTraitsBase):
 
         return "\'{}\' with {} Design Object(s).".format(self.object_name(), designObjectLen)
 
+class TypeRdmTraits(RdmTraitsBase):
+    def __init__(self, a_object_value):
+        RdmTraitsBase.__init__(self, a_object_value, "Inbuilt Sitelink3D v2 Type")
+
+    def object_details(self):
+        try:    
+            properties_string = ""
+            for i, key in enumerate(self.value["properties"].keys()):
+                if i != 0:
+                    properties_string += ", "
+                properties_string += key
+        except KeyError as err:  
+            pass 
+        return_string = self.value["_id"]
+        if len(properties_string)  > 0:
+            return_string += " with properties '{}'.".format(self.value["_id"], properties_string) 
+        return return_string
+
+class TransformRdmTraits(RdmTraitsBase):
+    def __init__(self, a_object_value):
+        RdmTraitsBase.__init__(self, a_object_value, "Transform")
+
+    def object_details(self):
+
+        return "{} '{}'.".format(self.value["_id"], self.value["transform"])
+
+class ViewRdmTraits(RdmTraitsBase):
+    def __init__(self, a_object_value):
+        RdmTraitsBase.__init__(self, a_object_value, "View")
+
+    def object_details(self): 
+        try:    
+            types_string = ""
+            for i, key in enumerate(self.value["types"]):
+                if i != 0:
+                    types_string += ", "
+                types_string += key
+        except KeyError as err:  
+            pass     
+        
+        return_string = "{} with map {}".format(self.value["_id"], self.value["map"])
+        if len(types_string)  > 0:
+            return_string += " for types '{}'.".format(types_string) 
+        return return_string 
+
 class ListRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
         RdmTraitsBase.__init__(self, a_object_value, "View List")
@@ -525,10 +570,14 @@ class Rdm(object):
                 return OperatorRdmTraits(a_object_value)
             if a_object_value["_type"] == "sl::material":
                 return MaterialRdmTraits(a_object_value)    
-            if a_object_value["_type"] == "_type" and a_object_value["_mixin"] == "sl::smartview":
-                return GenericNamedRdmTraits(a_object_value, "Widget Type")   
             if a_object_value["_type"] == "sl::designObjectSet":
-                return DesignObjectSetRdmTraits(a_object_value)      
+                return DesignObjectSetRdmTraits(a_object_value)   
+            if a_object_value["_type"] == "_transform":
+                return TransformRdmTraits(a_object_value)
+            if a_object_value["_type"] == "_type":
+                return TypeRdmTraits(a_object_value)   
+            if a_object_value["_type"] == "_view":
+                return ViewRdmTraits(a_object_value) 
             if a_object_value["_type"] == "sl::delay":
                 return DelayRdmTraits(a_object_value, "Delay")    
             if a_object_value["_type"] == "sl::list":
