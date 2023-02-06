@@ -2,12 +2,13 @@
 
 import argparse
 import uuid
+import logging
 
-def handle_arguments(a_description, a_log_level, a_arg_list=[], a_arg_filter_list=[]):
+def handle_arguments(a_description, a_arg_list=[], a_arg_filter_list=[]):
     arg_parser = argparse.ArgumentParser(description=a_description)
     # All scripts require these basic arguments
     arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_logging(arg_parser, a_log_level)
+    arg_parser = add_arguments_logging(arg_parser)
     arg_parser = add_arguments_auth(arg_parser)
 
     # Some scripts require specific arguments
@@ -25,9 +26,8 @@ def add_arguments_environment(a_arg_parser):
     a_arg_parser.add_argument("--dc", default="qa")
     return a_arg_parser
 
-def add_arguments_logging(a_arg_parser, a_log_level):
-    a_arg_parser.add_argument("--log-format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
-    a_arg_parser.add_argument("--log-level", default=a_log_level)
+def add_arguments_logging(a_arg_parser):
+    a_arg_parser.add_argument("--log_format", default='> %(asctime)-15s %(module)s %(levelname)s %(funcName)s:   %(message)s')
     return a_arg_parser
 
 def add_arguments_site(a_arg_parser):
@@ -204,6 +204,14 @@ arg_site_auth_code = {
     "required" : True
 }
 
+# Output logging
+arg_log_level = {
+    "arg" : "--log_level",
+    "default" : 20,
+    "help" : "CRITICAL=50, ERROR=40, WARNING=30, INFO=20, DEBUG=10.",
+    "required" : False
+}
+
 # Pagination related arguments
 arg_pagination_page_limit = {
         "arg" : "--page_limit",
@@ -322,11 +330,25 @@ arg_smartview_args = {
 }
 
 # RDM related arguments
+arg_rdm_object_uuid = {
+        "arg" : "--rdm_object_uuid",
+        "default" : "",
+        "help" : "The UUID of a particular object in RDM represented as a string.",
+        "required" : True
+}
+
 arg_rdm_view_name = {
         "arg" : "--rdm_view",
         "default" : "",
         "help" : "The view to query RDM by",
         "required" : True
+}
+
+arg_rdm_domain_default_sitelink = {
+        "arg" : "--rdm_domain",
+        "default" : "sitelink",
+        "help" : "The partition within RDM that contains data and associated views. Defaults to the main sitelink domain.",
+        "required" : False
 }
 
 arg_rdm_domain_default_filesystem = {

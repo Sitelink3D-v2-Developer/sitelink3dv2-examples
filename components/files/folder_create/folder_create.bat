@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 set folder_name="Windows Folder"
 set folder_uuid=""
 set folder_parent_uuid=""
@@ -22,6 +26,7 @@ python folder_create.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --folder_name %folder_name% ^
     --folder_uuid %folder_uuid% ^
     --folder_parent_uuid %folder_parent_uuid% ^

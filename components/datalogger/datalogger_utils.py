@@ -831,7 +831,7 @@ def make_haul_mfk_replicate_payload(asset_context, rc_uuid, latitude, longitude,
     if is_beacon:
         beacon_expiry_epoch = at_payload + BEACON_LONG_TTL
 
-    logging.info("BEACON IS {}, expiry is {}".format(is_beacon, beacon_expiry_epoch))
+    logging.info("Beacon is {}, expiry is {}".format(is_beacon, beacon_expiry_epoch))
     return {
         "type": "mfk::Replicate",
         "data": {

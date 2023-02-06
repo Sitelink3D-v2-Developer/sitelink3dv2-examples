@@ -5,6 +5,10 @@
 env="qa"
 dc="us"
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Settings specific to this script.
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 site_owner_uuid=""
@@ -20,6 +24,7 @@ oauth_scope=""
 exec python owner_get.py \
     --env "$env" \
     --dc "$dc" \
+    --log_level "$log_level" \
     --site_owner_uuid "$site_owner_uuid" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \

@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Material specifics
 rdm_material_name="API Material"
 
@@ -21,6 +25,7 @@ exec python material_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --rdm_material_name "$rdm_material_name" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \

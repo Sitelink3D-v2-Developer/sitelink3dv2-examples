@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem ## Settings specific to this script.
 rem # File representations in RDM look like the following
 rem # {
@@ -43,6 +47,7 @@ set oauth_scope=""
 python file_download.py ^
     --env %env% ^
     --dc %dc% ^
+    --log_level %log_level% ^
     --site_id %site_id% ^
     --file_uuid %file_uuid% ^
     --file_id %file_id% ^

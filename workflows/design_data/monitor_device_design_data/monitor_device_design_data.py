@@ -37,16 +37,15 @@ def particular_from_design_type(a_design_type):
         return "Invalid"
 
 def main():
-
     script_name = os.path.basename(os.path.realpath(__file__))
 
     # >> Argument handling  
-    args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_pagination_page_limit, arg_pagination_start])
+    args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_pagination_page_limit, arg_pagination_start])
     # << Argument handling
 
     # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
-    logging.basicConfig(format=args.log_format, level=args.log_level)
+    logging.basicConfig(format=args.log_format, level=int(args.log_level))
     logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
     # << Server & logging configuration
 
@@ -64,9 +63,7 @@ def main():
     for fi in device_design_object_list:
         logging.debug(json.dumps(fi, sort_keys=True, indent=4))
 
-    device_design_object_dict = {
-
-    }
+    device_design_object_dict = {}
 
     for fi in device_design_object_list:
         device_design_object = {

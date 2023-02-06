@@ -5,6 +5,10 @@
 env="qa"
 dc="us"
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Settings specific to this script.
 # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 # This parameter is optional.
@@ -46,6 +50,7 @@ exec python site_list.py \
     --env "$env" \
     --dc "$dc" \
     --site_owner_uuid "$site_owner_uuid" \
+    --log_level "$log_level" \
     --sort_field "$sort_field" \
     --sort_order "$sort_order" \
     --page_limit "$page_limit" \

@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem ## Settings specific to this script.
 set page_limit="500"
 set start=""
@@ -22,6 +26,7 @@ python file_list.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --page_limit %page_limit% ^
     --start %start% ^
     --jwt %jwt% ^

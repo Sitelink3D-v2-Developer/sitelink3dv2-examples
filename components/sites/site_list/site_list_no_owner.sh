@@ -5,6 +5,10 @@
 env="qa"
 dc="us"
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Settings specific to this script.
 ## optionally sort the results. sort_field may be either "rdm_name" or "create_timestamp_ms".
 # sorted results are ascending by default. ordering can be specified with sort_order="+" for ascending or sort_order="-" for descending. 
@@ -41,6 +45,7 @@ oauth_scope=""
 exec python site_list.py \
     --env "$env" \
     --dc "$dc" \
+    --log_level "$log_level" \
     --sort_field "$sort_field" \
     --sort_order "$sort_order" \
     --page_limit "$page_limit" \

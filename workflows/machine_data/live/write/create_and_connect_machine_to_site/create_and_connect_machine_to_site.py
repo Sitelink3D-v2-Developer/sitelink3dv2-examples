@@ -20,13 +20,13 @@ for imp in ["args", "utils", "get_token", "mfk", "datalogger_utils"]:
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.DEBUG, a_arg_list=[arg_site_id, arg_machine_resource_configuration_file])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_machine_resource_configuration_file])
 # << Argument handling
 
 # >> Server & logging configuration
 server_wss = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="wss")
 server_https = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
-logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.basicConfig(format=args.log_format, level=int(args.log_level))
 logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server_wss.to_url(), args.dc, args.site_id))
 # << Server & logging configuration
 

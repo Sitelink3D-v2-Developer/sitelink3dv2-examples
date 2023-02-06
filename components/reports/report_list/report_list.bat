@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem ## optionally sort the results. sort_field may be either "job_type", "issued_at", "status" or "job_type".
 rem # sorted results are ascending by default. ordering can be specified with sort_order="+" for ascending or sort_order="-" for descending. 
 set sort_field="issued_at"
@@ -42,6 +46,7 @@ python report_list.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --sort_field %sort_field% ^
     --sort_order %sort_order% ^
     --page_limit %page_limit% ^

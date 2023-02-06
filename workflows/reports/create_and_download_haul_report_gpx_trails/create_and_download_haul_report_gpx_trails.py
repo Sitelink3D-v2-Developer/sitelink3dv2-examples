@@ -27,12 +27,12 @@ for imp in ["args", "utils", "site_detail", "get_token", "report_traits", "repor
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end])
 # << Argument handling
 
 # >> Server & logging configuration
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.basicConfig(format=args.log_format, level=int(args.log_level))
 logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
 # << Server & logging configuration
 
@@ -54,7 +54,7 @@ haul_report_traits = HaulReportTraits(a_haul_states=["CYCLED"], a_sub_type="cycl
 
 report_job_id = create_report(a_server_config=server, a_site_id=args.site_id, a_report_name="Haul {}".format(report_name), a_report_traits=haul_report_traits, a_report_term=args.report_term, a_headers=headers)
 logging.info("Submitted [{}] called [{}] with job identifier [{}]".format(haul_report_traits.report_type(), report_name, report_job_id))
-poll_job(a_server_config=server, a_site_id=args.site_id, a_term=args.report_term, a_job_id=report_job_id, a_headers=headers)
+poll_job(a_server_config=server, a_site_id=args.site_id, a_report_term=args.report_term, a_report_job_id=report_job_id, a_headers=headers)
 
 url = "{}/reporting/v1/{}/{}/{}".format(server.to_url(), args.site_id, "longterms", report_job_id)
 result = json_from(requests.get(url, headers=headers))

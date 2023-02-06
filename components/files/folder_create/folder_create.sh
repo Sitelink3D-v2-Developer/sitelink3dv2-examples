@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 folder_name="Linux Folder"
 folder_uuid=""
 folder_parent_uuid=""
@@ -22,6 +26,7 @@ exec python folder_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --folder_name "$folder_name" \
     --folder_uuid "$folder_uuid" \
     --folder_parent_uuid "$folder_parent_uuid" \

@@ -5,6 +5,10 @@
 env="qa"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 operation="unarchive"
 
 ## Authorization. OAuth credentials are used if the JWT string is empty.
@@ -18,6 +22,7 @@ oauth_scope=""
 exec python site_archive_restore.py \
     --env "$env" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --operation "$operation" \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \

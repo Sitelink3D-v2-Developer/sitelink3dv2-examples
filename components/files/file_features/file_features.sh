@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Settings specific to this script.
 file_uuid=""
 file_name=""
@@ -22,6 +26,7 @@ exec python file_features.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --file_uuid "$file_uuid" \
     --file_name "$file_name" \
     --jwt "$jwt" \

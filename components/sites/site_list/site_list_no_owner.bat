@@ -5,6 +5,10 @@ rem ## Settings for the environment.
 set env="qa"
 set dc="us"
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem ## Settings specific to this script.
 rem ## optionally sort the results. sort_field may be either "rdm_name" or "create_timestamp_ms".
 rem # sorted results are ascending by default. ordering can be specified with site_order="+" for ascending or site_order="-" for descending. 
@@ -39,6 +43,7 @@ set oauth_scope=""
 python site_list.py ^
     --env %env% ^
     --dc %dc% ^
+    --log_level %log_level% ^
     --sort_field %sort_field% ^
     --sort_order %sort_order% ^
     --page_limit %page_limit% ^

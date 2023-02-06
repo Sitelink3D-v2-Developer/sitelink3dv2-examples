@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 page_limit="200"
 start=""
 
@@ -21,6 +25,7 @@ exec python download_device_design_data_as_landxml.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --page_limit "$page_limit" \
     --start "$start" \
     --jwt "$jwt" \
