@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem machine activity window in ms from epoch
 rem https://currentmillis.com/ is a convenient site to convert to and from "milliseconds since epoch".
 set datalogger_start_ms="1646961300000"
@@ -23,6 +27,7 @@ python create_generic_machine_report.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --datalogger_start_ms %datalogger_start_ms% ^
     --datalogger_end_ms %datalogger_end_ms% ^
     --jwt %jwt% ^

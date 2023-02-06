@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem # Use the components/rdm/rdm_list example to discover the domains and associated views at your site.
 set rdm_view="v_sl_delay_by_name"
 set rdm_domain="sitelink"
@@ -26,6 +30,7 @@ python rdm_archive_or_restore_all_objects_in_view.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --start %start% ^
     --page_limit %page_limit% ^
     --rdm_view %rdm_view% ^

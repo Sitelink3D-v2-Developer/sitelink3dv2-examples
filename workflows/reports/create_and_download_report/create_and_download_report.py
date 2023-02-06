@@ -37,12 +37,12 @@ for imp in ["args", "utils", "site_detail", "get_token", "report_traits", "repor
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end, arg_report_mask_region_uuid, arg_report_task_uuid, arg_report_sequence_instance, arg_data_update_method])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_report_name, arg_report_term, arg_report_iso_date_time_start, arg_report_iso_date_time_end, arg_report_mask_region_uuid, arg_report_task_uuid, arg_report_sequence_instance, arg_data_update_method])
 # << Argument handling
 
 # >> Server & logging configuration
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.basicConfig(format=args.log_format, level=int(args.log_level))
 logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_id))
 # << Server & logging configuration
 

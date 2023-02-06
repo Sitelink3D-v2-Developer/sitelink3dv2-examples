@@ -18,16 +18,16 @@ def fetch_job(a_server_config, a_site_id, a_term, a_job_id, a_headers):
     url = "{}/reporting/v1/{}/{}/{}".format(a_server_config.to_url(), a_site_id, a_term, a_job_id)
     return json_from(requests.get(url, headers=a_headers))
 
-def poll_job(a_server_config, a_site_id, a_report_term, report_job_id, a_headers):
-    job = fetch_job(a_server_config, a_site_id, a_report_term, report_job_id, a_headers)
+def poll_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_headers):
+    job = fetch_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_headers)
     status = job.get("status") or "SUBMITTED"
     while status not in ["CANCELLED", "COMPLETE", "FAILED"]:
-        logging.info("Polled job {} status is {} ...".format(report_job_id, status))
+        logging.info("Polled job {} status is {} ...".format(a_report_job_id, status))
         time.sleep(5)
-        job = fetch_job(a_server_config, a_site_id, a_report_term, report_job_id, a_headers)
+        job = fetch_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_headers)
         status = job.get("status", "SUBMITTED")
-    job = fetch_job(a_server_config, a_site_id, a_report_term, report_job_id, a_headers)
-    logging.info("Polled job {} final status is {}.".format(report_job_id, status))    
+    job = fetch_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_headers)
+    logging.info("Polled job {} final status is {}.".format(a_report_job_id, status))    
 
 def create_report(a_server_config, a_site_id,a_report_name, a_report_traits, a_report_term, a_headers):
     frame = {
@@ -49,7 +49,7 @@ def download_urls_for_job(a_server_config, a_site_id, a_report_traits, a_report_
     return a_report_traits.download_urls_from_job_results(result, a_headers)
 
 def report_job_poll_monitor(a_server_config, a_site_id, a_report_term, report_job_id, a_headers):
-    poll_job(a_server_config=a_server_config, a_site_id=a_site_id, a_report_term=a_report_term, report_job_id=report_job_id, a_headers=a_headers)
+    poll_job(a_server_config=a_server_config, a_site_id=a_site_id, a_report_term=a_report_term, a_report_job_id=report_job_id, a_headers=a_headers)
 
 class ReportJobMonitorBase():
     def __init__(self, a_server_config, a_site_id, a_report_term, a_headers):
@@ -66,7 +66,7 @@ class ReportJobMonitorPoll(ReportJobMonitorBase):
         ReportJobMonitorBase.__init__(self, a_server_config, a_site_id, a_report_term, a_headers)
 
     def monitor_job(self, a_report_job_id):
-        poll_job(a_server_config=self.m_server_config, a_site_id=self.m_site_id, a_report_term=self.m_report_term, report_job_id=a_report_job_id, a_headers=self.m_headers)
+        poll_job(a_server_config=self.m_server_config, a_site_id=self.m_site_id, a_report_term=self.m_report_term, a_report_job_id=a_report_job_id, a_headers=self.m_headers)
 
 
 class ReportJobMonitorEvent(ReportJobMonitorBase):
@@ -125,9 +125,6 @@ def report_job_monitor_factory(a_data_method, a_server_config, a_site_id, a_repo
         monitor = ReportJobMonitorEvent(a_server_config, a_site_id, a_report_term, a_headers)
 
     return monitor
-
-
-
 
 
 def create_and_download_report(a_server_config, a_site_id, a_report_name, a_report_traits, a_report_term, a_target_dir, a_job_report_monitor_callback, a_headers):

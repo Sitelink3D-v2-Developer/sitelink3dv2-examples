@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Operator specifics
 rdm_operator_first_name="John"
 rdm_operator_second_name="Smith"
@@ -23,6 +27,7 @@ exec python operator_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --rdm_operator_first_name "$rdm_operator_first_name" \
     --rdm_operator_second_name "$rdm_operator_second_name" \
     --rdm_operator_code "$rdm_operator_code" \

@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 rem ## Settings specific to this script.
 set transform_local_position_points_file="tps-bris.points.json"
 
@@ -21,6 +25,7 @@ python transform_local_to_wgs84.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --transform_local_position_points_file %transform_local_position_points_file% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^

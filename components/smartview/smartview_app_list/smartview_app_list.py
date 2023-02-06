@@ -27,20 +27,17 @@ def smartview_app_list(a_server_config):
     return app_list
 
 def main():
-    # >> Arguments
+    script_name = os.path.basename(os.path.realpath(__file__))
 
-    arg_parser = argparse.ArgumentParser(description="Smartview App Listing")
-    arg_parser = add_arguments_environment(arg_parser)
-    arg_parser = add_arguments_logging(arg_parser, logging.INFO)
+    # >> Argument handling  
+    args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level])
+    # << Argument handling
 
-    arg_parser.set_defaults()
-    args = arg_parser.parse_args()
-    logging.basicConfig(format=args.log_format, level=args.log_level)
-    # << Arguments
-
+    # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
-
-    logging.info("Running {0} for server={1} dc={2}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc))
+    logging.basicConfig(format=args.log_format, level=int(args.log_level))
+    logging.info("Running {0} for server={1} dc={2}".format(script_name, server.to_url(), args.dc))
+    # << Server & logging configuration
 
     app_list = smartview_app_list(a_server_config=server)
 

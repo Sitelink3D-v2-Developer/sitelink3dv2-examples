@@ -16,18 +16,17 @@ for imp in ["args", "utils", "get_token", "events"]:
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id])
 # << Argument handling
 
 # >> Server & logging configuration
 server = ServerConfig(a_environment=args.env, a_data_center=args.dc, a_scheme="https")
-logging.basicConfig(format=args.log_format, level=args.log_level)
+logging.basicConfig(format=args.log_format, level=int(args.log_level))
 logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 # << Server & logging configuration
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_id))
 site_event_manager = HttpEventManager(a_server_config=server, a_identifier=args.site_id, a_source=EventSource.Site, a_headers=headers)
 
 try:

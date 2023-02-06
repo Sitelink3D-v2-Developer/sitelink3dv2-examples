@@ -9,6 +9,10 @@ rem ## Site creation specifics.
 rem # The owner identifier is obtained using the process described at https://github.com/Sitelink3D-v2-Developer/sitelink3dv2-examples#owner-identifier
 set site_owner_uuid="" 
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 set site_name="API Hauling Site"
 set site_latitude="-27.979320763437187" 
 set site_longitude="153.40316555667877"
@@ -37,6 +41,7 @@ python create_site_configured_for_hauling.py ^
     --env %env% ^
     --dc %dc% ^
     --site_owner_uuid %site_owner_uuid% ^
+    --log_level %log_level% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

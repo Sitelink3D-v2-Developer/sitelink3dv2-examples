@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Region specifics
 rdm_region_name="API Region from Linux"
 rdm_region_verticies_file="verticies/brisbane.txt"
@@ -22,6 +26,7 @@ exec python region_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --rdm_region_name "$rdm_region_name" \
     --rdm_region_verticies_file "$rdm_region_verticies_file" \
     --jwt "$jwt" \

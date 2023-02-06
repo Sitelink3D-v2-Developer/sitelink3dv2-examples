@@ -5,6 +5,10 @@
 env="qa"
 dc="us"
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Site localization specifics.
 site_id="" 
 file_id=""
@@ -21,6 +25,7 @@ oauth_scope=""
 exec python site_localize.py \
     --env "$env" \
     --dc "$dc" \
+    --log_level "$log_level" \
     --site_id "$site_id" \
     --file_id "$file_id" \
     --file_rev "$file_rev" \

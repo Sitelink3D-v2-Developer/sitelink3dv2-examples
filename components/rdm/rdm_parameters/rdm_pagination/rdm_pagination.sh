@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 # Use the components/rdm/rdm_list example to discover the domains and associated views at your site.
 rdm_view="v_sl_delay_by_name"
 rdm_domain="sitelink"
@@ -25,6 +29,7 @@ exec python rdm_pagination.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --start "$start" \
     --page_limit "$page_limit" \
     --rdm_view "$rdm_view" \

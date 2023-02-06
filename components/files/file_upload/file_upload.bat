@@ -6,6 +6,10 @@ set env="qa"
 set dc="us"
 set site_id=""
 
+rem ## Log configuraiton. 
+rem # critical=50, error=40, warning=30, info=20, debug=10
+set log_level=20
+
 set file_name="file_to_upload.txt"
 set file_parent_uuid=""
 
@@ -23,6 +27,7 @@ python file_upload.py ^
     --env %env% ^
     --dc %dc% ^
     --site_id %site_id% ^
+    --log_level %log_level% ^
     --file_name %file_name% ^
     --file_parent_uuid %file_parent_uuid% ^
     --rdm_domain %rdm_domain% ^

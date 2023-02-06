@@ -6,6 +6,10 @@ env="qa"
 dc="us"
 site_id=""
 
+## Log configuraiton. 
+# critical=50, error=40, warning=30, info=20, debug=10
+log_level=20
+
 ## Delay specifics
 rdm_delay_name="Traffic"
 rdm_delay_code="D01"
@@ -22,6 +26,7 @@ exec python delay_create.py \
     --env "$env" \
     --dc "$dc" \
     --site_id "$site_id" \
+    --log_level "$log_level" \
     --rdm_delay_name "$rdm_delay_name" \
     --rdm_delay_code "$rdm_delay_code" \
     --jwt "$jwt" \
