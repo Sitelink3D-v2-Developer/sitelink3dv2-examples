@@ -59,7 +59,7 @@ poll_job(a_server_config=server, a_site_id=args.site_id, a_term=args.report_term
 url = "{}/reporting/v1/{}/{}/{}".format(server.to_url(), args.site_id, "longterms", report_job_id)
 result = json_from(requests.get(url, headers=headers))
 
-output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
 report_output_dir = ""
 report_name_base = ""

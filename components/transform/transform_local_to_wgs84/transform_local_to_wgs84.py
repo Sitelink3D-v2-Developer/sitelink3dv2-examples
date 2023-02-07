@@ -53,7 +53,7 @@ def main():
             cartesian_coords = local_grid_to_cartesian(points, approx_matrices, point_index_to_voxel_index)
 
             # Write the converted cartesian (ECEF) coordinates to an output file in a directory named for this site.
-            output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+            output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
             with open(os.path.join(output_dir, "coords.cartesian.json"), "w") as out_coords_file:
                 out_coords_file.write(json.dumps(cartesian_coords,sort_keys=True,indent=4))
 

@@ -12,6 +12,7 @@ set datalogger_start_ms="1617163200000"
 set datalogger_end_ms="1661293119118"
 
 set datalogger_output_file_name="DiagnosticReport.csv"
+set datalogger_output_folder="C:\\temp\\Bat\\Excel"
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -28,6 +29,7 @@ python create_detailed_diagnostic_report.py ^
     --datalogger_start_ms %datalogger_start_ms% ^
     --datalogger_end_ms %datalogger_end_ms% ^
     --datalogger_output_file_name %datalogger_output_file_name% ^
+    --datalogger_output_folder %datalogger_output_folder% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

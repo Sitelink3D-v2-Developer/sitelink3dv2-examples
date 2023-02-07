@@ -81,7 +81,7 @@ def get_site_name_summary(a_server_config, a_headers, a_site_id):
     site_name = site_detail(a_server_config, a_headers, a_site_id)["name"]
     return site_name + " [" + a_site_id[0:12] + "]"
 
-def make_site_output_dir(a_server_config, a_headers, a_current_dir, a_site_id):
-    output_dir = os.path.join(a_current_dir, get_site_name_summary(a_server_config, a_headers, a_site_id))
+def make_site_output_dir(a_server_config, a_headers, a_target_dir, a_site_id):
+    output_dir = os.path.join(a_target_dir, get_site_name_summary(a_server_config, a_headers, a_site_id))
     os.makedirs(output_dir, exist_ok=True)
     return output_dir

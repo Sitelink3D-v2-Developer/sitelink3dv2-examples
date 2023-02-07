@@ -47,7 +47,7 @@ def download_file(a_server_config, a_site_id, a_file_uuid, a_headers, a_target_d
 
     output_dir = a_target_dir
     if len(output_dir) == 0:
-        output_dir = make_site_output_dir(a_server_config=a_server_config, a_headers=a_headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=a_site_id)
+        output_dir = make_site_output_dir(a_server_config=a_server_config, a_headers=a_headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=a_site_id)
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -84,7 +84,7 @@ def main():
         if len(rj["items"]) > 0:
             target_name = rj["items"][0]["value"]["name"] # There should be only one entry as we specified a unique ID
                 
-    target_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+    target_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
     download_file(a_server_config=server, a_site_id=args.site_id, a_file_uuid=args.file_uuid, a_headers=headers, a_target_dir=target_dir, a_target_name=target_name)
 
 

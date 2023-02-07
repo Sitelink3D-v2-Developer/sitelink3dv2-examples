@@ -51,7 +51,7 @@ resource_definitions = {}
 assets = {}
 mfk = {}
 
-output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
 resources_dir = os.path.join(output_dir, "resources")
 os.makedirs(resources_dir, exist_ok=True)
