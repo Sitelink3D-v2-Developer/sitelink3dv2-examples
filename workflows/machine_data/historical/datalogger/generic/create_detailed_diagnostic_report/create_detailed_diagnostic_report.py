@@ -37,7 +37,7 @@ for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_util
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_datalogger_start_ms, arg_datalogger_end_ms, arg_datalogger_output_file_name])
+args = handle_arguments(a_description=script_name, a_log_level=logging.INFO, a_arg_list=[arg_site_id, arg_datalogger_start_ms, arg_datalogger_end_ms, arg_datalogger_output_file_name, arg_datalogger_output_folder])
 # << Argument handling
 
 # >> Server & logging configuration
@@ -47,5 +47,4 @@ logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basenam
 # << Server & logging configuration
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-
-ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name)
+ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=args.datalogger_output_folder, a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name)

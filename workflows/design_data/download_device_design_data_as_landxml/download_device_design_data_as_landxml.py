@@ -60,7 +60,7 @@ def main():
     for fi in device_design_object_list:
         logging.debug(json.dumps(fi, sort_keys=True, indent=4))
 
-    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
     for fi in device_design_object_list:
         current_dir = os.path.dirname(os.path.realpath(__file__))

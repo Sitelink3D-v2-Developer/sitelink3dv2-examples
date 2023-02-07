@@ -68,7 +68,7 @@ def main():
         operators[item["id"]] = "{} {} {}".format(item["value"]["firstName"], item["value"]["lastName"], item["id"])
     logging.debug(json.dumps(operators, indent=4))
 
-    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
     for fi in operator_domain_file_list:
         try:

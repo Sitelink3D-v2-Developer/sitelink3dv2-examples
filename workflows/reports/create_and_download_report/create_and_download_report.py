@@ -59,7 +59,7 @@ end_unix_time_millis   = datetime_to_unix_time_millis(report_end_datetime)
 report_range_name = args.report_name or "Report for Period {} to {} run {}".format(report_start_datetime.isoformat(), report_end_datetime.isoformat(), datetime.datetime.utcnow().replace(microsecond=0).isoformat())
 report_epoch_name = args.report_name or "Report for Epoch {} run {}".format(report_start_datetime.isoformat(), datetime.datetime.utcnow().replace(microsecond=0).isoformat())
 
-output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
        
 
 report_job_monitor = report_job_monitor_factory(a_data_method=args.data_update_method, a_server_config=server, a_site_id=args.site_id, a_report_term=args.report_term, a_headers=headers)

@@ -291,6 +291,13 @@ arg_datalogger_output_file_name = {
     "required" : True
 }
 
+arg_datalogger_output_folder = {
+    "arg" : "--datalogger_output_folder",
+    "default" : ".",
+    "help" : "The target location in the file system that the output file(s) will be written to.",
+    "required" : True
+}
+
 # Transform related arguments
 arg_transform_local_position_points_file = {
     "arg" : "--transform_local_position_points_file",

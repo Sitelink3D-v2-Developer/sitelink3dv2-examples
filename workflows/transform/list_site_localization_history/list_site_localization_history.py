@@ -42,7 +42,7 @@ def main():
     
     if localised:
 
-        output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+        output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
 
         # Query and download all versions of the localization history at this site to a directory named as a function of the time the file was the active localization.
         query_and_download_site_localization_file_history(a_server_config=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=output_dir)

@@ -530,7 +530,7 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
 
         OutputLineObjects(a_report_file, resource_config_processor._json["description"], a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
-def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_current_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
+def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
 
     # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
     # MFK replicate packets will be converted into WGS84 so that lat, lon and height information can also be output to the report making map plotting easy. As transforms
@@ -539,10 +539,10 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_current_dir, a_data
     # list_site_localization_history in this repository.
     localised, transform_revision = get_current_site_localisation(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
     transform_list = []
+    output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_target_dir=a_target_dir, a_site_id=a_site_id)
+    os.makedirs(output_dir, exist_ok=True)
+
     if localised:
-
-        output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_current_dir=a_current_dir, a_site_id=a_site_id)
-
         # Query and cache all versions of the localization history at this site.
         transform_list = query_and_download_site_localization_file_history(a_server_config=a_server, a_site_id=a_site_id, a_headers=a_headers, a_target_dir=output_dir)
 
@@ -560,7 +560,6 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_current_dir, a_data
     assets = {}
     state = {}
 
-    output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_current_dir=a_current_dir, a_site_id=a_site_id)
     resources_dir = os.path.join(output_dir, "resources")
     os.makedirs(resources_dir, exist_ok=True)
 

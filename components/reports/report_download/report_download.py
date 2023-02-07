@@ -86,7 +86,7 @@ def main():
     # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
+    output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_site_id=args.site_id)
     download_report(a_report_url=args.report_url, a_headers=headers, a_target_dir=output_dir, a_report_name=args.report_name, a_page_size=args.page_limit)       
 
 if __name__ == "__main__":

@@ -50,4 +50,4 @@ logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basenam
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
 
-ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_current_dir=os.path.dirname(os.path.realpath(__file__)), a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name, a_machine_description_filter="Generic Excavator (3DMC)")
+ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=os.path.dirname(os.path.realpath(__file__)), a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name, a_machine_description_filter="Generic Excavator (3DMC)")
