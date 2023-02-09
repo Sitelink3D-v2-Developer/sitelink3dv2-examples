@@ -594,7 +594,6 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
 
         if decoded_json['type'] == "mfk::Replicate":
             ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
-            geodetic_point_list = geodetic_coordinate_manager.calculate_geodetic_points(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
         line_count += 1
 
     logging.info("Writing report to {}".format(a_datalogger_output_file_name))
@@ -637,7 +636,7 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
                 pad_string += " -,"
                 line_diff -= 1
 
-            aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()
+            aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()[:-1]
             report_file.write(aggregate_line)
 
     report_file_temp.close()
