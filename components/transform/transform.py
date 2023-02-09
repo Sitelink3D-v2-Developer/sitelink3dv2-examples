@@ -126,15 +126,15 @@ def wgs84_coord_to_object_list_item(a_wgs_point):
         except KeyError:
             pass
 
+        item_dir = {
+                "title" : "direction"
+            }
         try:
             dir = a_wgs_point["dir"]
-            item_dir = {
-                    "title" : "direction",
-                    "value" : dir
-                }
-            obj["items"].append(item_dir)
+            item_dir["value"] = dir           
         except KeyError:
-            pass
+            item_dir["value"] = "-"     
+        obj["items"].append(item_dir)
 
         try:
             alt = a_wgs_point["alt"]
