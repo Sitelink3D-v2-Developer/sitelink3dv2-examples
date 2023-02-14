@@ -47,4 +47,21 @@ logging.info("Running {0} for server={1} dc={2} site={3}".format(os.path.basenam
 # << Server & logging configuration
 
 headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=args.datalogger_output_folder, a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name)
+# remove any previous error files in case one is generated from below exception handling
+target_dir=args.datalogger_output_folder
+
+
+output_dir = make_site_output_dir(a_server_config=server, a_headers=headers, a_target_dir=target_dir, a_site_id=args.site_id)
+os.makedirs(output_dir, exist_ok=True)
+error_file_name = os.path.join(output_dir, "error.txt")
+
+try:
+    os.remove(error_file_name)
+    logging.info("Removed previous error file.")
+except OSError as error:
+    pass
+
+try:
+    ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=target_dir, a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name)
+except SitelinkProcessingError as e:
+    log_and_exit_on_error(a_message=e, a_target_dir=output_dir)    

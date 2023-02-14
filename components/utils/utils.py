@@ -85,3 +85,15 @@ def make_site_output_dir(a_server_config, a_headers, a_target_dir, a_site_id):
     output_dir = os.path.join(a_target_dir, get_site_name_summary(a_server_config, a_headers, a_site_id))
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
+
+class SitelinkProcessingError(Exception):
+    pass
+
+
+def log_and_exit_on_error(a_message, a_target_dir):
+    os.makedirs(a_target_dir, exist_ok=True)
+    error_file_name = os.path.join(a_target_dir, "error.txt")
+    error_file = open(error_file_name, "w")
+    error_file.write(str(a_message))
+    error_file.close()
+    exit(1)
