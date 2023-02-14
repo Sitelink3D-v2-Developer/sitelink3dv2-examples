@@ -55,6 +55,9 @@ def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_
         point_index_to_voxel_index.append(voxel_list_index)
         
     approx_matrix_response = get_local_grid_to_cartesian_approx_matrix(a_server.to_url(), a_headers, a_site_id, a_transform_revision, a_voxel_extent, voxel_list)
+    if approx_matrix_response.status_code != 200:
+        raise SitelinkProcessingError("Couldn't find approximation matrix when convetring to cartesian coordinates.")
+
     approx_matrices = approx_matrix_response.json()["matrices"]
 
     return approx_matrices, point_index_to_voxel_index
@@ -78,6 +81,9 @@ def GetTransform(a_server, a_site_id, a_headers):
     params["start"] = base64.urlsafe_b64encode(json.dumps(start).encode('utf-8')).decode('utf-8').rstrip("=")
     params["end"] = base64.urlsafe_b64encode(json.dumps(end).encode('utf-8')).decode('utf-8').rstrip("=")
     response = session.get(rdm_url, headers=a_headers, params=params)
+    if response.status_code != 200:
+        raise SitelinkProcessingError("Couldn't find site transformation list.")
+
     rdm_view_list = response.json()
     return rdm_view_list
 
