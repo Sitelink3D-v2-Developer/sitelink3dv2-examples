@@ -378,7 +378,13 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
 
     position_string = SerialiseObjectList(a_object_list, a_header_list)
 
-    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay, operator, task, surface_name, position_string))
+    machine_name_strip = machine_name.replace(",","_")
+    delay_strip = delay.replace(",","_")
+    operator_strip = operator.replace(",","_")
+    task_strip = task.replace(",","_")
+    surface_name_strip = surface_name.replace(",","_")
+
+    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_strip, operator_strip, task_strip, surface_name_strip, position_string))
 
 
 def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_machine_description_filter=None):
@@ -516,7 +522,16 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 # For efficiency we cache all local points and run WGS84 transformations on them all at the end of data processing. Otherwise
                 # the need to lookup an approximation matrices for every replicate would make execution very slow.
                 if not local_position_added:
-                    a_geodetic_coordinate_manager.add_local_point(point, transform_info)
+                    # If we have good position quality, we add this local position to be transformed to WGS84. If not, we skip it and add a placeholder
+                    # as attempting to transform bad positions may subsequently fail the request for a transformation matrix which aborts entire processing.
+                    pos_quality = aux_control_data_dict["position_quality"] 
+                    if pos_quality == 2 or pos_quality == 3: # "RTK Fixed" or "mm Enhanced"
+                        if(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
+                            a_geodetic_coordinate_manager.skip_local_point("[unavailable - point at origin]")
+                        else:
+                            a_geodetic_coordinate_manager.add_local_point(point, transform_info)
+                    else:
+                        a_geodetic_coordinate_manager.skip_local_point("[unavailable - low position quality]")
                     local_position_added = True
 
         else:

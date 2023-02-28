@@ -228,6 +228,41 @@ class GeodeticCoordinateManager():
         self.m_geodetic_coordinate_list.append(None)
         self.m_transform_manager.addLocalPoint(a_point, next_geodetic_coordinate_list_index, transform_info)
 
+    def skip_local_point(self, a_geodetic_output_column_message):
+        next_geodetic_coordinate_list_index = len(self.m_geodetic_coordinate_list)
+        obj = {
+            "items" : []
+        }
+
+        item_lat = {
+                "title" : "latitude",
+                "value" : a_geodetic_output_column_message
+            }
+        obj["items"].append(item_lat)
+
+
+        item_lon = {
+                "title" : "longitude",
+                "value" : a_geodetic_output_column_message
+            }
+        obj["items"].append(item_lon)
+
+        item_dir = {
+                "title" : "direction",
+                "value" : a_geodetic_output_column_message
+            }
+        obj["items"].append(item_dir)
+
+
+        item_alt = {
+                "title" : "altitude",
+                "value" : a_geodetic_output_column_message
+            }
+        obj["items"].append(item_alt)
+
+        self.m_geodetic_coordinate_list.append(obj)
+
+
     def calculate_geodetic_points(self, a_server, a_site_id, a_headers):
         # return the contiguous list of geodetic points, first by submitting the local points for transformation via
         # the member transformation manager, then by submitting the returned transformed coordinates back into their
