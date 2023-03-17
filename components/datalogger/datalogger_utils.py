@@ -7,6 +7,9 @@ import os
 import urllib
 import datetime
 from dateutil import tz
+import websocket
+import ssl
+import io
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -658,7 +661,11 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
             logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
 
         if decoded_json['type'] == "mfk::Replicate":
-            ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            try:
+                ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            except requests.exceptions.HTTPError:
+                logging.warning("Could not process replicate.")
+                continue
         line_count += 1
 
     logging.info("Writing report to {}".format(a_datalogger_output_file_name))
@@ -714,3 +721,121 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
     elapsed_time = end_time - start_time
 
     logging.info("Processed {} lines in {} seconds".format(line_count + 1, elapsed_time)) # convert line_count from zero based indexing
+
+
+class Asset():
+    def __init__(self, asset_type, asset_class, a_oem=str(uuid.uuid4()), a_model=str(uuid.uuid4()), a_serial_number=str(uuid.uuid4()), a_asset_id=str(uuid.uuid4()), a_asset_uuid=str(uuid.uuid4())):
+        self.asset_type = asset_type
+        self.asset_class = asset_class
+        self.oem = a_oem
+        self.model = a_model
+        self.serial_number = a_serial_number
+        self.asset_id = a_asset_id
+        self.asset_uuid = a_asset_uuid
+        self.certificate, self.key_pair = generate_authorisation(self.asset_uuid, "sitelink@topcon.com")
+
+    def get_urn(self):
+        return "urn:X-topcon:{0}:ac:{1}:oem:{2}:model:{3}:sn:{4}:id:{5}".format(self.asset_type, self.asset_class, self.oem, self.model, self.serial_number, self.asset_id)
+
+    def make_payload(self, at = None):
+        certificate_pem = openssl.dump_certificate(openssl.FILETYPE_PEM, self.certificate)
+        return {
+            "type": "sitelink::Asset",
+            "data": {
+                "uuid": self.asset_uuid,
+                "urn": self.get_urn(),
+                "finger_print": self.certificate.digest("sha1").decode('utf-8'),
+                "finger_print_algorithm": "SHA1",
+                "public_id": {
+                    "type":"RSA",
+                    "public_pem_b64": base64.b64encode(certificate_pem).decode('utf-8'),
+                }
+            },
+            "at": at or config.get_milliseconds_since_epoch(),
+            "ttl": 57600,
+        }
+
+class AssetContext():
+    def __init__(self, assets, lease_start = None):
+        self.assets = assets
+        self.uuid = str(uuid.uuid4())
+        self.lease_start = lease_start or config.get_milliseconds_since_epoch()
+        self.lease_ttl = 28800
+
+    def make_payload(self):
+        payload = {
+            "uuid": self.uuid,
+            "lease_start": self.lease_start,
+            "lease_ttl": self.lease_ttl,
+        }
+        document = json.dumps(payload)
+        document_b64 = base64.b64encode(document.encode('utf-8')).decode('utf-8')
+        def get_asset_signature(asset):
+            return {
+                "algorithm": "SHA256-RSA",
+                "asset_urn": asset.get_urn(),
+                "asset_uuid": asset.asset_uuid,
+                "signature_b64": base64.b64encode(openssl.sign(asset.key_pair, document, "sha256")).decode('utf-8'),
+            }
+        return {
+            "type": "sitelink::AssetContext",
+            "data": {
+                "uuid": self.uuid,
+                "lease_start": self.lease_start,
+                "lease_ttl": self.lease_ttl,
+                "signatures": [get_asset_signature(asset) for asset in self.assets],
+                "document_b64": document_b64,
+            },
+            "at": self.lease_start,
+            "ttl": self.lease_ttl,
+        }
+
+class DataLoggerAggregatorSocket():
+    def __init__(self, a_server_config, a_site_id, a_dc, a_domain, a_region):
+        self.site_id = a_site_id
+        self.domain = a_domain
+        self.region = a_region
+        self.ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+        self.ws.settimeout(2)
+        dl_ws_url = "{}/data_logger/v1/publish_live/{}/{}/{}.{}".format(a_server_config.to_url(), a_dc, a_domain, a_site_id, a_region)
+        self.ws.connect(dl_ws_url)
+    def send(self, payload):
+        return self.ws.send(payload)
+    def receive(self):
+        return self.ws.recv()
+    def receive_ack(self):
+        return map(int, self.ws.recv().split("\n"))
+        
+BEACON_LONG_TTL = 30000; # ms before low frequency beacon should be resent
+BEACON_SHORT_TTL = 5000; # ms before high frequency beacon should be resent
+
+def make_haul_mfk_replicate_payload(asset_context, rc_uuid, latitude, longitude, altitude, direction, at = None, beacon_expiry_epoch=0):
+    manifest = io.BytesIO()
+    manifest.write(struct.pack("<d", latitude))
+    manifest.write(struct.pack("<d", longitude))
+    manifest.write(struct.pack("<d", altitude))
+    manifest.write(struct.pack("<f", direction))
+    manifest.seek(0)
+
+    at_payload = at or config.get_milliseconds_since_epoch()
+    is_beacon = at_payload > beacon_expiry_epoch
+    if is_beacon:
+        beacon_expiry_epoch = at_payload + BEACON_LONG_TTL
+  
+    logging.info("BEACON IS {}, expiry is {}".format(is_beacon, beacon_expiry_epoch))
+    return {
+        "type": "mfk::Replicate",
+        "data": {
+            "ac_uuid": asset_context.uuid,
+            "beacon": is_beacon,
+            "local_bounds": {
+                "type": "none",
+            },
+            "manifest": [
+                base64.b64encode(manifest.read()).decode('utf-8'),
+            ],
+            "rc_uuid": rc_uuid,
+        },
+        "at": at_payload,
+        "ttl": 30,
+    }, beacon_expiry_epoch
