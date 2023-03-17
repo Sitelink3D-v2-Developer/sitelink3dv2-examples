@@ -421,3 +421,11 @@ arg_data_update_method = {
         "help" : "A required field that specifies whether data updates (for example the status of reporting jobs) should be polled for or accessed using an event subscription and callback. Options are 'poll' or 'event'.",
         "required" : True
 }
+
+# Live data writing
+arg_machine_resource_configuration_file = {
+        "arg" : "--machine_resource_configuration_file",
+        "default" : "",
+        "help" : "The relative path to a json file defining the resource configuration for a machine.",
+        "required" : True
+}

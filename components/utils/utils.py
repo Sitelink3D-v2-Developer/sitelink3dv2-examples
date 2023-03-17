@@ -2,6 +2,8 @@
 import uuid
 import datetime
 import dateutil.parser
+import OpenSSL.crypto as openssl
+import random
 import pytz
 import time
 import os
@@ -89,6 +91,57 @@ def make_site_output_dir(a_server_config, a_headers, a_target_dir, a_site_id):
 class SitelinkProcessingError(Exception):
     pass
 
+##
+#  x509 content.
+##
+def make_certificate_request(public_key, digest="sha256", **name):
+    """
+    **name - The name of the subject of the request, possible
+        arguments are:
+            C     - Country name
+            ST    - State or province name
+            L     - Locality name
+            O     - Organization name
+            OU    - Organizational unit name
+            CN    - Common name
+            emailAddress - E-mail address
+    """
+    request = openssl.X509Req()
+    subject = request.get_subject()
+    for k, v in name.items():
+        setattr(subject, k, v)
+    request.set_pubkey(public_key)
+    request.sign(public_key, digest)
+    return request
+
+def make_key_pair(bits):
+    k = openssl.PKey()
+    k.generate_key(openssl.TYPE_RSA, bits)
+    return k
+
+# This function performs the repetitive work of making a key pair and a certificate, returning these for easy use by the caller
+def generate_authorisation(common_name, email):
+    key_pair = make_key_pair(2048)
+    cert_req = make_certificate_request(key_pair, O="SiteLink.test", CN=common_name, emailAddress=email)
+    days_valid = datetime.datetime.utcnow() + datetime.timedelta(days=7) # expiry of 7
+    certificate = make_certificate(cert_req, (cert_req, key_pair), days_valid)
+    return certificate, key_pair
+
+def make_certificate(req, signerCertKey, expires, digest = "sha256"):
+    not_before = datetime.datetime.utcnow()
+    if not_before > expires:
+        raise Exception("make_certificate expiry in the past")
+    signer_cert, signer_key = signerCertKey
+    cert = openssl.X509()
+    cert.set_serial_number(random.randint(1, 1<<16 - 1))
+    asn1timeFormat = "%Y%m%d%H%M%SZ"
+    cert.set_notBefore(bytes(not_before.strftime(asn1timeFormat), encoding="utf8"))
+    cert.set_notAfter(bytes(expires.strftime(asn1timeFormat), encoding="utf8"))
+    cert.set_issuer(signer_cert.get_subject())
+    cert.set_subject(req.get_subject())
+    cert.set_pubkey(req.get_pubkey())
+    cert.sign(signer_key, digest)
+    return cert
 
 def log_and_exit_on_error(a_message, a_target_dir):
     os.makedirs(a_target_dir, exist_ok=True)

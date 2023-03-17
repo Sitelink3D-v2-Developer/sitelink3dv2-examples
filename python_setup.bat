@@ -7,4 +7,5 @@ pip install ^
   websockets ^
   websocket-client ^
   numpy ^
-  queuelib
+  queuelib ^
+  pyopenssl

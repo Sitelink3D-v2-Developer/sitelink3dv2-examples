@@ -1,0 +1,139 @@
+{
+  "at": 0,
+  "data": {
+    "components": [
+      {
+        "description": "generic haul truck",
+        "interfaces": [
+          {
+            "name": "collision_shapes",
+            "oem": "topcon",
+            "shapes": [
+              {
+                "id": "body",
+                "node_ref": "topcon.nodes.body",
+                "type": "aabb"
+              }
+            ],
+            "version": "0.1"
+          },
+          {
+            "apply_measurements_b64": "bG9jYWwgbSA9IG1may50b3Bjb24ubWVhc3VyZW1lbnRzDQoNCi0tIG5vZGVzDQpsb2NhbCBuID0gbWZrLnRvcGNvbi5ub2Rlcw0KDQotLSBjb2xsaXNpb25fc2hhcGVzDQpsb2NhbCBjcyA9IG1may50b3Bjb24uY29sbGlzaW9uX3NoYXBlcw0KDQpjcy5ib2R5LmhleCA9IG0uYm9keV9sZW5ndGgudmFsdWUgLyAyDQpjcy5ib2R5LmhleSA9IG0uYm9keV93aWR0aC52YWx1ZSAvIDINCmNzLmJvZHkuaGV6ID0gbS5ib2R5X2hlaWdodC52YWx1ZSAvIDINCg0KY3MuYm9keS5jeiA9IC1tLmJvZHlfaGVpZ2h0LnZhbHVlIC8gMg0K",
+            "measurements": [
+              {
+                "description": "capacity in cubic metres of haul truck dumper",
+                "id": "capacity",
+                "value": 50
+              },
+              {
+                "description": "length in metres of haul truck",
+                "id": "body_length",
+                "value": 7.7
+              },
+              {
+                "description": "width in metres of haul truck",
+                "id": "body_width",
+                "value": 5.3
+              },
+              {
+                "description": "height in metres of haul truck above road",
+                "id": "body_height",
+                "value": 3.9
+              }
+            ],
+            "name": "measurements",
+            "oem": "topcon",
+            "version": "0.1"
+          },
+          {
+            "name": "nodes",
+            "nodes": [
+              {
+                "id": "body",
+                "nodes": []
+              }
+            ],
+            "oem": "topcon",
+            "version": "0.1"
+          },
+          {
+            "assets": [
+              {
+                "resource": [
+                  {
+                    "href": "https://s3.amazonaws.com/sitelink-mfk/topcon/haul_trucks/generic/v3/3d/collada/haul_truck.dae",
+                    "mime_type": "model/vnd.collada+xml"
+                  },
+                  {
+                    "href": "https://s3.amazonaws.com/sitelink-mfk/topcon/haul_trucks/generic/v3/3d/gltf/haul_truck.gltf",
+                    "mime_type": "model/gltf+json"
+                  }
+                ],
+                "shapes": [
+                  {
+                    "asset_transform": "body",
+                    "asx": 8.204,
+                    "asy": 2.862,
+                    "asz": 3.325,
+                    "id": "body",
+                    "node_ref": "topcon.nodes.body",
+                    "sx": 8.204,
+                    "sy": 2.862,
+                    "sz": 3.325
+                  }
+                ],
+                "view": "3d"
+              }
+            ],
+            "name": "render_assets",
+            "oem": "topcon",
+            "version": "0.2"
+          },
+          {
+            "manifest": [
+              {
+                "type": "double",
+                "value_ref": "topcon.transform.wgs.lat"
+              },
+              {
+                "type": "double",
+                "value_ref": "topcon.transform.wgs.lon"
+              },
+              {
+                "type": "double",
+                "value_ref": "topcon.transform.wgs.alt"
+              },
+              {
+                "type": "float",
+                "value_ref": "topcon.transform.wgs.dir"
+              }
+            ],
+            "name": "replicate",
+            "oem": "topcon",
+            "version": "0.1"
+          },
+          {
+            "name": "transform",
+            "oem": "topcon",
+            "type": "wgs",
+            "version": "0.1",
+            "wgs": {
+              "alt": 0,
+              "dir": 0,
+              "id": "wgs",
+              "lat": 0,
+              "lon": 0
+            }
+          }
+        ],
+        "uuid": "bf8fd906-28d6-45e9-8a6a-339977b11d9b"
+      }
+    ],
+    "description": "Haul Truck",
+    "resource_type": "748534a7-ce04-4ede-9f1a-50c5968c8b8c",
+    "uuid": "777a93c0-ec0d-4994-b1fc-83271f5618f0",
+    "version": "0.1"
+  },
+  "ttl": 86400,
+  "type": "mfk::ResourceConfiguration"
+}
