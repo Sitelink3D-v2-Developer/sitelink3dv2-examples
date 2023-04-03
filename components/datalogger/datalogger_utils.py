@@ -524,14 +524,20 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 if not local_position_added:
                     # If we have good position quality, we add this local position to be transformed to WGS84. If not, we skip it and add a placeholder
                     # as attempting to transform bad positions may subsequently fail the request for a transformation matrix which aborts entire processing.
-                    pos_quality = aux_control_data_dict["position_quality"] 
-                    if pos_quality == 2 or pos_quality == 3: # "RTK Fixed" or "mm Enhanced"
-                        if(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
-                            a_geodetic_coordinate_manager.skip_local_point("[unavailable - point at origin]")
+                    if "position_quality" in aux_control_data_dict.keys():
+                        pos_quality = aux_control_data_dict["position_quality"] 
+                        if pos_quality == 2 or pos_quality == 3: # "RTK Fixed" or "mm Enhanced"
+                            if(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
+                                a_geodetic_coordinate_manager.skip_local_point("[unavailable - point at origin]")
+                            else:
+                                a_geodetic_coordinate_manager.add_local_point(point, transform_info)
+                        elif pos_quality == 1:
+                            a_geodetic_coordinate_manager.skip_local_point("[unavailable - low position quality]")
                         else:
-                            a_geodetic_coordinate_manager.add_local_point(point, transform_info)
+                            a_geodetic_coordinate_manager.skip_local_point("[unavailable - position quality unknown]")
                     else:
-                        a_geodetic_coordinate_manager.skip_local_point("[unavailable - low position quality]")
+                        a_geodetic_coordinate_manager.skip_local_point("[unavailable - position quality unknown]") # Initial Volvo app doesn't report position_quality and initial aftermarket excavator only reports 0 (Unknown)
+
                     local_position_added = True
 
         else:
