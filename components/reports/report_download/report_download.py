@@ -42,34 +42,12 @@ def download_report_binary(a_report_url, a_headers, a_target_dir, a_report_name)
         logging.info("Saved report {}".format(output_file))    
 
 def download_report(a_report_url, a_headers, a_target_dir, a_report_name, a_page_size="500"):
-    
-    paginate_report = a_report_url.startswith("https") and a_report_url.endswith("hauls") # reports of this format are the only ones to paginate
+    logging.debug(a_report_url)
     if not os.path.exists(a_target_dir):
         os.makedirs(a_target_dir, exist_ok=True)
 
-    if paginate_report:
-        logging.info("Downloading paginated report.")
-        page_traits = ReportDataPaginationTraits(a_page_size=a_page_size, a_start="0")
-        more_data = True
-
-        output_list = []
-        while True:
-            report_list = fetch_report_paginated(a_report_url=a_report_url, a_headers=a_headers, a_params=page_traits.params())       
-            more_data = page_traits.more_data(report_list)
-            logging.info ("Found {} items {}".format(len(report_list["data"]), "({})".format("unpaginated" if page_traits.page_number() == 1 else "last page") if not more_data else "(page {})".format(page_traits.page_number())))
-
-            output_list.append(report_list["data"])
-
-            if not more_data:
-                break
-        output_file = os.path.join(a_target_dir, a_report_name)
-        with open(output_file, "w") as f:
-            f.write(json.dumps(list(itertools.chain.from_iterable(output_list)), indent=4))
-            logging.info("Saved report {}".format(output_file))  
-
-    else:
-        logging.info("Downloading binary report.")
-        download_report_binary(a_report_url, a_headers, a_target_dir, a_report_name)
+    logging.info("Downloading binary report.")
+    download_report_binary(a_report_url, a_headers, a_target_dir, a_report_name)
 
 
 def main():
