@@ -5,6 +5,7 @@ import uuid
 from collections import OrderedDict
 import struct
 import math
+from enum import Enum
 
 def lla_to_ecef(lat, lon, alt):
     a = 6378137.0                   # WGS-84 semi-major axis
@@ -553,13 +554,110 @@ class Unknown(Interface):
             if key in self.__dict__:
                 return getattr(self, key)
 
+class AsBuiltShapes(Interface):
+    def __init__(self, abshapes_json):
+        super(AsBuiltShapes, self).__init__(abshapes_json)
+        self.shapes = list(map(functools.partial(self.Shape, interface=self), abshapes_json.get("shapes", {})))
+
+    def cache(self, component):
+        for shape in self.shapes:
+            for vertex in shape.vertices:
+                vertex.point = component.get_interface_object(vertex.point_reference)
+                for constant in vertex.constants:
+                    key, value_id = constant.value_reference.rsplit(".", 1)
+                    raw_sensors = component.get_interface_object(key)
+                    constant.value = raw_sensors[value_id]
+
+    class Shape(object):
+        def __init__(self, shape_json, interface):
+            self.id = shape_json["id"]
+            self.functions = list(map(functools.partial(AsBuiltShapes.FourCC), shape_json["functions"]))
+            self.vertices = list(map(functools.partial(AsBuiltShapes.Shape.Vertex), shape_json["vertices"]))
+
+            self._enum_map = OrderedDict()
+            self._enum_map["type"] = AsBuiltShapes.Shape.Type(shape_json["type"])
+            self._enum_map["enabled"] = AsBuiltShapes.Shape.Enabled(shape_json["enabled"])
+            self._enum_map["apply_when"] = AsBuiltShapes.Shape.ApplyWhen(shape_json["apply_when"])
+            interface[self.id] = self
+
+        def __setitem__(self, key, value):
+            if key == "type":
+                self._enum_map[key] = AsBuiltShapes.Shape.Type(value)
+            elif key == "enabled":
+                 self._enum_map[key] = AsBuiltShapes.Shape.Enabled(value)
+            elif key == "apply_when":
+                 self._enum_map[key] = AsBuiltShapes.Shape.ApplyWhen(value)
+
+        def __getitem__(self, name):
+            return self._enum_map[name]
+
+        def is_enabled(self):
+            return self._enum_map["enabled"] == AsBuiltShapes.Shape.Enabled.ENABLED
+
+        class Vertex(object):
+            def __init__(self, vertex):
+                self.point_reference = vertex["point_ref"]
+                self.constants = list(map(functools.partial(AsBuiltShapes.Shape.Vertex.Constants), vertex["constants"]))
+                self.point = None
+
+            def __getitem__(self, key):
+                if key in self.__dict__:
+                    return getattr(self, key)
+
+            class Constants(object):
+                def __init__(self, constant):
+                    self.function = constant["function"]
+                    self.value_reference = constant["value_ref"]
+                    self.value = None
+
+                def __getitem__(self, key):
+                    if key in self.__dict__:
+                        return getattr(self, key)
+
+        class Type(Enum):
+            LINE = "line"
+            QUAD = "quad"
+            def __init__(self, value):
+                self._value_ = value
+
+        class Enabled(Enum):
+            DISABLED = 0
+            ENABLED = 1
+            def __init__(self, value):
+                self._value_ = value
+
+        class ApplyWhen(Enum):
+            ALWAYS = 0
+            HEIGHT_LOWER = 1
+            HEIGHT_HIGHER = 2
+            INITIALIZED = 3
+            HEIGHT_LOWER_AND_INITIALIZED = 4
+            HEIGHT_HIGHER_AND_INITIALIZED = 5
+            def __init__(self, value):
+                self._value_ = value
+
+    class FourCC(object):
+        def __init__(self, function):
+            if function is None or len(function) > 4:
+                raise RuntimeError(f"expected valid four char code, got: {function}")
+
+            c = [None] * len(function)
+            for i in range(len(function)):
+                c[i] = chr(ord(function[i]) & 255)
+
+            self.fourCC = "".join(c)
+
+        def __str__(self):
+            return self.fourCC
+
 class Component(object):
     interface_factory = {
         "replicate": Replicate,
         "points_of_interest": PointsOfInterest,
         "nodes": Nodes,
         "transform": Transform,
-        "attach": Attach
+        "attach": Attach,
+        "asbuilt_shapes": AsBuiltShapes
     }
 
     def __init__(self, component_json):

@@ -232,21 +232,10 @@ def FindWgs84InResourceConfiguration(a_resource_configuration, a_transform_compo
 
     return this_wgs
 
-def FindTransformComponentInResourceConfiguration(a_resource_configuration):
-    # Iterate over the available components and find an interface with the description "points_of_interest"
+def FindComponentWithInterfaceInResourceConfiguration(a_resource_configuration, a_interface_name):
     for comp in a_resource_configuration.components:
         try:
-            iface = comp.interfaces["transform"]
-            return comp
-        except KeyError:
-            pass
-    return None
-
-def FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration):
-    # Iterate over the available components and find an interface with the description "points_of_interest"
-    for comp in a_resource_configuration.components:
-        try:
-            iface = comp.interfaces["aux_control_data"]
+            iface = comp.interfaces[a_interface_name]
             return comp
         except KeyError:
             pass
@@ -262,7 +251,7 @@ def SerialiseObjectList(a_object_list, a_header_list):
     # the list. They'll then be in the header list the next time we encounter data for that field.
     for obj in a_object_list:
         for item in obj["items"]:
-            object_name = item["title"]
+            object_name = item["title"].replace(",","_")
             try:
                 object_name_header_index = a_header_list.index(object_name)
             except ValueError:
@@ -275,7 +264,7 @@ def SerialiseObjectList(a_object_list, a_header_list):
     value_list = [None for _ in range(len(a_header_list))]
     for obj in a_object_list:
         for item in obj["items"]:
-            object_name = item["title"]
+            object_name = item["title"].replace(",","_")
             object_name_header_index = a_header_list.index(object_name)
             value_list[object_name_header_index] = "{}, ".format(item["value"])
 
@@ -419,7 +408,7 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         # Here we need to find the component in the resource configuration that contains the aux_control_data interface.
         # This will contain position quality information if available for this machine. A machine may specify multiple
         # components in its resource configuration but only one of those components will specify aux control data.
-        aux_control_data_comp = FindAuxControlDataComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
+        aux_control_data_comp = FindComponentWithInterfaceInResourceConfiguration(a_resource_configuration=resource_config_processor, a_interface_name="aux_control_data")
         aux_control_data_dict = GetAuxControlDataFromComponent(a_component=aux_control_data_comp)
 
         # Here we need to find the component(s) in the resource configuration that contains the points_of_interest interface.
@@ -430,7 +419,9 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         # so the component_point_list may be legitimately empty.
         component_point_list = FindPointsOfInterestInResourceConfiguration(a_resource_configuration=resource_config_processor)
         # The component specifying the "transform" component is required to apply replicate manifest updates.
-        transform_component = FindTransformComponentInResourceConfiguration(a_resource_configuration=resource_config_processor)
+        transform_component = FindComponentWithInterfaceInResourceConfiguration(a_resource_configuration=resource_config_processor, a_interface_name="transform")
+
+        asbuilt_shapes_comp = FindComponentWithInterfaceInResourceConfiguration(a_resource_configuration=resource_config_processor, a_interface_name="asbuilt_shapes")
 
         # Here we build our list of objects to print, each of which contains a list of items. This object list is passed to the
         # OutputLineObjects function to serialise for output. This object list is populated by a combination of two categories.
@@ -443,6 +434,59 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
         object_list = []
         geodetic_object_list = []
         local_position_added = False
+
+        if asbuilt_shapes_comp is not None:
+
+            asbuilt_shapes:mfk.AsBuiltShapes = asbuilt_shapes_comp.interfaces["asbuilt_shapes"]
+            asbuilt_shapes.cache(asbuilt_shapes_comp)
+            for shp in asbuilt_shapes.shapes:
+                for vert in shp.vertices:
+                    obj = {
+                        "items" : []
+                    }
+                    node_name, prop = vert.point_reference.rsplit(".", 1)
+                    for con in vert.constants:
+                    
+                        key, value_id = con.value_reference.rsplit(".", 1)
+                        raw_sensors = asbuilt_shapes_comp.get_interface_object(key)
+                        
+                        if con.function == "dsty":
+                            item = {
+                                "title" : prop + "_density ({})".format(raw_sensors["description"]),
+                                "value" : con.value
+                            }
+                            obj["items"].append(item)
+
+                        if con.function == "vibf":
+                            item = {
+                                "title" : prop + "_vibration_freq ({})".format(raw_sensors["description"]),
+                                "value" : con.value
+                            }
+                            obj["items"].append(item)
+
+                        if con.function == "viba":
+                            item = {
+                                "title" : prop + " vibration_amp ({})".format(raw_sensors["description"]),
+                                "value" : con.value
+                            }
+                            obj["items"].append(item)
+
+                        if con.function == "spdm":
+                            item = {
+                                "title" : prop + "_speed ({})".format(raw_sensors["description"]),
+                                "value" : con.value
+                            }
+                            obj["items"].append(item)
+
+                        if con.function == "temp":
+                            item = {
+                                "title" : prop + "_temp ({})".format(raw_sensors["description"]),
+                                "value" : con.value
+                            }
+                            obj["items"].append(item)
+
+                    object_list.append(obj)
+
         if len(component_point_list) > 0:
 
             for comp in component_point_list:
