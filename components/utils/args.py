@@ -98,6 +98,13 @@ arg_file_id = {
         "required" : True
     }
 
+arg_file_rev = {
+        "arg" : "--file_rev",
+        "default" : "",
+        "help" : "The RDM revision of the file as a string.",
+        "required" : True
+    }    
+
 arg_file_parent_uuid = {
         "arg" : "--file_parent_uuid",
         "default" : None,
