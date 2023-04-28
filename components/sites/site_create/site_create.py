@@ -54,12 +54,10 @@ def main():
     # >> Server & logging configuration
     server = ServerConfig(a_environment=args.env, a_data_center=args.dc)
     logging.basicConfig(format=args.log_format, level=args.log_level)
-    logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server.to_url(), args.dc, args.site_name))
+    logging.info("Running {0} for server={1} dc={2} site={3} owner={3}".format(script_name, server.to_url(), args.dc, args.site_name, args.site_owner_uuid))
     # << Server & logging configuration
 
     headers = headers_from_jwt_or_oauth(a_jwt=args.jwt, a_client_id=args.oauth_id, a_client_secret=args.oauth_secret, a_scope=args.oauth_scope, a_server_config=server)
-
-    logging.info("Running {0} for server={1} dc={2} owner={3}".format(os.path.basename(os.path.realpath(__file__)), server.to_url(), args.dc, args.site_owner_uuid))
 
     site_id = create_site(a_site_name=args.site_name, a_dc=args.dc, a_server_config=server, a_owner_id=args.site_owner_uuid, a_latitude=args.site_latitude, a_longitude=args.site_longitude, a_phone=args.site_contact_phone, a_email=args.site_contact_email, a_name=args.site_contact_name, a_timezone=args.site_timezone, a_headers=headers)
 
