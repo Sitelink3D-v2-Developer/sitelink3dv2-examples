@@ -147,6 +147,9 @@ def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a
         elif "delay" == nested_state["state"] or "id" == nested_state["state"]:
             object_name = rj["items"][0]["value"]["name"] 
 
+        elif "sequence_name" == nested_state["state"] or "id" == nested_state["state"]:
+            object_name = rj["items"][0]["value"]["name"] 
+
         nested_state["name"] = object_name
 
     a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']][a_state_msg['data']['state']] = nested_state
@@ -299,6 +302,7 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     task = "-"
     delay = "-"
     surface_name = "-"
+    sequence_name = "-"
 
     try:
         operator = FormatState(a_state=a_state["topcon.rdm.list"]["operator"])
@@ -320,6 +324,10 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     except KeyError:
         logging.debug("No Surface state found.")
 
+    try:
+        sequence_name = a_state["topcon.task"]["sequence_name"]["value"]
+    except KeyError:
+        logging.debug("No Sequence state found.")
     try:
         for i, val in enumerate(a_assets_dict[ac_uuid]["signatures"]):
             if val["asset_urn"].startswith("urn:X-topcon:machine"):
@@ -375,8 +383,9 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     operator_strip = operator.replace(",","_")
     task_strip = task.replace(",","_")
     surface_name_strip = surface_name.replace(",","_")
+    sequence_name_strip = sequence_name.replace(",","_")
 
-    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_strip, operator_strip, task_strip, surface_name_strip, position_string))
+    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_strip, operator_strip, task_strip, surface_name_strip, sequence_name_strip, position_string))
 
 
 def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_machine_description_filter=None):
@@ -682,8 +691,8 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
 
     report_file_name = os.path.join(output_dir, a_datalogger_output_file_name)
     report_file = open(report_file_name, "w")
-    column_count=13 # initial number of fixed columns as below
-    report_file.write("Machine Type, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay (ID), Operator (ID), Task (ID), Surface")
+    column_count=14 # initial number of fixed columns as below
+    report_file.write("Machine Type, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay (ID), Operator (ID), Task (ID), Surface, Sequence")
     for point_of_interest_name in header_list:
         report_file.write(", {}".format(point_of_interest_name))
         column_count += 1 # we use this to space out the geodetic columns later - each line has a variable number of columns from the temp file.
