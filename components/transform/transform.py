@@ -27,6 +27,26 @@ def get_local_grid_to_cartesian_approx_matrix(a_server_url, a_headers, a_site_id
         "voxels": a_voxel_list,
     }))
 
+def binary_transform_search(a_server, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list, low, high):
+
+    if high > low:
+        approx_matrix_response = get_local_grid_to_cartesian_approx_matrix(a_server.to_url(), a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list[low:high])
+        if approx_matrix_response.status_code != 200:
+            # call failed
+            logging.debug("Transform failed using point index range {} to {}".format(low, high))   
+
+            if high - low == 1: # we found a single failing point, return this information
+                return low, approx_matrix_response
+            else:
+                mid = (high + low) // 2
+                return binary_transform_search(a_server, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list, low, mid)
+        else:
+            return None, approx_matrix_response.json()["matrices"]
+ 
+    else:
+        # bad call
+        return None, None
+ 
 def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_site_id, a_server, a_headers):
 
     voxel_list = []
@@ -53,14 +73,12 @@ def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_
             voxel_list_index = voxel_hash_to_voxel_list_index[voxel_hash]
 
         point_index_to_voxel_index.append(voxel_list_index)
-        
-    approx_matrix_response = get_local_grid_to_cartesian_approx_matrix(a_server.to_url(), a_headers, a_site_id, a_transform_revision, a_voxel_extent, voxel_list)
-    if approx_matrix_response.status_code != 200:
-        raise SitelinkProcessingError("Couldn't find approximation matrix when convetring to cartesian coordinates.")
 
-    approx_matrices = approx_matrix_response.json()["matrices"]
+    approx_matrices = None    
 
-    return approx_matrices, point_index_to_voxel_index
+    failure_point_index, approx_matrices = binary_transform_search(a_server, a_headers, a_site_id, a_transform_revision, a_voxel_extent, voxel_list, 0, len(a_local_points)-1)
+
+    return approx_matrices, point_index_to_voxel_index, failure_point_index
 
 def cartesian_to_wgs84(a_cartesian_coords):
 
@@ -188,24 +206,62 @@ class TransformManager():
 
     def transform(self, a_server, a_site_id, a_headers):
         output_list = []
+
+        point_failure_output_json = { 
+                        "lon": "[approximation matrix unavailable]", 
+                        "lat": "[approximation matrix unavailable]", 
+                        "height": "[approximation matrix unavailable]"
+                    }
         for transform_revision in self.m_local_machine_point_dict.keys():
             point_list_to_transform = self.m_local_machine_point_dict[transform_revision]["point_list"]
-            logging.debug("Transforming {} points recorded during transform revision {}".format(len(point_list_to_transform), transform_revision))
-            approx_matrices, point_index_to_voxel_index = get_approx_matrices(a_voxel_extent=600, a_local_points=point_list_to_transform, a_transform_revision=transform_revision, a_site_id=a_site_id, a_server=a_server, a_headers=a_headers)
-        
-            cartesian_coords = local_grid_to_cartesian(point_list_to_transform, approx_matrices, point_index_to_voxel_index)
-
-            # Lastly we convert the cartesian (ECEF) coordinates into geodetic coordinates. Below converts to WGS84.
-            wgs84_points = cartesian_to_wgs84(a_cartesian_coords=cartesian_coords)
-            object_list = []
-            for i, point in enumerate(wgs84_points):
-                object_list.append( {
-                            "object" : wgs84_coord_to_object_list_item(a_wgs_point=point),
-                            "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][i]
-                        }
-                    )
-            output_list.extend(object_list)
             
+            # we will work over this range, perhaps in chunks, depending on whether we need to skip some points that fail the approx matrix call
+            point_list_index_max = len(point_list_to_transform)-1
+            point_list_index_min = 0
+
+            while True:
+
+                logging.debug("Transforming {} points recorded during transform revision {} with inclusive index range {} to {}".format(point_list_index_max-point_list_index_min, transform_revision, point_list_index_min, point_list_index_max))
+                approx_matrices, point_index_to_matrix_index, failure_point_index = get_approx_matrices(a_voxel_extent=600, a_local_points=point_list_to_transform[point_list_index_min:point_list_index_max+1], a_transform_revision=transform_revision, a_site_id=a_site_id, a_server=a_server, a_headers=a_headers)
+            
+                # at this point we either have valid approx_matrices and no failure_point_index or visa versa.
+                # if there's been a failure, inject handling for the returned point index into the object list and recall with new point range
+                # this will trigger a voxel recalculation within get_approx_matrices
+
+                if failure_point_index == None: # no errors, return the list
+                    logging.debug("get_approx_matrices returned with success")                
+
+                    wgs84_points = [point_failure_output_json] * (point_list_index_min - point_list_index_min)
+                    if approx_matrices != None: #this should be the case because failure_point_index is None, but to be sure...
+                        cartesian_coords = local_grid_to_cartesian(point_list_to_transform[point_list_index_min:point_list_index_max+1], approx_matrices, point_index_to_matrix_index)
+
+                        # Lastly we convert the cartesian (ECEF) coordinates into geodetic coordinates. Below converts to WGS84.
+                        wgs84_points = cartesian_to_wgs84(a_cartesian_coords=cartesian_coords)
+
+                        object_list = []
+                        for i, point in enumerate(wgs84_points):
+                            object_list.append( {
+                                        "object" : wgs84_coord_to_object_list_item(a_wgs_point=point),
+                                        "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][i + point_list_index_min]
+                                    }
+                                )
+                        output_list.extend(object_list)
+                    break
+            
+                else:
+                    # there's been a failure but not at the last point, update output list, adjust indexes into the remaining points to be transformed (skipping the failing index) and go around again
+                    logging.debug("get_approx_matrices returned with FAIL at index {}".format(failure_point_index))    
+                    failure_object_json = {
+                                    "object" : wgs84_coord_to_object_list_item(a_wgs_point=point_failure_output_json),
+                                    "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][failure_point_index]
+                                }
+                    output_list.extend([failure_object_json])
+                    
+                    if failure_point_index == point_list_index_max: # the last element has failed, handle this special case and return
+                        break  
+                    else:
+                        point_list_index_min = point_list_index_min + 1       
+
         return output_list
 
 # This class abstracts the collation of WGS84 points natively provided by connected clients and those
@@ -229,7 +285,6 @@ class GeodeticCoordinateManager():
         self.m_transform_manager.addLocalPoint(a_point, next_geodetic_coordinate_list_index, transform_info)
 
     def skip_local_point(self, a_geodetic_output_column_message):
-        next_geodetic_coordinate_list_index = len(self.m_geodetic_coordinate_list)
         obj = {
             "items" : []
         }
