@@ -10,6 +10,7 @@ from dateutil import tz
 import websocket
 import ssl
 import io
+import glm
 
 def path_up_to_last(a_last, a_inclusive=True, a_path=os.path.dirname(os.path.realpath(__file__)), a_sep=os.path.sep):
     return a_path[:a_path.rindex(a_sep + a_last + a_sep) + (len(a_sep)+len(a_last) if a_inclusive else 0)]
@@ -96,13 +97,13 @@ def GetPointOfInterestLocalSpace(a_point_of_interest_component, a_transform_comp
         logging.debug("Using Point {}".format(poi))
         node = a_point_of_interest_component.get_interface_object(poi.node_ref)
         logging.debug("Using Node {}".format(node))
-        node_transform = node.get_local_transform()
+        node_transform = node.get_transform()
 
         # We want to multiply the POI's referenced (and pre-transformed) node by the POI's offset.
         # For excavators this may be the bucket left and right, the drum for rollers, the blade for dozers etc.
         # When processing replicates they're applied to a transform in the node (referenced by the point of interest) that's already been local transformed because UpdateTransform was already called in the MFK code.
-        poi_offset = poi.get_point()
-        transformed_offset_point =  poi_offset @ node_transform
+        poi_offset = glm.vec4(poi.get_point(), 1)
+        transformed_offset_point =  node_transform @ poi_offset
 
         # Each time a replicate comes in, point.GetNode().GetTransform() is getting that pre-transformed node and then applying this offset from the point (which is the point of interest offset apart from its parent transform).
         # Remember that a point of interest has a parent node (node reference).
@@ -111,14 +112,14 @@ def GetPointOfInterestLocalSpace(a_point_of_interest_component, a_transform_comp
         machine_to_local_transform = transform_interface.get_transform(mfk_to_local_machine_update)
 
         # the transformed offset point is then multiplied by the machine to local transform to get the actual world space n,e,z
-        poi_local_space = transformed_offset_point @ machine_to_local_transform
+        poi_local_space = machine_to_local_transform @ transformed_offset_point
 
     except KeyError:
         logging.debug("KeyError")
 
     logging.debug("POI in local space {}".format(poi_local_space))
 
-    return poi_local_space[0]
+    return poi_local_space
 
 # the types of RDM data that are provided to us in UUID form that we can then use to lookup names for
 state_name_lookup_list = ["operator", "delay", "id"] # id is task
@@ -143,12 +144,12 @@ def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a
         object_name = "Unknown"
         if "operator" == nested_state["state"]:
             object_name = rj["items"][0]["value"]["firstName"] + " " + rj["items"][0]["value"]["lastName"]
-        
+
         elif "delay" == nested_state["state"] or "id" == nested_state["state"]:
-            object_name = rj["items"][0]["value"]["name"] 
+            object_name = rj["items"][0]["value"]["name"]
 
         elif "sequence_name" == nested_state["state"] or "id" == nested_state["state"]:
-            object_name = rj["items"][0]["value"]["name"] 
+            object_name = rj["items"][0]["value"]["name"]
 
         nested_state["name"] = object_name
 
@@ -265,7 +266,7 @@ def SerialiseObjectList(a_object_list, a_header_list):
                 a_header_list.append(object_name)
                 object_name_header_index = a_header_list.index(object_name)
 
-    # Here we populate the value list at the index that matches the item title for this value in the header list, 
+    # Here we populate the value list at the index that matches the item title for this value in the header list,
     # or None otherwise to correctly space the value list.
     value_list = [None for _ in range(len(a_header_list))]
     for obj in a_object_list:
@@ -276,8 +277,8 @@ def SerialiseObjectList(a_object_list, a_header_list):
 
     for val in value_list:
         val = "-, " if val is None else val
-        output_string += val    
-    
+        output_string += val
+
     return output_string
 
 def FormatState(a_state):
@@ -409,7 +410,7 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 return
 
         # Write the Resource Configuration to file for ease of inspection only if it passes the machine filter above.
-        if rc_updated: 
+        if rc_updated:
             resource_description = a_resource_config_dict[rc_uuid]["description"] + " [" + a_resource_config_dict[rc_uuid]["uuid"][0:8] + "]"
             resource_file_name = os.path.join(a_resources_dir, resource_description + ".json")
             resource_file = open(resource_file_name, "w")
@@ -458,10 +459,10 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                     }
                     node_name, prop = vert.point_reference.rsplit(".", 1)
                     for con in vert.constants:
-                    
+
                         key, value_id = con.value_reference.rsplit(".", 1)
                         raw_sensors = asbuilt_shapes_comp.get_interface_object(key)
-                        
+
                         if con.function == "dsty":
                             item = {
                                 "title" : prop + "_density ({})".format(raw_sensors["description"]),
@@ -506,7 +507,6 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 for point in comp["points"]:
 
                     poi_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=comp["points_component"], a_transform_component=transform_component, a_point_of_interest=point["point_node"])
-
                     item_x = {
                         "title" : point["display_name"] + " [x]",
                         "value" : poi_local_space[1]
@@ -581,7 +581,7 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                     # If we have good position quality, we add this local position to be transformed to WGS84. If not, we skip it and add a placeholder
                     # as attempting to transform bad positions may subsequently fail the request for a transformation matrix which aborts entire processing.
                     if "position_quality" in aux_control_data_dict.keys():
-                        pos_quality = aux_control_data_dict["position_quality"] 
+                        pos_quality = aux_control_data_dict["position_quality"]
                         if pos_quality == 2 or pos_quality == 3: # "RTK Fixed" or "mm Enhanced"
                             if(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
                                 a_geodetic_coordinate_manager.skip_local_point("[unavailable - point at origin]")
@@ -605,14 +605,14 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 geodetic_object_list.append(obj)
                 a_geodetic_coordinate_manager.add_geodetic_point(obj)
 
-        OutputLineObjects(a_report_file, resource_config_processor._json["description"], a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
+        OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
 def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
 
     # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
     # MFK replicate packets will be converted into WGS84 so that lat, lon and height information can also be output to the report making map plotting easy. As transforms
     # chage at the site the localized coordinates may also change so the WGS84 conversion must be performed using the site transform that was in use at the site at the
-    # time the data was collected. For more information on the process of extracting localization history for a site see the workflow example called 
+    # time the data was collected. For more information on the process of extracting localization history for a site see the workflow example called
     # list_site_localization_history in this repository.
     localised, transform_revision = get_current_site_localisation(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
     transform_list = []
@@ -699,7 +699,7 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
 
     for object_name in geodetic_header_list:
         report_file.write(", {}".format(object_name))
-        
+
     first_line = True # The first line of the temp file is blank so we skip this
     geodetic_file_temp = open(geodetic_file_name_temp, "r")
     with open(report_file_name_temp, 'r') as report_file_temp:
@@ -707,12 +707,12 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
             if first_line:
                 first_line = False
                 continue
-            
+
             geo_line = geodetic_file_temp.readline()
             line_column_count = len(line.split(","))
             pad_string = " "
             line_diff = column_count - line_column_count
-            
+
             while line_diff >= 0:
                 pad_string += " -,"
                 line_diff -= 1
@@ -814,7 +814,7 @@ class DataLoggerAggregatorSocket():
         return self.ws.recv()
     def receive_ack(self):
         return map(int, self.ws.recv().split("\n"))
-        
+
 BEACON_LONG_TTL = 30000; # ms before low frequency beacon should be resent
 BEACON_SHORT_TTL = 5000; # ms before high frequency beacon should be resent
 
@@ -830,7 +830,7 @@ def make_haul_mfk_replicate_payload(asset_context, rc_uuid, latitude, longitude,
     is_beacon = at_payload > beacon_expiry_epoch
     if is_beacon:
         beacon_expiry_epoch = at_payload + BEACON_LONG_TTL
-  
+
     logging.info("BEACON IS {}, expiry is {}".format(is_beacon, beacon_expiry_epoch))
     return {
         "type": "mfk::Replicate",
