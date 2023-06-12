@@ -52,11 +52,5 @@ def main():
         file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="file_system", a_view="v_fs_files_by_folder", a_params=state, a_headers=headers)
         process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
 
-        logging.info("Listing operator domain entries")
-        file_list_query = RdmListPageQuery(a_server_config=server, a_site_id=args.site_id, a_domain="operator", a_view="v_op_files_by_operator", a_params=state, a_headers=headers)
-        process_pages(a_page_traits=page_traits, a_page_query=file_list_query)
-
-
-
 if __name__ == "__main__":
     main()    

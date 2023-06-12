@@ -9,10 +9,6 @@ set site_id=""
 set file_name="file_to_upload.txt"
 set file_parent_uuid=""
 
-rem ## There are two domains within which files are stored in Sitelink3D v2.
-rem # set domain="file_system" to access general files that are visible on the "Site Files" tab in the File Manager.
-rem # set domain="operator" to access topo data files from machines that are visible on the "Operator Files" tab in the File Manager.
-rem # See the file_operator_upload.bat file for an example of uploading to the operator domain.
 set rdm_domain="file_system" 
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
