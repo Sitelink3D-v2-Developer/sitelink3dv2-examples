@@ -31,5 +31,4 @@ exec python create_dozer_blade_poi_report_with_state.py \
     --jwt "$jwt" \
     --oauth_id "$oauth_id" \
     --oauth_secret "$oauth_secret" \
-    --oauth_scope "$oauth_scope" 
-    
+    --oauth_scope "$oauth_scope"

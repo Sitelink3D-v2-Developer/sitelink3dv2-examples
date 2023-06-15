@@ -1,59 +1,26 @@
-import numpy as np
 import functools
 import base64
 import uuid
 from collections import OrderedDict
 import struct
 import math
+import glm
 from enum import Enum
 
 def lla_to_ecef(lat, lon, alt):
-    a = 6378137.0                   # WGS-84 semi-major axis
-    e2 = 6.6943799901377997e-3      # WGS-84 first eccentricity squared
+    # WGS-84 ellipsoid parameters
+    a = 6378137.0                   # semi-major axis
+    e2 = 6.6943799901377997e-3      # first eccentricity squared
 
+    # Calculate the radius of curvature in the prime vertical
     n = a / math.sqrt(1 - e2 * math.sin(lat) * math.sin(lat))
 
+    # Convert geodetic coordinates to ECEF coordinates
     x = (n + alt) * math.cos(lat) * math.cos(lon)
     y = (n + alt) * math.cos(lat) * math.sin(lon)
     z = (n * (1 - e2) + alt) * math.sin(lat)
 
-    return np.array([x, y, z])
-
-def scale_matrix(m, v):
-    result = np.zeros((4,4))
-    result[0] = m[0] * v[0]
-    result[1] = m[1] * v[1]
-    result[2] = m[2] * v[2]
-    result[3] = m[3]
-
-    return result
-
-def rotate_matrix(m, angle, axis):
-    c = np.cos(angle)
-    s = np.sin(angle)
-
-    temp = (1 - c) * axis
-
-    rotate = np.zeros((4,4))
-    rotate[0][0] = c + temp[0] * axis[0]
-    rotate[0][1] = 0 + temp[0] * axis[1] + s * axis[2]
-    rotate[0][2] = 0 + temp[0] * axis[2] - s * axis[1]
-
-    rotate[1][0] = 0 + temp[1] * axis[0] - s * axis[2]
-    rotate[1][1] = c + temp[1] * axis[1]
-    rotate[1][2] = 0 + temp[1] * axis[2] + s * axis[0]
-
-    rotate[2][0] = 0 + temp[2] * axis[0] + s * axis[1]
-    rotate[2][1] = 0 + temp[2] * axis[1] - s * axis[0]
-    rotate[2][2] = c + temp[2] * axis[2]
-
-    result = np.zeros((4,4))
-    result[0] = m[0] * rotate[0][0] + m[1] * rotate[0][1] + m[2] * rotate[0][2]
-    result[1] = m[0] * rotate[1][0] + m[1] * rotate[1][1] + m[2] * rotate[1][2]
-    result[2] = m[0] * rotate[2][0] + m[1] * rotate[2][1] + m[2] * rotate[2][2]
-    result[3] = m[3]
-
-    return result
+    return glm.vec3(x, y, z)
 
 class SpaceConverter(object):
     def __init__(self, source_forward_axis, source_forward_positive,
@@ -62,36 +29,35 @@ class SpaceConverter(object):
     dest_up_axis, dest_up_positive, dest_right_handed):
 
         # setup source space vectors
-        forward = np.zeros(3)
+        forward = glm.vec3()
         forward[source_forward_axis] = 1 if source_forward_positive else -1
 
-        up = np.zeros(3)
+        up = glm.vec3()
         up[source_up_axis] = 1 if source_up_positive else -1
 
-        right = np.cross(forward, up)
+        right = glm.cross(forward, up)
         if not source_right_handed:
             right = -right
 
         # setup dest space vectors
-        new_forward = np.zeros(3)
+        new_forward = glm.vec3()
         new_forward[dest_forward_axis] = 1 if dest_forward_positive else -1
 
-        new_up = np.zeros(3)
+        new_up = glm.vec3()
         new_up[dest_up_axis] = 1 if dest_up_positive else -1
 
-        new_right = np.cross(new_forward, new_up)
+        new_right = glm.cross(new_forward, new_up)
         if not dest_right_handed:
             new_right = -new_right
 
         # build a conversion matrix
-        space_convert = np.eye(4)
-
-        current_axis = np.array([forward, right, up])
-        new_axis = np.array([new_forward, new_right, new_up])
+        space_convert = glm.identity(glm.mat4)
+        current_axis = [forward, right, up]
+        new_axis = [new_forward, new_right, new_up]
 
         for i in range(3):
             sign, direction = self.__find_axis(i, current_axis)
-            space_convert[i] = np.append(new_axis[direction] * sign, 0)
+            space_convert[i] = glm.vec4(new_axis[direction] * sign, 0)
 
         self.space_convert = space_convert
 
@@ -193,7 +159,6 @@ class Replicate(Interface):
             remaining_bytes = replicate_interface.read_manifest(binary_manifest)
             if remaining_bytes > 0:
                 raise AssertionError("too much manifest data")
-
 
     class Value(object):
         def __init__(self, manifest_json):
@@ -304,7 +269,7 @@ class PointsOfInterest(Interface):
             setvalueref(self, key, value)
 
         def get_point(self):
-            return np.array([(self.tx, self.ty, self.tz, 1.)])
+            return glm.vec3(self.tx, self.ty, self.tz)
 
         def get_id(self):
             return self.id
@@ -339,8 +304,9 @@ class Nodes(Interface):
     class Node(object):
         def __init__(self, node_json, parent, interface):
             self.parent = parent
-            self._dirty = True
-            self._transform = None
+            self.dirty = True
+            self.local = None
+            self.transform = None
 
             self.rx = node_json.get("rx", 0)
             self.ry = node_json.get("ry", 0)
@@ -353,7 +319,6 @@ class Nodes(Interface):
             self.sz = node_json.get("sz", 1)
             self.id = node_json["id"]
 
-            self.transform = None
             interface[self.id] = self
 
             nodes = node_json["nodes"]
@@ -363,7 +328,7 @@ class Nodes(Interface):
             if len(key) != 2 or key[0] not in "rt" or key[1] not in "xyz":
                 raise KeyError("{0} not in Node".format(key))
             setvalueref(self, key, value)
-            self._dirty = True
+            self.dirty = True
 
         def __getitem__(self, key):
             if key in self.__dict__:
@@ -372,37 +337,37 @@ class Nodes(Interface):
         def get_id(self):
             return self.id
 
-        def get_local_transform(self):
-            if not self._dirty:
-                return self._transform
+        def get_transform(self):
+            return self.transform
 
-            # translate
-            M = np.eye(4)
-            M[3, 0] = self.tx
-            M[3, 1] = self.ty
-            M[3, 2] = self.tz
+        def get_local_transform(self):
+            if not self.dirty:
+                return self.local
+
+            # Update the local transform
+            # Note: We apply roll then pitch then yaw.
+            local = glm.translate(glm.vec3(self.tx, self.ty, self.tz))
 
             if self.rz:
-                M = rotate_matrix(M, self.rz, np.array([0,0,1])) # yaw
+                local = glm.rotate(local, self.rz, glm.vec3(0,0,1)) # yaw
             if self.ry:
-                M = rotate_matrix(M, self.ry, np.array([0,1,0])) # pitch
+                local = glm.rotate(local, self.ry, glm.vec3(0,1,0)) # pitch
             if self.rx:
-                M = rotate_matrix(M, self.rx, np.array([1,0,0])) # roll
+                local = glm.rotate(local, self.rx, glm.vec3(1,0,0)) # roll
 
-            scale = np.array([self.sx, self.sy, self.sz])
-            M = scale_matrix(M, scale)
+            local = glm.scale(local, glm.vec3(self.sx, self.sy, self.sz))
 
-            self._transform = M
-            self._dirty = False
-            return M
+            self.local = local
+            self.dirty = False
+
+            return self.local
 
     def update_transforms(self, root_transform):
         for node in self.iterobjects():
-            parent_transform = root_transform
-            if node.parent:
-                parent_transform = parent_transform * node.parent.get_local_transform()
-
-            node.transform = parent_transform * node.get_local_transform()
+            if node.parent == None:
+                node.transform = root_transform @ node.get_local_transform()
+            else:
+                node.transform = node.parent.transform @ node.get_local_transform()
 
 class Transform(Interface):
     def __init__(self, xf_json):
@@ -477,7 +442,7 @@ class Transform(Interface):
     def get_transform(self, a_local: J670ToLocal):
         if self.type != "local":
             raise Exception('expecting type T_LOCAL')
-        resource_position = np.zeros(3)
+        resource_position = glm.vec3()
         # northing
         resource_position[a_local.northing_axis] = self["local_position"]["northing"] if a_local.northing_positive else -self["local_position"]["northing"]
         # easting
@@ -485,26 +450,21 @@ class Transform(Interface):
         # elevation
         resource_position[a_local.elevation_axis] = self["local_position"]["elevation"] if a_local.elevation_positive else -self["local_position"]["elevation"]
 
-        forward = np.zeros(3)
+        forward = glm.vec3()
         forward[a_local.northing_axis] = 1 if a_local.northing_positive else -1
 
-        right = np.zeros(3)
+        right = glm.vec3()
         right[a_local.easting_axis] = 1 if a_local.easting_positive else -1
 
-        up = np.zeros(3)
+        up = glm.vec3()
         up[a_local.elevation_axis] = 1 if a_local.elevation_positive else -1
 
-        # translate
-        resource = np.eye(4)
-        resource[3, 0] = self["local_position"]["easting"]
-        resource[3, 1] = self["local_position"]["northing"]
-        resource[3, 2] = self["local_position"]["elevation"]
+        resource = glm.translate(resource_position) # translate
+        resource = glm.rotate(resource, -self["local_rotation"]["yaw"], up) # yaw
+        resource = glm.rotate(resource, self["local_rotation"]["pitch"], right) # pitch
+        resource = glm.rotate(resource, self["local_rotation"]["roll"], forward) #  roll
 
-        resource = rotate_matrix(resource, -self["local_rotation"]["yaw"], up)
-        resource = rotate_matrix(resource, self["local_rotation"]["pitch"], right)
-        resource = rotate_matrix(resource, self["local_rotation"]["roll"], forward)
-
-        return a_local.get_j670_to_local_transform() @ resource
+        return resource @ a_local.get_j670_to_local_transform()
 
     def get_resource_to_local_transform(self, a_local: J670ToLocal, a_ecef_to_local):
         if self.type == "local":
@@ -517,17 +477,12 @@ class Transform(Interface):
         alt = math.radians(self["wgs"]["alt"])
 
         ecef = lla_to_ecef(lat,lon,alt)
-        local = np.append(ecef, 1) @ a_ecef_to_local
+        local = glm.vec4(ecef, 1) @ a_ecef_to_local
 
-        # translate
-        resource = np.eye(4)
-        resource[3, 0] = local[0]
-        resource[3, 1] = local[1]
-        resource[3, 2] = local[2]
-
+        resource = glm.translate(glm.vec3(local[0], local[1], local[2]))
 
         # TODO: add matrix rotation for wgs
-        return a_local.get_j670_to_local_transform() @ resource
+        return resource @ a_local.get_j670_to_local_transform()
 
 class Unknown(Interface):
     def __init__(self, unknown_json):
@@ -589,7 +544,7 @@ class AsBuiltShapes(Interface):
                  self._enum_map[key] = AsBuiltShapes.Shape.ApplyWhen(value)
 
         def __getitem__(self, name):
-            return self._enum_map[name]
+            return self._enum_map[name].value
 
         def is_enabled(self):
             return self._enum_map["enabled"] == AsBuiltShapes.Shape.Enabled.ENABLED
@@ -684,7 +639,10 @@ class Component(object):
 
 class ResourceConfiguration(object):
     def __init__(self, rc_json):
-        self._json = rc_json
+        self.version = rc_json["version"]
+        self.uuid = uuid.UUID(rc_json["uuid"])
+        self.description = rc_json["description"]
+        self.resource_type = rc_json["resource_type"]
         self.components = list(map(Component, rc_json["components"]))
         self.cache()
         self.update_transforms()
@@ -721,7 +679,7 @@ class ResourceConfiguration(object):
                 if "attach" in component.interfaces:
                     attach_transform = component.interfaces["attach"].parent_node.transform
                 else:
-                    attach_transform = np.eye(4)
+                    attach_transform = glm.identity(glm.mat4)
 
                 nodes = component.interfaces["nodes"]
                 nodes.update_transforms(attach_transform)
