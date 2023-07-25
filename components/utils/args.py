@@ -285,10 +285,17 @@ arg_report_sequence_instance = {
 }
 
 # Datalogger related arguments
+arg_datalogger_machine_id = {
+    "arg" : "--datalogger_machine_id",
+    "default" : "",
+    "help" : "The ms since epoch that datalogger data is to be queried from.",
+    "required" : True
+}
+
 arg_datalogger_start_ms = {
     "arg" : "--datalogger_start_ms",
     "default" : "",
-    "help" : "The ms since epoch that datalogger data is to be queried from.",
+    "help" : "The datalogger identifier for a specific machine in the form of a UUID.",
     "required" : True
 }
 

@@ -11,7 +11,7 @@ rem # critical=50, error=40, warning=30, info=20, debug=10
 set log_level=20
 
 rem # Use the components/metadata/rdm_list example to discover the domains and associated views at your site.
-set rdm_view="v_sl_task_by_name"
+set rdm_view="v_sl_material_by_name"
 set rdm_domain="sitelink"
 set rdm_object_uuid=""
 

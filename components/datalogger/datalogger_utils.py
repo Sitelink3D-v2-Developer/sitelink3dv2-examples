@@ -20,7 +20,7 @@ components_dir = path_up_to_last("components")
 sys.path.append(os.path.join(components_dir, "utils"))
 from imports import *
 
-for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_utils", "transform", "rdm_pagination_traits", "rdm_list"]:
+for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_utils", "transform", "rdm_pagination_traits", "datalogger_pagination_traits", "rdm_list"]:
     exec(import_cmd(components_dir, imp))
 
 session = requests.Session()
@@ -607,6 +607,158 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
 
         OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
+
+def ProcessDataloggerMachineToCsv(a_server, a_machine_id, a_headers, a_target_dir, a_page_size, a_start, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
+    
+    # First list available machines:
+    dba_url = "{}/dba/v1/machines".format(a_server.to_url())
+
+    logging.info(json.dumps(a_headers,indent=4))
+
+
+    page_traits = DataloggerPaginationTraits(a_page_size=a_page_size, a_start=a_start)
+
+    datalogger_query = DataloggerPageQuery(a_server_config=a_server, a_params={}, a_headers=a_headers)
+    process_pages(a_page_traits=page_traits, a_page_query=datalogger_query)
+
+
+
+    # get the datalogger data
+    response = session.get(dba_url, headers=a_headers)
+    logging.info(response.text)
+    response.raise_for_status()
+    logging.info("Machine list: {}".format(json.dumps(response.json(), indent=4)))
+
+    dba_url = "{}/dba/v1/machines/{}/updates?view=historical&start_ms={}&end_ms={}".format(a_server.to_url(), a_machine_id, a_datalogger_start_ms, a_datalogger_end_ms)
+    #response = session.get(dba_url, headers=a_headers)
+    
+    # # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
+    # # MFK replicate packets will be converted into WGS84 so that lat, lon and height information can also be output to the report making map plotting easy. As transforms
+    # # chage at the site the localized coordinates may also change so the WGS84 conversion must be performed using the site transform that was in use at the site at the
+    # # time the data was collected. For more information on the process of extracting localization history for a site see the workflow example called
+    # # list_site_localization_history in this repository.
+    # localised, transform_revision = get_current_site_localisation(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    # transform_list = []
+    # output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_target_dir=a_target_dir, a_site_id=a_site_id)
+    # os.makedirs(output_dir, exist_ok=True)
+
+    # if localised:
+    #     # Query and cache all versions of the localization history at this site.
+    #     transform_list = query_and_download_site_localization_file_history(a_server_config=a_server, a_site_id=a_site_id, a_headers=a_headers, a_target_dir=output_dir)
+
+    # else:
+    #     logging.info("Site not localized.")
+
+
+    # dba_url = "{}/dba/v1/sites/{}/updates?startms={}&endms={}&category=low_freq".format(a_server.to_url(), a_site_id, a_datalogger_start_ms, a_datalogger_end_ms)
+
+    # get the datalogger data
+    response = session.get(dba_url, headers=a_headers)
+    logging.info(response)
+    logging.info(response.text)
+    response.raise_for_status()
+
+
+    # resource_definitions = {}
+    # assets = {}
+    # state = {}
+
+    # resources_dir = os.path.join(output_dir, "resources")
+    # os.makedirs(resources_dir, exist_ok=True)
+
+    # report_file_name_temp = os.path.join(output_dir, a_datalogger_output_file_name + ".tmp")
+    # report_file_temp = open(report_file_name_temp, "w")
+
+    # geodetic_file_name_temp = os.path.join(output_dir, a_datalogger_output_file_name + ".geo.tmp")
+    # geodetic_file_temp = open(geodetic_file_name_temp, "w")
+
+    # # We need to buffer the points of interest we receive from each component of each machine we encounter. This will be output
+    # # at the end of iteration over the full dataset so that the dynamic column titles can be fully identified over the entire dataset.
+
+    # point_of_interest_dict = {}
+
+    # geodetic_coordinate_manager = GeodeticCoordinateManager()
+
+    # # Main datalogger data processing loop
+    # header_list = []
+    # geodetic_header_list = []
+    # line_count = 0
+
+    # logging.info("Processing Data Logger output.")
+    # # record start of report execution to measure execution time
+    # start_time = time.time()
+
+    for line in response.iter_lines():
+        logging.info("response line:{}".format(line))
+    #     decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
+
+    #     if decoded_json['type'] == "sitelink::State":
+    #         UpdateStateForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    #         logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
+
+    #     if decoded_json['type'] == "mfk::Replicate":
+    #         try:
+    #             ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    #         except requests.exceptions.HTTPError:
+    #             logging.warning("Could not process replicate.")
+    #             continue
+    #     line_count += 1
+
+    # logging.info("Writing report to {}".format(a_datalogger_output_file_name))
+
+    # report_file_temp.close()
+    # geodetic_file_temp.close()
+
+    # # batch process transform to wgs84 and to file
+    # geodetic_point_list = geodetic_coordinate_manager.calculate_geodetic_points(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+    # geodetic_file_temp = open(geodetic_file_name_temp, "w")
+    # for i, geodetic_point in enumerate(geodetic_point_list):
+    #     geodetic_file_temp.write(SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n')
+    # geodetic_file_temp.close()
+
+    # report_file_name = os.path.join(output_dir, a_datalogger_output_file_name)
+    # report_file = open(report_file_name, "w")
+    # column_count=14 # initial number of fixed columns as below
+    # report_file.write("Machine Type, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay (ID), Operator (ID), Task (ID), Surface, Sequence")
+    # for point_of_interest_name in header_list:
+    #     report_file.write(", {}".format(point_of_interest_name))
+    #     column_count += 1 # we use this to space out the geodetic columns later - each line has a variable number of columns from the temp file.
+
+    # for object_name in geodetic_header_list:
+    #     report_file.write(", {}".format(object_name))
+
+    # first_line = True # The first line of the temp file is blank so we skip this
+    # geodetic_file_temp = open(geodetic_file_name_temp, "r")
+    # with open(report_file_name_temp, 'r') as report_file_temp:
+    #     for line in report_file_temp:
+    #         if first_line:
+    #             first_line = False
+    #             continue
+
+    #         geo_line = geodetic_file_temp.readline()
+    #         line_column_count = len(line.split(","))
+    #         pad_string = " "
+    #         line_diff = column_count - line_column_count
+
+    #         while line_diff >= 0:
+    #             pad_string += " -,"
+    #             line_diff -= 1
+
+    #         aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()[:-1]
+    #         report_file.write(aggregate_line)
+
+    # report_file_temp.close()
+    # geodetic_file_temp.close()
+    # os.remove(report_file_name_temp)
+    # os.remove(geodetic_file_name_temp)
+
+    # end_time = time.time()
+
+    # elapsed_time = end_time - start_time
+
+    # logging.info("Processed {} lines in {} seconds".format(line_count + 1, elapsed_time)) # convert line_count from zero based indexing
+
+
 def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
 
     # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
@@ -614,6 +766,8 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
     # chage at the site the localized coordinates may also change so the WGS84 conversion must be performed using the site transform that was in use at the site at the
     # time the data was collected. For more information on the process of extracting localization history for a site see the workflow example called
     # list_site_localization_history in this repository.
+    logging.info(json.dumps(a_headers,indent=4))
+
     localised, transform_revision = get_current_site_localisation(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
     transform_list = []
     output_dir = make_site_output_dir(a_server_config=a_server, a_headers=a_headers, a_target_dir=a_target_dir, a_site_id=a_site_id)

@@ -24,6 +24,7 @@ import_targets = {
     "sorting" : ["utils", "parameters"],
     "filtering" : ["utils", "parameters"],
     "site_pagination_traits" : ["sites"],
+    "datalogger_pagination_traits" : ["datalogger"],
     "site_create" : ["sites", "site_create"],
     "site_detail" : ["sites", "site_detail"],
     "report_download" : ["reports", "report_download"],

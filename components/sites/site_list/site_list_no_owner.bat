@@ -7,7 +7,7 @@ set dc="us"
 
 rem ## Log configuraiton. 
 rem # critical=50, error=40, warning=30, info=20, debug=10
-set log_level=20
+set log_level=10
 
 rem ## Settings specific to this script.
 rem ## optionally sort the results. sort_field may be either "rdm_name" or "create_timestamp_ms".

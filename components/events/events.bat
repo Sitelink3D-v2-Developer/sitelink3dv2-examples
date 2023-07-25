@@ -8,7 +8,7 @@ set site_id=""
 
 rem ## Log configuraiton. 
 rem # critical=50, error=40, warning=30, info=20, debug=10
-set log_level=20
+set log_level=10
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.

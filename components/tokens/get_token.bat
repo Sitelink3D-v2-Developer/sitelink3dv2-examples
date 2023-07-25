@@ -12,7 +12,7 @@ set log_level=20
 rem # Authorization
 set oauth_id=""
 set oauth_secret=""
-set oauth_scope=""
+set oauth_scope="" 
 
 python get_token.py ^
     --env %env% ^
