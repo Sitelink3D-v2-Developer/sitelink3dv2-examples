@@ -116,7 +116,7 @@ features_to_import = query_file_features(a_server_config=server, a_site_id=args.
 logging.info("Posting job to import the discovered features (design objects) from file:")
 # ------------------------------------------------------------------------------
 
-import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_file_name=args.file_name, a_features=features_to_import, a_headers=headers)
+import_file_features(a_server_config=server, a_site_id=args.site_id, a_file_upload_uuid=str(file_upload_bean.upload_uuid), a_import_uuid=str(file_rdm_bean["_id"]), a_file_name=args.file_name, a_features=features_to_import, a_headers=headers)
 
 # ------------------------------------------------------------------------------
 logging.info("Listing design objects using RDM view:")

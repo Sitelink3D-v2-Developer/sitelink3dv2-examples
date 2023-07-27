@@ -73,7 +73,7 @@ def query_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_n
 # Using the recommended _id allows design objects of the same type and name to be identified as revisions of the same entity even if sourced from files of different names.
 # Using a unique value for the RDM _id field after each import will tell Sitelink3D v2 that the design object has no association with another design object.
 #
-def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_name, a_features, a_headers):
+def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_import_uuid, a_file_name, a_features, a_headers):
     data_payload = { "file_name": a_file_name,
         "imports" : a_features
     }
@@ -129,6 +129,7 @@ def import_file_features(a_server_config, a_site_id, a_file_upload_uuid, a_file_
             "count" : v["count"],
             "doFileUUID" : v["design_file_uuid"], # The unique ID for this instance of this design object in the design file microservice.
             "importFileUUID": file_uuid, # The propagation of the file upload instance. See FileUploadBean class in file_upload.py for details on the upload_uuid field.
+            "importUUID" : a_import_uuid,
             "path": v["path"]
         }
 
