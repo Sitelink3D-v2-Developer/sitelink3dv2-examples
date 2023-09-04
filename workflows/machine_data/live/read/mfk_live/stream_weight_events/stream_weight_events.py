@@ -65,7 +65,7 @@ logging.debug("connecting to web socket at {0}".format(mfk_live_url))
 ws = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
 ws.connect(mfk_live_url)
 
-rc = ResourceConfiguration(json.loads(ws.recv()))
+rc = ResourceConfiguration(json.loads(ws.recv())["data"])
 
 assets = {}
 jobs = {}
@@ -162,7 +162,10 @@ while True:
                         job_totals["materials"][lift_material_uuid] = {}
                         job_totals["materials"][lift_material_uuid]["total"] = 0
                         job_totals["materials"][lift_material_uuid]["count"] = 0
-                        job_totals["materials"][lift_material_uuid]["material"] = lift["material_name"]
+                        if "material_name" not in lift:
+                            job_totals["materials"][lift_material_uuid]["material"] = "unknown_material_name"
+                        else:
+                            job_totals["materials"][lift_material_uuid]["material"] = lift["material_name"]
                     lift_weight = job_totals["materials"][lift_material_uuid]
                     lift_weight["total"] += lift["weight"]
                     if lift["weight"] > 0:
