@@ -498,7 +498,9 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                             }
                             obj["items"].append(item)
 
-                    object_list.append(obj)
+                    
+                    if len(obj["items"]) != 0:
+                        object_list.append(obj)
 
         if len(component_point_list) > 0:
 
@@ -583,7 +585,11 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                     if "position_quality" in aux_control_data_dict.keys():
                         pos_quality = aux_control_data_dict["position_quality"]
                         if pos_quality == 2 or pos_quality == 3: # "RTK Fixed" or "mm Enhanced"
-                            if(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
+                            error_horz = aux_control_data_dict["position_error_horz"] 
+                            error_vert = aux_control_data_dict["position_error_vert"]
+                            if error_horz == -1 or error_vert == -1:
+                                a_geodetic_coordinate_manager.skip_local_point("[unavailable - position error unknown]")
+                            elif(math.isclose(point["e"], 0.0, abs_tol=0.00003) and math.isclose(point["n"], 0.0, abs_tol=0.00003)):
                                 a_geodetic_coordinate_manager.skip_local_point("[unavailable - point at origin]")
                             else:
                                 a_geodetic_coordinate_manager.add_local_point(point, transform_info)
@@ -686,7 +692,8 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
     geodetic_point_list = geodetic_coordinate_manager.calculate_geodetic_points(a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
     geodetic_file_temp = open(geodetic_file_name_temp, "w")
     for i, geodetic_point in enumerate(geodetic_point_list):
-        geodetic_file_temp.write(SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n')
+        if geodetic_point is not None:
+            geodetic_file_temp.write(SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n')
     geodetic_file_temp.close()
 
     report_file_name = os.path.join(output_dir, a_datalogger_output_file_name)

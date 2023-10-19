@@ -18,34 +18,25 @@ for imp in ["file_download", "rdm_pagination_traits", "rdm_list"]:
 
 session = requests.Session()
 
-def get_local_grid_to_cartesian_approx_matrix(a_server_url, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list):
+def get_local_grid_to_cartesian_approx_matrix(a_server_url, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel):
    
     transform_url = "{0}/transform/v1/site/{1}/transform_rev/{2}/enz_to_ecef_approx_matrix".format(a_server_url, a_site_id, a_transform_rev)
-
-    return session.post(transform_url, headers=a_headers, data=json.dumps({
+    payload = json.dumps({
         "voxel_extent": a_voxel_extent,
-        "voxels": a_voxel_list,
-    }))
+        "voxels": [a_voxel["voxel"]],
+    })
+    return session.post(transform_url, headers=a_headers, data=payload)
 
-def binary_transform_search(a_server, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list, low, high):
+# returns approx_matrix, successful_point_list, absolute_row_respecting_point_index_to_successful_point_list_index
+def get_transform(a_server, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel):
 
-    if high > low:
-        approx_matrix_response = get_local_grid_to_cartesian_approx_matrix(a_server.to_url(), a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list[low:high])
-        if approx_matrix_response.status_code != 200:
-            # call failed
-            logging.debug("Transform failed using point index range {} to {}".format(low, high))   
-
-            if high - low == 1: # we found a single failing point, return this information
-                return low, approx_matrix_response
-            else:
-                mid = (high + low) // 2
-                return binary_transform_search(a_server, a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel_list, low, mid)
-        else:
-            return None, approx_matrix_response.json()["matrices"]
- 
+    # try to transform the single voxel.
+    approx_matrix_response = get_local_grid_to_cartesian_approx_matrix(a_server.to_url(), a_headers, a_site_id, a_transform_rev, a_voxel_extent, a_voxel)
+    if approx_matrix_response.status_code != 200:
+        logging.debug("Aprox matrix call failed {} {}".format(approx_matrix_response.status_code, approx_matrix_response.text))
+        return None
     else:
-        # bad call
-        return None, None
+        return approx_matrix_response.json()["matrices"]
  
 def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_site_id, a_server, a_headers):
 
@@ -54,7 +45,6 @@ def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_
     voxel_hash_to_voxel_list_index = {}
 
     # Determine the unique voxels we require matrices for to avoid asking for duplicates where multiple points fall within the same voxel.
-
     for i, point in enumerate(a_local_points):
 
         voxel ={
@@ -67,18 +57,32 @@ def get_approx_matrices(a_voxel_extent, a_local_points, a_transform_revision, a_
         voxel_list_index = None
         if voxel_hash not in voxel_hash_to_voxel_list_index:
             voxel_list_index = len(voxel_list)
-            voxel_list.append(voxel)
+            voxel_list_bean = {
+                "voxel":voxel,
+                "points":[point],
+                "absolute_row_respecting_point_index_to_points_index":[i]
+            }
+            voxel_list.append(voxel_list_bean)
             voxel_hash_to_voxel_list_index[voxel_hash] = voxel_list_index
         else:
             voxel_list_index = voxel_hash_to_voxel_list_index[voxel_hash]
+            voxel_list[voxel_list_index]["points"].append(point)
+            voxel_list[voxel_list_index]["absolute_row_respecting_point_index_to_points_index"].append(i)
 
-        point_index_to_voxel_index.append(voxel_list_index)
+        point_index_to_voxel_index.append(voxel_list_index) # this may need to contain the failure / success flag, so each point has a voxel reference and a flag as to whether it could be transformed or not.
 
-    approx_matrices = None    
+    # Although we can call the transform service with multiple voxels and get multiple matrices in return, we iterate a voxel at a time, in case bad points fail the transform.
+    # This allows us to binary search the points for a resulting transformation on a per voxel basis.
 
-    failure_point_index, approx_matrices = binary_transform_search(a_server, a_headers, a_site_id, a_transform_revision, a_voxel_extent, voxel_list, 0, len(a_local_points)-1)
+    approx_matrices = None  
 
-    return approx_matrices, point_index_to_voxel_index, failure_point_index
+    for i, vox in enumerate(voxel_list):
+
+        voxel_list[i]["approx_matrix"] = get_transform(a_server, a_headers, a_site_id, a_transform_revision, a_voxel_extent, vox)
+        
+
+    # return the following structure that covers all voxels and the state of all points within that voxel (which contributed to the approx matrix and which failed it)
+    return voxel_list, point_index_to_voxel_index
 
 def cartesian_to_wgs84(a_cartesian_coords):
 
@@ -207,10 +211,12 @@ class TransformManager():
     def transform(self, a_server, a_site_id, a_headers):
         output_list = []
 
+        # in this block, "dir" gets translated to "direction" before being output to CSV column heading.
         point_failure_output_json = { 
                         "lon": "[approximation matrix unavailable]", 
                         "lat": "[approximation matrix unavailable]", 
-                        "height": "[approximation matrix unavailable]"
+                        "height": "[approximation matrix unavailable]",
+                        "dir": "[approximation matrix unavailable]"
                     }
         for transform_revision in self.m_local_machine_point_dict.keys():
             point_list_to_transform = self.m_local_machine_point_dict[transform_revision]["point_list"]
@@ -219,48 +225,36 @@ class TransformManager():
             point_list_index_max = len(point_list_to_transform)-1
             point_list_index_min = 0
 
-            while True:
+            logging.debug("Transforming {} points recorded during transform revision {} with inclusive index range {} to {}".format(point_list_index_max-point_list_index_min, transform_revision, point_list_index_min, point_list_index_max))
+            voxel_list, point_index_to_voxel_index = get_approx_matrices(a_voxel_extent=600, a_local_points=point_list_to_transform[point_list_index_min:point_list_index_max+1], a_transform_revision=transform_revision, a_site_id=a_site_id, a_server=a_server, a_headers=a_headers)
 
-                logging.debug("Transforming {} points recorded during transform revision {} with inclusive index range {} to {}".format(point_list_index_max-point_list_index_min, transform_revision, point_list_index_min, point_list_index_max))
-                approx_matrices, point_index_to_matrix_index, failure_point_index = get_approx_matrices(a_voxel_extent=600, a_local_points=point_list_to_transform[point_list_index_min:point_list_index_max+1], a_transform_revision=transform_revision, a_site_id=a_site_id, a_server=a_server, a_headers=a_headers)
-            
-                # at this point we either have valid approx_matrices and no failure_point_index or visa versa.
-                # if there's been a failure, inject handling for the returned point index into the object list and recall with new point range
-                # this will trigger a voxel recalculation within get_approx_matrices
-
-                if failure_point_index == None: # no errors, return the list
+            for i, point in enumerate(point_list_to_transform):
+                vox = voxel_list[point_index_to_voxel_index[i]]
+                if vox["approx_matrix"] is not None: # no errors, perform the transformation
                     logging.debug("get_approx_matrices returned with success")                
 
-                    wgs84_points = [point_failure_output_json] * (point_list_index_min - point_list_index_min)
-                    if approx_matrices != None: #this should be the case because failure_point_index is None, but to be sure...
-                        cartesian_coords = local_grid_to_cartesian(point_list_to_transform[point_list_index_min:point_list_index_max+1], approx_matrices, point_index_to_matrix_index)
+                    cartesian_coords = local_grid_to_cartesian(vox)
 
-                        # Lastly we convert the cartesian (ECEF) coordinates into geodetic coordinates. Below converts to WGS84.
-                        wgs84_points = cartesian_to_wgs84(a_cartesian_coords=cartesian_coords)
+                    # Lastly we convert the cartesian (ECEF) coordinates into geodetic coordinates. Below converts to WGS84.
+                    wgs84_points = cartesian_to_wgs84(a_cartesian_coords=cartesian_coords)
 
-                        object_list = []
-                        for i, point in enumerate(wgs84_points):
-                            object_list.append( {
-                                        "object" : wgs84_coord_to_object_list_item(a_wgs_point=point),
-                                        "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][i + point_list_index_min]
-                                    }
-                                )
-                        output_list.extend(object_list)
-                    break
+                    object_list = []
+                    for j, wgs_point in enumerate(wgs84_points):
+                        object_list.append( {
+                                    "object" : wgs84_coord_to_object_list_item(a_wgs_point=wgs_point),
+                                    "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][i + point_list_index_min]
+                                }
+                            )
+                    output_list.extend(object_list)
             
                 else:
-                    # there's been a failure but not at the last point, update output list, adjust indexes into the remaining points to be transformed (skipping the failing index) and go around again
-                    logging.debug("get_approx_matrices returned with FAIL at index {}".format(failure_point_index))    
+                    # there's been a failure
+                   
                     failure_object_json = {
                                     "object" : wgs84_coord_to_object_list_item(a_wgs_point=point_failure_output_json),
-                                    "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][failure_point_index]
+                                    "list_index" : self.m_local_machine_point_dict[transform_revision]["index_list"][i + point_list_index_min]
                                 }
                     output_list.extend([failure_object_json])
-                    
-                    if failure_point_index == point_list_index_max: # the last element has failed, handle this special case and return
-                        break  
-                    else:
-                        point_list_index_min = point_list_index_min + 1       
 
         return output_list
 
@@ -375,12 +369,13 @@ class Spheroid():
             "height": height
         }
 
-def local_grid_to_cartesian(points, approx_matrices, point_index_to_matrix_index):
+def local_grid_to_cartesian(a_voxel):
 
     coords = []
-    for i in range(len(points)):
-        approx_matrix = approx_matrices[point_index_to_matrix_index[i]]
-        point = points[i]
+    for i in range(len(a_voxel["points"])):
+
+        approx_matrix = a_voxel["approx_matrix"][0]
+        point = a_voxel["points"][i]
         coords.append({
             "x": approx_matrix["rows"][0][0] * point["e"] +
                 approx_matrix["rows"][0][1] * point["n"] +
