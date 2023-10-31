@@ -282,6 +282,35 @@ class OperatorRdmTraits():
             ret["code"] = a_code
         return ret
 
+class RoadTruckRdmTraits():
+    def __init__(self, a_object_value):
+        self.value = a_object_value
+        
+    def class_name(self):
+        return "Road Truck"
+
+    def object_name(self):
+        return "{}".format(self.value["name"])
+
+    def object_details(self):
+        return "\'{}\'.".format(self.object_name())
+
+    @staticmethod
+    def post_bean_json(a_name, a_tare, a_target, a_code=None):
+        ret = {
+            "_id": str(uuid.uuid4()),
+            "name" : a_name,
+            "tare" : float(a_tare),
+            "target" : float(a_target),
+            "_rev": str(uuid.uuid4()),
+            "_v"   : 0,
+            "_type":"sl::truck",
+            "_at":int(round(time.time() * 1000))
+        }
+        if a_code:
+            ret["code"] = a_code
+        return ret
+
 class MaterialRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
         RdmTraitsBase.__init__(self, a_object_value, "Material")
@@ -610,6 +639,8 @@ class Rdm(object):
                 return GenericNamedRdmTraits(a_object_value, "File")
             if a_object_value["_type"] == "fs::folder":
                 return GenericNamedRdmTraits(a_object_value, "Folder")
+            if a_object_value["_type"] == "sl::truck":
+                return GenericNamedRdmTraits(a_object_value, "Truck")
         except TypeError as err:
             pass
 

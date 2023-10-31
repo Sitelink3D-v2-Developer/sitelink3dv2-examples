@@ -379,6 +379,34 @@ arg_rdm_material_name = {
         "required" : True
 }
 
+arg_rdm_road_truck_name = {
+        "arg" : "--rdm_road_truck_name",
+        "default" : "",
+        "help" : "A name for a road truck interacting with load-weighing systems.",
+        "required" : True
+}
+
+arg_rdm_road_truck_code = {
+        "arg" : "--rdm_road_truck_code",
+        "default" : "",
+        "help" : "An optional code to describe a road truck interacting with load-weighing systems.",
+        "required" : False
+}
+
+arg_rdm_road_truck_tare = {
+        "arg" : "--rdm_road_truck_tare",
+        "default" : "",
+        "help" : "The unladen mass of a road truck interacting with load-weighing systems.",
+        "required" : False
+}
+
+arg_rdm_road_truck_target = {
+        "arg" : "--rdm_road_truck_target",
+        "default" : "",
+        "help" : "The legal weight limit of the truck.",
+        "required" : True
+}
+
 arg_rdm_operator_code = {
         "arg" : "--rdm_operator_code",
         "default" : "",

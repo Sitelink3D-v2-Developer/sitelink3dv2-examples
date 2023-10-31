@@ -39,9 +39,10 @@ def main():
         rdm_list = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
         more_data = page_traits.more_data(rdm_list)
         for fi in rdm_list["items"]:
-            if fi["id"] == args.rdm_object_uuid:
+            if fi["id"] == args.rdm_object_uuid or len(args.rdm_object_uuid) == 0:
                 logging.info(json.dumps(fi,indent=4))
-                break 
+                if len(args.rdm_object_uuid) != 0:
+                    break 
 
 if __name__ == "__main__":
     main()    
