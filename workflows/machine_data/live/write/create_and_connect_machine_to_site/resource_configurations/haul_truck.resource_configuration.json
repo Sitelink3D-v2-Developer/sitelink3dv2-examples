@@ -39,6 +39,16 @@
                 "description": "height in metres of haul truck above road",
                 "id": "body_height",
                 "value": 3.9
+              },
+              {
+                "id": "bin_capacity_volume",
+                "description": "volumetric capacity in cubic metres of haul truck bin",
+                "value": 5
+              },
+              {
+                "id": "bin_capacity_weight",
+                "description": "weight capacity in tonnes of haul truck bin",
+                "value": 10
               }
             ],
             "name": "measurements",
@@ -131,7 +141,7 @@
     ],
     "description": "Haul Truck",
     "resource_type": "748534a7-ce04-4ede-9f1a-50c5968c8b8c",
-    "uuid": "777a93c0-ec0d-4994-b1fc-83271f5618f0",
+    "uuid": "999a93c0-ec0d-4994-b1fc-83271f5618f0",
     "version": "0.1"
   },
   "ttl": 86400,
