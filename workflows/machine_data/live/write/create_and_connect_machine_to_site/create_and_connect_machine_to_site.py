@@ -66,10 +66,12 @@ ret = datalogger_context.send(json.dumps(payload))
 logging.debug("Asset Context payload send returned {}".format(ret))
 
 with open(args.machine_resource_configuration_file) as file:
-    ret = datalogger_context.send(file.read())
+    payload=file.read()
+    logging.debug("Sending resource configuration payload {}".format(json.dumps(json.loads(payload), indent=4)))
+    ret = datalogger_context.send(payload)
     logging.debug("Resource Configuration payload send returned {}".format(ret))
 
-rc_uuid = "777a93c0-ec0d-4994-b1fc-83271f5618f0"
+rc_uuid = "999a93c0-ec0d-4994-b1fc-83271f5618f0"
 latitude = -27.0
 datalogger_update = DataLoggerAggregatorSocket(server_wss, args.site_id, args.dc, "update", site_detail["region"])
 expected_update_count = 0
