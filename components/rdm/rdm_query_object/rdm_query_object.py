@@ -16,6 +16,20 @@ for imp in ["args","get_token", "rdm_traits", "rdm_list", "rdm_pagination_traits
 
 session = requests.Session()
 
+# Return all objects in the specified RDM view that have a field of value specified. If None, return all objects
+def query_rdm_object_properties_in_view(a_server_config, a_site_id, a_domain, a_view, a_headers, a_page_traits, a_callback, a_object_filter_field=None):
+    
+    more_data = True
+    ret = []
+    while more_data:
+        rdm_list = query_rdm_by_domain_view(a_server_config=a_server_config, a_site_id=a_site_id, a_domain=a_domain, a_view=a_view, a_headers=a_headers, a_params=a_page_traits.params())
+        more_data = a_page_traits.more_data(rdm_list)
+        for fi in rdm_list["items"]:
+            if a_callback(fi):
+                ret.append(fi)
+    return ret
+    
+
 def main():
     script_name = os.path.basename(os.path.realpath(__file__))
 
@@ -33,16 +47,11 @@ def main():
 
     logging.info("Querying view {}".format(args.rdm_view))
 
-    page_traits = RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start)
-    more_data = True
-    while more_data:
-        rdm_list = query_rdm_by_domain_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_params=page_traits.params())
-        more_data = page_traits.more_data(rdm_list)
-        for fi in rdm_list["items"]:
-            if fi["id"] == args.rdm_object_uuid or len(args.rdm_object_uuid) == 0:
-                logging.info(json.dumps(fi,indent=4))
-                if len(args.rdm_object_uuid) != 0:
-                    break 
+    def callback(a_item):
+        if a_item["id"] == args.rdm_object_uuid or len(args.rdm_object_uuid) == 0:
+                logging.info(json.dumps(a_item,indent=4))
+
+    query_rdm_object_properties_in_view(a_server_config=server, a_site_id=args.site_id, a_domain=args.rdm_domain, a_view=args.rdm_view, a_headers=headers, a_page_traits=RdmViewPaginationTraits(a_page_size=args.page_limit, a_start=args.start), a_callback=callback)
 
 if __name__ == "__main__":
     main()    

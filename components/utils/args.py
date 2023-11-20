@@ -407,6 +407,13 @@ arg_rdm_road_truck_target = {
         "required" : True
 }
 
+arg_rdm_road_truck_target_update = {
+        "arg" : "--rdm_road_truck_target_update",
+        "default" : "",
+        "help" : "An update to an existing truck's legal weight limit.",
+        "required" : True
+}
+
 arg_rdm_operator_code = {
         "arg" : "--rdm_operator_code",
         "default" : "",
