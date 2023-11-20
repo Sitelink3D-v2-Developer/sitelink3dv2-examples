@@ -31,8 +31,32 @@ def create_road_truck(a_site_id, a_server_config, a_name, a_tare, a_target, a_co
     if response.status_code == 200:
         logging.info("Road truck created.")
         logging.debug ("create road truck returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        return True, road_truck_rdm_bean["_id"]
     else:  
         logging.info("Road truck creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
+        return False, road_truck_rdm_bean["_id"]
+
+def update_road_truck(a_site_id, a_server_config, a_id, a_name, a_tare, a_target, a_code, a_headers):
+    road_truck_rdm_bean = RoadTruckRdmTraits.post_bean_json(a_name=a_name, a_tare=a_tare, a_target=a_target, a_code=a_code)
+    road_truck_rdm_bean["_id"] = a_id
+
+    url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(), a_site_id)
+    logging.debug ("Upload RDM to {}".format(url))
+    
+    json.dumps(road_truck_rdm_bean,indent=4)
+
+    data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(road_truck_rdm_bean).encode('utf-8')).decode('utf-8') }
+    logging.debug("Road truck RDM payload: {}".format(json.dumps(road_truck_rdm_bean, indent=4)))
+
+    response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
+    response.raise_for_status()
+    if response.status_code == 200:
+        logging.info("Road truck updated.")
+        logging.debug ("update road truck returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        return True
+    else:  
+        logging.info("Road truck update unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
+        return False
 
 def main():
     script_name = os.path.basename(os.path.realpath(__file__))
