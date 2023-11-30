@@ -30,6 +30,11 @@ def GetDbaResource(a_server_config, a_site_id, a_uuid, a_headers):
     resource_response = session.get(resource_url, headers=a_headers)
     return resource_response.json()
 
+def GetDbaAssets(a_server_config, a_site_id, a_headers):
+    resource_url = "{}/dba/v1/sites/{}/assets".format(a_server_config.to_url(), a_site_id)
+    resource_response = session.get(resource_url, headers=a_headers)
+    return resource_response.json()
+
 # Extract the human readable machine name from the supplied machine asset.
 def get_machine_name_for_ac_uuid(a_asset_contexts, a_ac_uuid):
     machine_name = "Unknown"
