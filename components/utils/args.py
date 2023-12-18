@@ -407,6 +407,34 @@ arg_rdm_road_truck_target = {
         "required" : True
 }
 
+arg_rdm_road_trailer_name = {
+        "arg" : "--rdm_road_trailer_name",
+        "default" : "",
+        "help" : "A name for a road trailer interacting with load-weighing systems.",
+        "required" : True
+}
+
+arg_rdm_road_trailer_code = {
+        "arg" : "--rdm_road_trailer_code",
+        "default" : "",
+        "help" : "An optional code to describe a road trailer interacting with load-weighing systems.",
+        "required" : False
+}
+
+arg_rdm_road_trailer_tare = {
+        "arg" : "--rdm_road_trailer_tare",
+        "default" : "",
+        "help" : "The unladen mass of a road trailer interacting with load-weighing systems.",
+        "required" : False
+}
+
+arg_rdm_road_trailer_target = {
+        "arg" : "--rdm_road_trailer_target",
+        "default" : "",
+        "help" : "The legal weight limit of the trailer.",
+        "required" : True
+}
+
 arg_rdm_road_truck_target_update = {
         "arg" : "--rdm_road_truck_target_update",
         "default" : "",

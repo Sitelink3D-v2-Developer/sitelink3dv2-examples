@@ -8,14 +8,19 @@ set site_id=""
 
 rem ## Log configuraiton. 
 rem # critical=50, error=40, warning=30, info=20, debug=10
-set log_level=20
+set log_level=10
 
 rem ## Road truck specifics
-set rdm_road_truck_name="Truck 001"
-set rdm_road_truck_code="001"
-set rdm_road_truck_target="12.5"
-set rdm_road_truck_target_update="32.5"
+set rdm_road_truck_name="LV-001 (truck)"
+set rdm_road_truck_code="001a"
+set rdm_road_truck_target="2.5"
+set rdm_road_truck_target_update="5.5"
 set rdm_road_truck_tare="5.0"
+
+set rdm_road_trailer_name="LV-001 (trailer)"
+set rdm_road_trailer_code="001b"
+set rdm_road_trailer_target="4.5"
+set rdm_road_trailer_tare="5.0"
 
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
@@ -35,6 +40,10 @@ python create_search_and_update_road_truck.py ^
     --rdm_road_truck_target %rdm_road_truck_target% ^
     --rdm_road_truck_target_update %rdm_road_truck_target_update% ^
     --rdm_road_truck_tare %rdm_road_truck_tare% ^
+    --rdm_road_trailer_name %rdm_road_trailer_name% ^
+    --rdm_road_trailer_code %rdm_road_trailer_code% ^
+    --rdm_road_trailer_target %rdm_road_trailer_target% ^
+    --rdm_road_trailer_tare %rdm_road_trailer_tare% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^
