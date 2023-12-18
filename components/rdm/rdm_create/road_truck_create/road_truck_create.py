@@ -15,6 +15,28 @@ for imp in ["args", "get_token", "rdm_traits"]:
 
 session = requests.Session()
 
+def create_road_trailer(a_site_id, a_server_config, a_name, a_tare, a_target, a_code, a_headers):
+    road_trailer_rdm_bean = RoadTrailerRdmTraits.post_bean_json(a_name=a_name, a_tare=a_tare, a_target=a_target, a_code=a_code)
+
+    url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(), a_site_id)
+    logging.debug ("Upload RDM to {}".format(url))
+    
+    json.dumps(road_trailer_rdm_bean,indent=4)
+
+    data_encoded_json = { "data_b64" : base64.b64encode(json.dumps(road_trailer_rdm_bean).encode('utf-8')).decode('utf-8') }
+    logging.debug("Road trailer RDM payload: {}".format(json.dumps(road_trailer_rdm_bean, indent=4)))
+
+    response = session.post(url, headers=a_headers, data=json.dumps(data_encoded_json))
+    response.raise_for_status()
+    if response.status_code == 200:
+        logging.info("Road trailer created.")
+        logging.debug ("create road trailer returned {0}\n{1}".format(response.status_code, json.dumps(response.json(), indent=4)))
+        return True, road_trailer_rdm_bean["_id"]
+    else:  
+        logging.info("Road trailer creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
+        return False, road_trailer_rdm_bean["_id"]
+        
+
 def create_road_truck(a_site_id, a_server_config, a_name, a_tare, a_target, a_code, a_headers):
     road_truck_rdm_bean = RoadTruckRdmTraits.post_bean_json(a_name=a_name, a_tare=a_tare, a_target=a_target, a_code=a_code)
 
@@ -36,8 +58,8 @@ def create_road_truck(a_site_id, a_server_config, a_name, a_tare, a_target, a_co
         logging.info("Road truck creation unsuccessful. Status code {}: '{}'".format(response.status_code, response.text))
         return False, road_truck_rdm_bean["_id"]
 
-def update_road_truck(a_site_id, a_server_config, a_id, a_name, a_tare, a_target, a_code, a_headers):
-    road_truck_rdm_bean = RoadTruckRdmTraits.post_bean_json(a_name=a_name, a_tare=a_tare, a_target=a_target, a_code=a_code)
+def update_road_truck(a_site_id, a_server_config, a_id, a_name, a_tare, a_target, a_code, a_headers, a_trailer_list=None):
+    road_truck_rdm_bean = RoadTruckRdmTraits.post_bean_json(a_name=a_name, a_tare=a_tare, a_target=a_target, a_code=a_code, a_trailer_list=a_trailer_list)
     road_truck_rdm_bean["_id"] = a_id
 
     url = "{0}/rdm_log/v1/site/{1}/domain/sitelink/events".format(a_server_config.to_url(), a_site_id)

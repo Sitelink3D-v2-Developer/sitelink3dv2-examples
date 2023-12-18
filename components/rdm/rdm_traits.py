@@ -296,7 +296,7 @@ class RoadTruckRdmTraits():
         return "\'{}\'.".format(self.object_name())
 
     @staticmethod
-    def post_bean_json(a_name, a_tare, a_target, a_code=None):
+    def post_bean_json(a_name, a_tare, a_target, a_code=None, a_trailer_list=None):
         ret = {
             "_id": str(uuid.uuid4()),
             "name" : a_name,
@@ -309,7 +309,38 @@ class RoadTruckRdmTraits():
         }
         if a_code:
             ret["code"] = a_code
+        if a_trailer_list:
+            ret["trailers"] = a_trailer_list
         return ret
+
+class RoadTrailerRdmTraits():
+    def __init__(self, a_object_value):
+        self.value = a_object_value
+        
+    def class_name(self):
+        return "Road Trailer"
+
+    def object_name(self):
+        return "{}".format(self.value["name"])
+
+    def object_details(self):
+        return "\'{}\'.".format(self.object_name())
+
+    @staticmethod
+    def post_bean_json(a_name, a_tare, a_target, a_code=None):
+        ret = {
+            "_id": str(uuid.uuid4()),
+            "name" : a_name,
+            "tare" : float(a_tare),
+            "target" : float(a_target),
+            "_rev": str(uuid.uuid4()),
+            "_v"   : 0,
+            "_type":"sl::trailer",
+            "_at":int(round(time.time() * 1000))
+        }
+        if a_code:
+            ret["code"] = a_code
+        return ret        
 
 class MaterialRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
