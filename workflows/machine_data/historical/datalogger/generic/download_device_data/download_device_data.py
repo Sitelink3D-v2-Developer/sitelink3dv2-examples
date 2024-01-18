@@ -106,7 +106,10 @@ try:
     deviceDesignObject_by_deviceURN = {}
     # first query the design objects in RDM by device URN
     def callback(a_item):
-        
+
+        if a_item["value"]["designType"] == "Planes":
+            return
+
         urn = a_item["value"]["deviceURN"]
         if urn not in deviceDesignObject_by_deviceURN.keys():
             deviceDesignObject_by_deviceURN[urn] = {} 
