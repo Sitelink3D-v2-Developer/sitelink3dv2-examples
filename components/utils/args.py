@@ -263,6 +263,20 @@ arg_report_iso_date_time_end = {
         "required" : True
 }
 
+arg_time_start_ms = {
+        "arg" : "--time_start_ms",
+        "default" : "",
+        "help" : "The ms since epoch that data is to be queried from.",
+        "required" : True
+}
+
+arg_time_end_ms = {
+        "arg" : "--time_end_ms",
+        "default" : "",
+        "help" : "The ms since epoch that data is to be queried to.",
+        "required" : True
+}
+
 arg_report_mask_region_uuid = {
     "arg" : "--report_mask_region_uuid",
     "default" : "",

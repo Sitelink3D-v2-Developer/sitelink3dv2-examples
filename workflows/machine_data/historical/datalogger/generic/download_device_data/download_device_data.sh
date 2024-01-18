@@ -10,6 +10,11 @@ site_id=""
 # critical=50, error=40, warning=30, info=20, debug=10
 log_level=20
 
+# original machine activity window in ms from epoch
+# https://currentmillis.com/ is a convenient site to convert to and from "milliseconds since epoch".
+time_start_ms="1689084000000"
+time_end_ms="1689429600000"
+
 datalogger_output_file_name="DeviceData.csv"
 datalogger_output_folder="/temp/Excel"
 
@@ -26,6 +31,8 @@ exec python download_device_data.py \
     --dc "$dc" \
     --site_id "$site_id" \
     --log_level "$log_level" \
+    --time_start_ms "$time_start_ms" \
+    --time_end_ms "$time_end_ms" \
     --datalogger_output_file_name "$datalogger_output_file_name" \
     --datalogger_output_folder "$datalogger_output_folder" \
     --jwt "$jwt" \

@@ -51,7 +51,7 @@ for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_util
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_datalogger_output_file_name, arg_datalogger_output_folder])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_time_start_ms, arg_time_end_ms, arg_datalogger_output_file_name, arg_datalogger_output_folder])
 # << Argument handling
 
 # >> Server & logging configuration
@@ -78,7 +78,7 @@ try:
     report_file_name = os.path.join(output_dir, args.datalogger_output_file_name)
     report_file = open(report_file_name, "w")
     
-    report_file.write("Device, Machine, Name, Design Type, Count, Feature Name, Description, Color, coordinate 1, coordinate 2, coordinate 3\n")
+    report_file.write("Device, Machine, Name, Modified At Time (UTC), Design Type, Count, Feature Name, Description, Color, coordinate 1, coordinate 2, coordinate 3\n")
         
 
     rdm_view_list = GetTransform(a_server=server, a_site_id=args.site_id, a_headers=headers)
@@ -106,7 +106,14 @@ try:
     deviceDesignObject_by_deviceURN = {}
     # first query the design objects in RDM by device URN
     def callback(a_item):
-        
+
+        if a_item["value"]["designType"] == "Planes":
+            return
+
+        # check whether the time of this item fits within the requested window
+        if int(a_item["value"]["createdAt"]) <  int(args.time_start_ms) or int(a_item["value"]["createdAt"]) > int(args.time_end_ms):
+            return
+
         urn = a_item["value"]["deviceURN"]
         if urn not in deviceDesignObject_by_deviceURN.keys():
             deviceDesignObject_by_deviceURN[urn] = {} 
@@ -115,7 +122,7 @@ try:
         urn_toks = urn.split(":")
         dev_hash = "{} {} ({})".format(urn_toks[6], urn_toks[8], urn_toks[12])
 
-        machine_name = "<MACHINE>"
+        machine_name = "[machine name unavailable]"
         for asset in asset_items:
             if asset["urn"] == urn:
                 for machine in asset_items:
@@ -124,8 +131,8 @@ try:
                         machine_name = urllib.parse.unquote(machine_urn.split(":")[-1])
                         break
 
-        line_prefix = "{},{},{},{},{}".format( dev_hash, machine_name, a_item["value"]["name"], a_item["value"]["designType"], a_item["value"]["count"] )
-
+        utc_time = datetime.datetime.fromtimestamp(int(a_item["value"]["createdAt"])/1000,tz=tz.UTC)
+        line_prefix = "{},{},{},{},{},{}".format( dev_hash, machine_name, a_item["value"]["name"], utc_time, a_item["value"]["designType"], a_item["value"]["count"] )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         device_output_dir = os.path.join(output_dir, a_item["value"]["deviceURN"].replace(':', "-"))
