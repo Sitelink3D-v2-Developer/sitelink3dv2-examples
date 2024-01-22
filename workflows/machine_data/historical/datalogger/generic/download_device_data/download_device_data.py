@@ -82,6 +82,8 @@ try:
         
 
     rdm_view_list = GetTransform(a_server=server, a_site_id=args.site_id, a_headers=headers)
+    if len(rdm_view_list["items"]) == 0:
+        raise SitelinkProcessingError("Couldn't find site transformation list.")
     transform_rev = rdm_view_list["items"][0]["value"]["_rev"]
     logging.debug(json.dumps(rdm_view_list,indent=4))
 
