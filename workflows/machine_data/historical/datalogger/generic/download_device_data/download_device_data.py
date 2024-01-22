@@ -115,7 +115,7 @@ try:
         # check whether the time of this item fits within the requested window
         if int(a_item["value"]["createdAt"]) <  int(args.time_start_ms) or int(a_item["value"]["createdAt"]) > int(args.time_end_ms):
             return
-
+      
         urn = a_item["value"]["deviceURN"]
         if urn not in deviceDesignObject_by_deviceURN.keys():
             deviceDesignObject_by_deviceURN[urn] = {} 
