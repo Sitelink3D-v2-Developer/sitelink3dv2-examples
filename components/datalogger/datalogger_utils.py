@@ -176,6 +176,8 @@ def UpdateResourceConfiguration(a_resource_config_uuid, a_resource_config_dict, 
 def UpdateResourceConfigurationProcessor(a_resource_config_uuid, a_resource_config_dict):
     mfk_rc = a_resource_config_dict[a_resource_config_uuid]
     logging.debug("Resource Configuration: {}".format(json.dumps(mfk_rc,indent=4)))
+    if "version" not in mfk_rc:
+        raise RuntimeError("Could not load resource configuration {}".format(json.dumps(mfk_rc,indent=4)))
     resource_config_processor = ResourceConfiguration(mfk_rc)
     return resource_config_processor
 
@@ -189,6 +191,8 @@ def GetAuxControlDataFromComponent(a_component):
     ret["position_quality"] = aux_control_data["position_info"]["quality"]
     ret["position_error_horz"] = aux_control_data["position_info"]["error_horz"]
     ret["position_error_vert"] = aux_control_data["position_info"]["error_vert"]
+    ret["error_horz_limitation"] = aux_control_data["position_info"]["error_horz_limitation"]
+    ret["error_vert_limitation"] = aux_control_data["position_info"]["error_vert_limitation"]
     return ret
 
 def FindPointsOfInterestInResourceConfiguration(a_resource_configuration):
@@ -289,6 +293,12 @@ def SerialiseObjectList(a_object_list, a_header_list):
 def FormatState(a_state):
     return a_state["name"] + " (" + a_state["value"] + ")"
 
+def FormatStateName(a_state):
+    return a_state["name"]
+
+def FormatStateID(a_state):
+    return a_state["value"]
+
 # Write a variable list of "objects" each of which has a variable list of "items" to a serialised string that can be output to the CSV.
 # The items will each have a "title" property that identifies the CSV header (effectively the column) that the data is to be associated
 # with and written to. An example of an object may be a point of interest on the left of a machine blade or bucket. That point of interest
@@ -300,28 +310,34 @@ def FormatState(a_state):
 # The algorithm uses the title_list to manage where in the CSV output string each item is written so that data aligns with the comma
 # separated titles when they're eventually written to file. State is written in a similar way but at fixed (known) column offsets.
 #
-def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, aux_control_data_dict, a_object_list, a_header_list, a_state={}):
+def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, aux_control_data_dict, a_object_list, a_header_list, a_output_verbosity="advanced", a_state={}):
     ac_uuid = a_replicate["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
     operator = "-"
+    operator_id = "-"
     task = "-"
+    task_id = "-"
     delay = "-"
+    delay_id = "-"
     surface_name = "-"
     sequence_name = "-"
 
     try:
-        operator = FormatState(a_state=a_state["topcon.rdm.list"]["operator"])
+        operator = FormatStateName(a_state=a_state["topcon.rdm.list"]["operator"])
+        operator_id = FormatStateID(a_state=a_state["topcon.rdm.list"]["operator"])
     except KeyError:
         logging.debug("No Operator state found.")
 
     try:
-        delay = FormatState(a_state=a_state["topcon.rdm.list"]["delay"])
+        delay = FormatStateName(a_state=a_state["topcon.rdm.list"]["delay"])
+        delay_id = FormatStateID(a_state=a_state["topcon.rdm.list"]["delay"])
     except KeyError:
         logging.debug("No Delay state found.")
 
     try:
-        task = FormatState(a_state=a_state["topcon.task"]["id"])
+        task = FormatStateName(a_state=a_state["topcon.task"]["id"])
+        task_id = FormatStateID(a_state=a_state["topcon.task"]["id"])
     except KeyError:
         logging.debug("No Task state found.")
 
@@ -346,6 +362,11 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
 
     utc_time = datetime.datetime.fromtimestamp(a_replicate["at"]/1000,tz=tz.UTC)
 
+    # we now split this into separate date and time columns so users can better filter
+    utc_time_split = str(utc_time).split(" ")
+    utc_date_only = utc_time_split[0]
+    utc_time_only = utc_time_split[1]
+
     position_quality = "Unknown"
 
     try:
@@ -364,6 +385,8 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     position_error_horz = "Unknown"
     position_error_vert = "Unknown"
     auto_grade_control = "Unknown"
+    error_horz_limitation = "Unknown"
+    error_vert_limitation = "Unknown"
 
     try:
         reverse = aux_control_data_dict["reverse"]
@@ -381,6 +404,15 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
         auto_grade_control = aux_control_data_dict["auto_grade_control"]
     except:
         pass
+    try:
+        error_horz_limitation = aux_control_data_dict["error_horz_limitation"]
+    except:
+        pass
+    try:
+        error_vert_limitation = aux_control_data_dict["error_vert_limitation"]
+    except:
+        pass
+
 
     position_string = SerialiseObjectList(a_object_list, a_header_list)
 
@@ -391,10 +423,14 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
     surface_name_strip = surface_name.replace(",","_")
     sequence_name_strip = sequence_name.replace(",","_")
 
-    a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_time, position_quality, position_error_horz, position_error_vert, auto_grade_control, reverse, delay_strip, operator_strip, task_strip, surface_name_strip, sequence_name_strip, position_string))
+    if a_output_verbosity == "basic":
+        a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, machine_name_strip, utc_date_only, utc_time_only, position_quality, position_error_horz, position_error_vert, task_strip, surface_name_strip, sequence_name_strip, position_string))
 
+    else:
+        a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_date_only, utc_time_only, position_quality, position_error_horz, error_horz_limitation, position_error_vert, error_vert_limitation, auto_grade_control, reverse, delay_strip, delay_id, operator_strip, operator_id, task_strip, task_id, surface_name_strip, sequence_name_strip, position_string))
+        
 
-def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_machine_description_filter=None):
+def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_output_verbosity="advanced", a_machine_description_filter=None):
         logging.debug("Found replicate.")
         rc_uuid = a_decoded_json['data']['rc_uuid']
         rc_updated = UpdateResourceConfiguration(a_resource_config_uuid=rc_uuid, a_resource_config_dict=a_resource_config_dict, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
@@ -459,53 +495,54 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
             asbuilt_shapes.cache(asbuilt_shapes_comp)
             for shp in asbuilt_shapes.shapes:
                 for vert in shp.vertices:
-                    obj = {
-                        "items" : []
-                    }
-                    node_name, prop = vert.point_reference.rsplit(".", 1)
-                    for con in vert.constants:
+                    if a_output_verbosity == "advanced":
+                        obj = {
+                            "items" : []
+                        }
+                        node_name, prop = vert.point_reference.rsplit(".", 1)
+                        for con in vert.constants:
 
-                        key, value_id = con.value_reference.rsplit(".", 1)
-                        raw_sensors = asbuilt_shapes_comp.get_interface_object(key)
+                            key, value_id = con.value_reference.rsplit(".", 1)
+                            raw_sensors = asbuilt_shapes_comp.get_interface_object(key)
 
-                        if con.function == "dsty":
-                            item = {
-                                "title" : prop + "_density ({})".format(raw_sensors["description"]),
-                                "value" : con.value
-                            }
-                            obj["items"].append(item)
+                            if con.function == "dsty":
+                                item = {
+                                    "title" : prop + "_density ({})".format(raw_sensors["description"]),
+                                    "value" : con.value
+                                }
+                                obj["items"].append(item)
 
-                        if con.function == "vibf":
-                            item = {
-                                "title" : prop + "_vibration_freq ({})".format(raw_sensors["description"]),
-                                "value" : con.value
-                            }
-                            obj["items"].append(item)
+                            if con.function == "vibf":
+                                item = {
+                                    "title" : prop + "_vibration_freq ({})".format(raw_sensors["description"]),
+                                    "value" : con.value
+                                }
+                                obj["items"].append(item)
 
-                        if con.function == "viba":
-                            item = {
-                                "title" : prop + " vibration_amp ({})".format(raw_sensors["description"]),
-                                "value" : con.value
-                            }
-                            obj["items"].append(item)
+                            if con.function == "viba":
+                                item = {
+                                    "title" : prop + " vibration_amp ({})".format(raw_sensors["description"]),
+                                    "value" : con.value
+                                }
+                                obj["items"].append(item)
 
-                        if con.function == "spdm":
-                            item = {
-                                "title" : prop + "_speed ({})".format(raw_sensors["description"]),
-                                "value" : con.value
-                            }
-                            obj["items"].append(item)
+                            if con.function == "spdm":
+                                item = {
+                                    "title" : prop + "_speed ({})".format(raw_sensors["description"]),
+                                    "value" : con.value
+                                }
+                                obj["items"].append(item)
 
-                        if con.function == "temp":
-                            item = {
-                                "title" : prop + "_temp ({})".format(raw_sensors["description"]),
-                                "value" : con.value
-                            }
-                            obj["items"].append(item)
+                            if con.function == "temp":
+                                item = {
+                                    "title" : prop + "_temp ({})".format(raw_sensors["description"]),
+                                    "value" : con.value
+                                }
+                                obj["items"].append(item)
 
-                    
-                    if len(obj["items"]) != 0:
-                        object_list.append(obj)
+                        
+                        if len(obj["items"]) != 0:
+                            object_list.append(obj)
 
         if len(component_point_list) > 0:
 
@@ -513,30 +550,32 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
 
                 for point in comp["points"]:
 
+                    
                     poi_local_space = GetPointOfInterestLocalSpace(a_point_of_interest_component=comp["points_component"], a_transform_component=transform_component, a_point_of_interest=point["point_node"])
-                    item_x = {
-                        "title" : point["display_name"] + " [x]",
-                        "value" : poi_local_space[1]
-                    }
+                    if a_output_verbosity == "advanced":
+                        item_x = {
+                            "title" : point["display_name"] + " [x]",
+                            "value" : poi_local_space[1]
+                        }
 
-                    item_y = {
-                        "title" : point["display_name"] + " [y]",
-                        "value" : poi_local_space[0]
-                    }
+                        item_y = {
+                            "title" : point["display_name"] + " [y]",
+                            "value" : poi_local_space[0]
+                        }
 
-                    item_z = {
-                        "title" : point["display_name"] + " [z]",
-                        "value" : poi_local_space[2]
-                    }
+                        item_z = {
+                            "title" : point["display_name"] + " [z]",
+                            "value" : poi_local_space[2]
+                        }
 
-                    obj = {
-                        "items" : [item_x,item_y,item_z]
-                    }
+                        obj = {
+                            "items" : [item_x,item_y,item_z]
+                        }
 
-                    object_list.append(obj)
+                        object_list.append(obj)
 
                 # As an additional benefit, we also search the Transform interface for a local_position entry. This provides a single point
-                # representation for the machine and is what's used in the Sitelink3D v2 web site machine list and for the machine icon pin
+                # representation for the machine and is what's used in the Sitelink3D web site machine list and for the machine icon pin
                 # on the map. If available, we extract this local position and then convert it to WGS84 using the transform in use on site
                 # at the time this replicate was produced.
                 transform_interface = transform_component.interfaces["transform"]
@@ -546,7 +585,6 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                     "e": transform_interface.local_position["easting"],
                     "n": transform_interface.local_position["northing"]
                 }
-
 
                 item_z = {
                     "title" : "local_position [z]",
@@ -574,13 +612,14 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 transform_info = get_transform_info_for_time(a_ms_since_epoch=a_decoded_json["at"], a_transform_list=a_transform_list)
 
                 # Record the transform information for output to file
-                object_list.append({
-                        "items": [
-                            {
-                                "title": "Transform",
-                                "value": "revision {} (file {})".format(transform_info["revision"], transform_info["file_name"])
-                            }
-                        ]  })
+                if a_output_verbosity == "advanced":
+                    object_list.append({
+                            "items": [
+                                {
+                                    "title": "Transform",
+                                    "value": "revision {} (file {})".format(transform_info["revision"], transform_info["file_name"])
+                                }
+                            ]  })
 
                 # For efficiency we cache all local points and run WGS84 transformations on them all at the end of data processing. Otherwise
                 # the need to lookup an approximation matrices for every replicate would make execution very slow.
@@ -616,9 +655,9 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 geodetic_object_list.append(obj)
                 a_geodetic_coordinate_manager.add_geodetic_point(obj)
 
-        OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
+        OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_output_verbosity, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
-def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_machine_description_filter=None):
+def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name, a_output_verbosity="advanced", a_machine_description_filter=None):
 
     # Before we fetch the raw data, we will first extract the history of localization at the site. This is required because any localized positions that we receive via
     # MFK replicate packets will be converted into WGS84 so that lat, lon and height information can also be output to the report making map plotting easy. As transforms
@@ -682,9 +721,9 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
 
         if decoded_json['type'] == "mfk::Replicate":
             try:
-                ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
-            except requests.exceptions.HTTPError:
-                logging.warning("Could not process replicate.")
+                ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers, a_output_verbosity=a_output_verbosity)
+            except (requests.exceptions.HTTPError, RuntimeError, Exception) as e: 
+                logging.warning("Could not process replicate {} with message '{}'".format(json.dumps(decoded_json, indent=4), e))
                 continue
         line_count += 1
 
@@ -698,13 +737,32 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
     geodetic_file_temp = open(geodetic_file_name_temp, "w")
     for i, geodetic_point in enumerate(geodetic_point_list):
         if geodetic_point is not None:
-            geodetic_file_temp.write(SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n')
+            serialised_list = SerialiseObjectList([geodetic_point], geodetic_header_list) + '\n'
+            geodetic_file_temp.write(serialised_list)
     geodetic_file_temp.close()
 
     report_file_name = os.path.join(output_dir, a_datalogger_output_file_name)
     report_file = open(report_file_name, "w")
-    column_count=14 # initial number of fixed columns as below
-    report_file.write("Machine Type, Device ID, Machine Name, Time (UTC), GPS Mode, Error(H), Error(V), MC Mode, Reverse, Delay (ID), Operator (ID), Task (ID), Surface, Sequence")
+    column_count=0 # initial number of fixed columns as below
+    fixed_header_list=[]
+    
+    first_column = True
+    if a_output_verbosity == "basic":
+        fixed_header_list = ["Machine Type", "Machine Name", "Date (UTC)", "Time (UTC)", "Position Quality", "Error(H)", "Error(V)", "Task", "Surface", "Sequence"]
+
+    else:
+        fixed_header_list = ["Machine Type", "Device ID", "Machine Name", "Date (UTC)", "Time (UTC)", "Position Quality", "Error(H)", "Error(H) Limitation", "Error(V)", "Error(V) Limitation", "Auto Grade Control Enabled", "Reverse", "Delay", "Delay ID", "Operator", "Operator ID", "Task", "Task ID", "Surface", "Sequence"]    
+        
+    column_count = len(fixed_header_list)
+    line = ""
+    for title in fixed_header_list:
+        if first_column:
+            line = title
+            first_column = False
+        else:
+            line += ", {}".format(title)
+    
+    report_file.write(line)
     for point_of_interest_name in header_list:
         report_file.write(", {}".format(point_of_interest_name))
         column_count += 1 # we use this to space out the geodetic columns later - each line has a variable number of columns from the temp file.
@@ -719,14 +777,16 @@ def ProcessDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datal
             if first_line:
                 first_line = False
                 continue
-
             geo_line = geodetic_file_temp.readline()
-            line_column_count = len(line.split(","))
+            split_line_list = line.split(",")
+
+            line_column_count = len(split_line_list) -1 # minus one to cater for the trailing comma
+            logging.info
+            
             pad_string = " "
             line_diff = column_count - line_column_count
-
-            while line_diff >= 0:
-                pad_string += " -,"
+            while line_diff > 0:
+                pad_string += "-, "
                 line_diff -= 1
 
             aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()[:-1]

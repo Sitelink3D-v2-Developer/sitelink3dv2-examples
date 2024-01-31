@@ -37,7 +37,7 @@ for imp in ["args", "utils", "get_token", "mfk", "site_detail", "datalogger_util
 script_name = os.path.basename(os.path.realpath(__file__))
 
 # >> Argument handling  
-args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_datalogger_start_ms, arg_datalogger_end_ms, arg_datalogger_output_file_name, arg_datalogger_output_folder])
+args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_id, arg_datalogger_start_ms, arg_datalogger_end_ms, arg_datalogger_output_file_name, arg_datalogger_output_folder, arg_output_verbosity])
 # << Argument handling
 
 # >> Server & logging configuration
@@ -62,6 +62,6 @@ except OSError as error:
     pass
 
 try:
-    ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=target_dir, a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name)
+    ProcessDataloggerToCsv(a_server=server, a_site_id=args.site_id, a_headers=headers, a_target_dir=target_dir, a_datalogger_start_ms=args.datalogger_start_ms, a_datalogger_end_ms=args.datalogger_end_ms, a_datalogger_output_file_name=args.datalogger_output_file_name, a_output_verbosity=args.output_verbosity)
 except SitelinkProcessingError as e:
     log_and_exit_on_error(a_message=e, a_target_dir=output_dir)    
