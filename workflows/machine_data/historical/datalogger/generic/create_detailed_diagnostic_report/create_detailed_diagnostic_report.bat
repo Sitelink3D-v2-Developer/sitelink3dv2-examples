@@ -18,6 +18,11 @@ set datalogger_end_ms="1661293119118"
 set datalogger_output_file_name="DiagnosticReport.csv"
 set datalogger_output_folder="C:\\temp\\Bat\\Excel"
 
+rem configure the report to produce basic or advanced output 
+rem "basic": machine name & type, date & time, GPS fix mode & errors values, active task, surface & sequence, local and WGS84 position
+rem "advanced": all of basic plus device ID, machine control mode (auto), reverse flag, identifiers for active settings above, site transform & all machine points of interest
+set output_verbosity="advanced"
+
 rem ## Authorization. OAuth credentials are used if the JWT string is empty.
 rem # run `SitelinkFrontend.core.store.getState().app.owner.jwt[0]` in your browser developer console to obtain a JWT.
 set jwt=""
@@ -35,6 +40,7 @@ python create_detailed_diagnostic_report.py ^
     --datalogger_end_ms %datalogger_end_ms% ^
     --datalogger_output_file_name %datalogger_output_file_name% ^
     --datalogger_output_folder %datalogger_output_folder% ^
+    --output_verbosity %output_verbosity% ^
     --jwt %jwt% ^
     --oauth_id %oauth_id% ^
     --oauth_secret %oauth_secret% ^

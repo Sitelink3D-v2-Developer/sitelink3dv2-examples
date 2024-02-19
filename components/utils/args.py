@@ -335,6 +335,14 @@ arg_transform_local_position_points_file = {
     "required" : True
 }
 
+# Output control
+arg_output_verbosity = {
+    "arg" : "--output_verbosity",
+    "default" : "basic",
+    "help" : "basic or advanced.",
+    "required" : False
+}
+
 # Smartview related arguments
 arg_smartview_args = {
     "arg" : "--smartview_args",
