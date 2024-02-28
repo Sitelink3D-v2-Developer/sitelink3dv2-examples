@@ -128,10 +128,12 @@ try:
         for asset in asset_items:
             if asset["urn"] == urn:
                 for machine in asset_items:
-                    if machine["id"] == asset["last_seen_with"][0]:
-                        machine_urn = machine["urn"] 
-                        machine_name = urllib.parse.unquote(machine_urn.split(":")[-1])
-                        break
+                    last_seen_with = asset["last_seen_with"]
+                    if last_seen_with is not None:
+                        if machine["id"] == last_seen_with[0]:
+                            machine_urn = machine["urn"] 
+                            machine_name = urllib.parse.unquote(machine_urn.split(":")[-1])
+                            break
 
         utc_time = datetime.datetime.fromtimestamp(int(a_item["value"]["createdAt"])/1000,tz=tz.UTC)
         line_prefix = "{},{},{},{},{},{}".format( dev_hash, machine_name, a_item["value"]["name"], utc_time, a_item["value"]["designType"], a_item["value"]["count"] )
