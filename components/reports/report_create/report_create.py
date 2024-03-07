@@ -29,15 +29,16 @@ def poll_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_heade
     job = fetch_job(a_server_config, a_site_id, a_report_term, a_report_job_id, a_headers)
     logging.info("Polled job {} final status is {}.".format(a_report_job_id, status))    
 
-def create_report(a_server_config, a_site_id,a_report_name, a_report_traits, a_report_term, a_headers):
+def create_report(a_server_config, a_site_id,a_report_name, a_report_traits, a_report_term, a_headers, a_issued_by="{} via API".format(getpass.getuser())):
     frame = {
         "site_id"    : a_site_id,
         "source"     : "API",
         "job_type"   : "rpt::{}".format(a_report_traits.report_type()),
-        "issued_by"  : "{} via API".format(getpass.getuser()),
+        "issued_by"  : a_issued_by,
         "params": a_report_traits.job_params(a_report_name=a_report_name),
         "results": {}
     }
+    logging.info(json.dumps(frame))
     url = "{}/reporting/v1/{}/{}".format(a_server_config.to_url(), a_site_id, a_report_term)
     j = json_from(requests.post(url, data=json.dumps(frame), headers=a_headers))
 
@@ -127,17 +128,19 @@ def report_job_monitor_factory(a_data_method, a_server_config, a_site_id, a_repo
     return monitor
 
 
-def create_and_download_report(a_server_config, a_site_id, a_report_name, a_report_traits, a_report_term, a_target_dir, a_job_report_monitor_callback, a_headers):
-    report_job_id = create_report(a_server_config=a_server_config, a_site_id=a_site_id, a_report_name=a_report_name, a_report_traits=a_report_traits, a_report_term=a_report_term, a_headers=a_headers)
+def create_and_download_report(a_server_config, a_site_id, a_report_name, a_report_traits, a_report_term, a_target_dir, a_job_report_monitor_callback, a_headers, a_issued_by="{} via API".format(getpass.getuser()), a_report_file_name=None):
+    report_job_id = create_report(a_server_config=a_server_config, a_site_id=a_site_id, a_report_name=a_report_name, a_report_traits=a_report_traits, a_report_term=a_report_term, a_headers=a_headers, a_issued_by=a_issued_by)
     logging.info("Submitted [{}] called [{}] with job identifier [{}]".format(a_report_traits.report_type(), a_report_name, report_job_id))
     a_job_report_monitor_callback(a_report_job_id=report_job_id)
 
     targets = download_urls_for_job(a_server_config=a_server_config, a_site_id=a_site_id, a_report_traits=a_report_traits, a_report_term=a_report_term, a_job_id=report_job_id, a_headers=a_headers)
-    
+    logging.info(targets)
     for target in targets:
         if None == target:
             logging.info("No results.")
         else:
             url, name = target
-            logging.debug("downloading report at URL {}".format(url))
+            if a_report_file_name is not None:
+                name = a_report_file_name
+            logging.info("downloading report at URL {} with name {}".format(url, name))
             download_report(a_report_url=url, a_headers=a_report_traits.results_header(), a_target_dir=a_target_dir, a_report_name=name) 

@@ -235,6 +235,14 @@ arg_report_name = {
         "required" : True
 }
 
+# Report related arguments
+arg_report_issued_by = {
+        "arg" : "--report_issued_by",
+        "default" : "",
+        "help" : "A name for a the source of the report.",
+        "required" : False
+}
+
 arg_report_url = {
         "arg" : "--report_url",
         "default" : "",
