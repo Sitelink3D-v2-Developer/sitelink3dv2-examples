@@ -9,4 +9,6 @@ pip install ^
   numpy ^
   queuelib ^
   pyopenssl ^
-  pyglm
+  pyglm ^
+  openpyxl ^
+  python-csv

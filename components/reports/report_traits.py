@@ -24,8 +24,8 @@ class ReportRangeBase():
         self.m_end_unix_time_millis = a_end_unix_time_millis
 
     def add_time_range_params(self, a_params):
-        a_params["from"] = self.m_start_unix_time_millis
-        a_params["to"] = self.m_end_unix_time_millis   
+        a_params["from"] = int(self.m_start_unix_time_millis)
+        a_params["to"] = int(self.m_end_unix_time_millis)   
 
     def job_params(self, params):
         self.add_time_range_params(self, params)
