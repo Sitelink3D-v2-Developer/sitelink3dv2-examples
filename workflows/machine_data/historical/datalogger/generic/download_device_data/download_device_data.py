@@ -1,22 +1,5 @@
 #!/usr/bin/env python
 
-# This example demonstrates the power of accessing historical raw data at a site using the Datalogger service. The Datalogger service provides
-# historical data over a specified time period in a format consistent with the way data is provided live with MFK Live. That is to say that
-# the data consists of three broad message types:
-# 1. Events (not used in this example).
-# 2. State.
-# 3. MFK updates (Machine Forward Kinematics).
-#
-# This script is one of many potential applications for such raw data. Here, a detailed report of all (low frequency) machine positions along
-# with associated state, position and AsBuilt related flags as well as RDM metadata such as selected Task and design information is produced.
-# Interpreting raw Datalogger data enables API consumers to build their own customized reports or otherwise process data for statistical or
-# any other purpose.
-#
-# The following is an overview of this example:
-# 1. Extract raw data from the Datalogger (DBA) Service and iterate over the resulting lines.
-# 2. Cache state information so that the most recent state is available to be output when kinematic updates are received.
-# 3. Process mfk::Replicate packets containing binary encoded kinematic updates, conditioning the data to be output as a CSV line.
-
 def particular_from_design_type(a_design_type):
     if(a_design_type == "Lines"):
         return "LN3"
@@ -115,7 +98,7 @@ try:
         # check whether the time of this item fits within the requested window
         if int(a_item["value"]["createdAt"]) <  int(args.time_start_ms) or int(a_item["value"]["createdAt"]) > int(args.time_end_ms):
             return
-      
+    
         urn = a_item["value"]["deviceURN"]
         if urn not in deviceDesignObject_by_deviceURN.keys():
             deviceDesignObject_by_deviceURN[urn] = {} 
