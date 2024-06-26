@@ -23,8 +23,8 @@ class ServerConfig():
         self._scheme, self._host, self._port = shp(a_environment, a_scheme)
         self._data_center = a_data_center        
 
-    def to_url(self):
-        ret = "{}://{}-{}:{}".format(self._scheme, self._data_center, self._host, self._port)
+    def to_url(self, a_dc=""):
+        ret = "{}://{}-{}:{}".format(self._scheme, self._data_center if a_dc=="" else a_dc, self._host, self._port)
         return ret    
 
 def is_valid_uuid(val):
