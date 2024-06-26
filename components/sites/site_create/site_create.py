@@ -15,7 +15,7 @@ for imp in ["utils", "get_token", "rdm_traits", "args"]:
 
 def create_site(a_site_name, a_dc, a_server_config, a_owner_id, a_latitude, a_longitude, a_phone, a_email, a_name, a_timezone, a_headers):
 
-    create_site_url = "{0}/siteowner/v1/owners/{1}/create_site".format(a_server_config.to_url(), a_owner_id)
+    create_site_url = "{0}/siteowner/v1/owners/{1}/create_site".format(a_server_config.to_url(a_dc="us"), a_owner_id)
 
     payload_json = {
         "site_uuid": str(uuid.uuid4()),
