@@ -22,6 +22,17 @@ def query_rdm_by_domain_view(a_server_config, a_site_id, a_domain, a_view, a_hea
     response.raise_for_status()
     return response.json() 
 
+def get_rdm_object_name(a_server, a_site_id, a_uuid, a_view, a_headers):
+    page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[a_uuid], a_end=[a_uuid, None])
+    rj = query_rdm_by_domain_view(a_server_config=a_server, a_site_id=a_site_id, a_domain="sitelink", a_view=a_view, a_headers=a_headers, a_params=page_traits.params())
+    object_name = "[unknown]"
+    if len(rj["items"]) > 0: # There should be only one entry as we specified a unique ID
+        value = rj["items"][0]["value"]
+        if "name" in value: 
+            object_name = value["name"]
+    return object_name
+
+
 class RdmListPageQuery():
     def __init__(self, a_server_config, a_site_id, a_domain, a_view, a_params, a_headers, a_result_callback=None):
         self.m_server_config = a_server_config
