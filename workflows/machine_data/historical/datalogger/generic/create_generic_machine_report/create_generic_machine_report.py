@@ -59,11 +59,41 @@ os.makedirs(resources_dir, exist_ok=True)
 state_file_name = os.path.join(output_dir, "states.txt")
 event_file_name = os.path.join(output_dir, "events.txt")
 kinematics_file_name = os.path.join(output_dir, "kinematics.txt")
+lift_file_name = os.path.join(output_dir, "lifts.txt")
 
 payload_output_file = {}
 payload_output_file["sitelink::Event"] = open(event_file_name, "w")
 payload_output_file["sitelink::State"] = open(state_file_name, "w")
 payload_output_file["mfk::Replicate"]  = open(kinematics_file_name, "w")
+lift_file = open(lift_file_name, "w")
+lift_file.write("Job, machine, truck, trailer, material, time, weight, job_uuid, last_material_lifted_for_job")
+
+none_string = "[none]"
+
+class Lift():
+    def __init__(self, a_truck_name, a_trailer_name, a_material, a_weight, a_time):
+        self.m_truck_name = a_truck_name
+        self.m_trailer_name = a_trailer_name
+        self.m_material = a_material
+        self.m_weight = a_weight
+        self.m_time = a_time
+
+class Job():
+    def __init__(self, a_job_uuid, a_open_time_ms):
+        self.m_job_uuid = a_job_uuid
+        self.m_material_pending_for_lift = none_string
+        self.m_last_material_lifted = none_string
+        self.m_lift_list = []
+
+class DataloggerPayloadBase():
+    def __init__(self, a_json):
+        self.m_json = a_json
+        
+    def payload_type(self):
+        return self.m_json["type"]
+        
+    def data_type(self):
+        return self.m_json["data"]["type"]
 
 # Log formatted payload specific data to the provided file handle.
 def LogPayload(a_payload, a_file):
@@ -71,6 +101,11 @@ def LogPayload(a_payload, a_file):
 
 # Main datalogger data processing loop
 line_count = 0
+job_uuid_dict = {}
+ac_state_dict = {}
+name_cache_dict = {}
+ac_last_selected_job_dict = {}
+
 for line in response.iter_lines():
     line_count += 1
     decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
@@ -145,6 +180,71 @@ for line in response.iter_lines():
 
             LogPayload(a_payload=payload, a_file=payload_output_file[payload.payload_type()])
 
+            # The payload type may now contribute to our job list
+            if isinstance(payload, DataloggerPayloadOnBoardWeighingOpen):
+                # a new job has been birthed
+                job_uuid = decoded_json["data"]["job_uuid"]
+                if job_uuid not in job_uuid_dict:
+                    job_uuid_dict[job_uuid] = Job(a_job_uuid=job_uuid, a_open_time_ms=decoded_json["at"])
+                
+                # track the most recently selected job for this AC so we can track its last know material independent of lifts
+                ac_uuid = decoded_json["data"]["ac_uuid"]
+                ac_last_selected_job_dict[ac_uuid] = job_uuid
+
+            if isinstance(payload, DataloggerPayloadOnBoardWeighingClear):
+                job_uuid = decoded_json["data"]["job_uuid"]
+                this_job = job_uuid_dict[job_uuid]
+                this_job.m_job_number = decoded_json["data"]["job_num"]
+                ac_uuid = decoded_json["data"]["ac_uuid"]
+                machine_name = get_machine_name_for_ac_uuid(assets, ac_uuid)
+                for lift in this_job.m_lift_list:
+                    seconds = lift.m_time / 1000
+                    dt_object = datetime.datetime.fromtimestamp(seconds)
+                    formatted_date = dt_object.strftime("%Y/%m/%d %H:%M:%S")
+                    lift_string="{}, {}, {}, {}, {}, {}, {}, {}, {}".format(this_job.m_job_number, machine_name, lift.m_truck_name, lift.m_trailer_name, lift.m_material, formatted_date, lift.m_weight, job_uuid, this_job.m_last_material_lifted)
+                    lift_file.write("\n"+lift_string)
+                this_job = job_uuid_dict[decoded_json["data"]["job_uuid"]].m_lift_list.append(lift)
+
+            def update_states(a_ac_uuid, a_state_name, a_state_uuid, a_ac_state_dict, a_name_cache_dict):
+                if a_ac_uuid not in a_ac_state_dict:
+                    a_ac_state_dict[a_ac_uuid] = {}
+                
+                if a_state_name not in a_ac_state_dict[a_ac_uuid]:
+                    a_ac_state_dict[a_ac_uuid][a_state_name] = none_string
+
+                # populate name cache if needed
+                if a_state_uuid:
+                    if a_state_name not in a_name_cache_dict:
+                        a_name_cache_dict[a_state_name] = {}
+                    if a_state_uuid not in a_name_cache_dict[a_state_name]:
+                        state_value = get_rdm_object_name(a_server=server, a_site_id=args.site_id, a_uuid=a_state_uuid, a_view="_head", a_headers=headers)
+                        a_name_cache_dict[a_state_name][a_state_uuid] = state_value
+
+                a_ac_state_dict[a_ac_uuid][a_state_name] = a_name_cache_dict[a_state_name][a_state_uuid] if a_state_uuid else none_string
+
+            if isinstance(payload, DataloggerPayloadState):
+                state_name = decoded_json["data"]["state"]
+                state_value = decoded_json["data"]["value"]
+                ac_uuid = decoded_json["data"]["ac_uuid"]
+                update_states(a_ac_uuid=ac_uuid, a_state_name=state_name, a_state_uuid=state_value, a_ac_state_dict=ac_state_dict, a_name_cache_dict=name_cache_dict)
+                if state_name == "material" and len(state_value) > 0:
+                    material_name = ac_state_dict[ac_uuid][state_name]
+                    if ac_uuid in ac_last_selected_job_dict:
+                        job_uuid_dict[ac_last_selected_job_dict[ac_uuid]].m_material_pending_for_lift = material_name
+                
+            if isinstance(payload, DataloggerPayloadOnBoardWeighingLift):
+                weight = decoded_json["data"]["weight"]     
+                ac_uuid = decoded_json["data"]["ac_uuid"]
+                if ac_uuid not in ac_state_dict:
+                    ac_state_dict[ac_uuid] = {}    
+
+                job_uuid = decoded_json["data"]["job_uuid"]
+                if job_uuid in job_uuid_dict:
+                    lift = Lift(a_truck_name=ac_state_dict[ac_uuid]["truck"] if "truck" in ac_state_dict[ac_uuid] else none_string, a_trailer_name=ac_state_dict[ac_uuid]["trailer"] if "trailer" in ac_state_dict[ac_uuid] else none_string, a_material=ac_state_dict[ac_uuid]["material"] if "material" in ac_state_dict[ac_uuid] else none_string, a_weight=weight, a_time=decoded_json["at"])
+                    this_job = job_uuid_dict[job_uuid]
+                    this_job.m_lift_list.append(lift)
+                    this_job.m_last_material_lifted = this_job.m_material_pending_for_lift
+                    
     except KeyError as err:
         logging.error("Error processing replicate payload.")
         pass
