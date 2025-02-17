@@ -66,12 +66,13 @@ if report_exists:
     wb_obj.active = wb_obj['Weights']
     sheet_obj = wb_obj.active
 
-    # we retain columns (1 based) 1,2,9,12,25,30
+    # we retain columns (1 based) 1,2,6,7,9,12,25,30
     sheet_obj.delete_cols(31, 5)
     sheet_obj.delete_cols(26, 4)
     sheet_obj.delete_cols(13, 12)
     sheet_obj.delete_cols(10, 2)
-    sheet_obj.delete_cols(3, 6)
+    sheet_obj.delete_cols(8, 1)
+    sheet_obj.delete_cols(3, 3)
  
 csv_file = os.path.join(output_dir, args.datalogger_output_file_name) 
 with open(csv_file, 'w', newline="") as f:
