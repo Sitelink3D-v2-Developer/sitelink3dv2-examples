@@ -402,10 +402,45 @@ arg_rdm_delay_code = {
         "required" : False
 }
 
+arg_rdm_mix_name = {
+        "arg" : "--rdm_mix_name",
+        "default" : "Mix",
+        "help" : "A name that represents a combination of materials in some proportion.",
+        "required" : True
+}
+
 arg_rdm_material_name = {
         "arg" : "--rdm_material_name",
         "default" : "Material",
         "help" : "A name that represents a physical substance that can be hauled, compacted or otherwise worked at a site. This name is visible to operators for selection on client software and in reports.",
+        "required" : True
+}
+
+arg_rdm_mix_material_1_uuid = {
+        "arg" : "--rdm_mix_material_1_uuid",
+        "default" : "",
+        "help" : "A string representing the UUID of the first material to contribute to a mix.",
+        "required" : True
+}
+
+arg_rdm_mix_material_1_ratio = {
+        "arg" : "--rdm_mix_material_1_ratio",
+        "default" : 1,
+        "help" : "A number representing proportion that the first material contributes to a mix.",
+        "required" : True
+}
+
+arg_rdm_mix_material_2_uuid = {
+        "arg" : "--rdm_mix_material_2_uuid",
+        "default" : "",
+        "help" : "A string representing the UUID of the second material to contribute to a mix.",
+        "required" : True
+}
+
+arg_rdm_mix_material_2_ratio = {
+        "arg" : "--rdm_mix_material_2_ratio",
+        "default" : 1,
+        "help" : "A number representing proportion that the second material contributes to a mix.",
         "required" : True
 }
 
