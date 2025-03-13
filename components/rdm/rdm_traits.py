@@ -340,7 +340,28 @@ class RoadTrailerRdmTraits():
         }
         if a_code:
             ret["code"] = a_code
-        return ret        
+        return ret    
+
+class MixRdmTraits(RdmTraitsBase):
+    def __init__(self, a_object_value):
+        RdmTraitsBase.__init__(self, a_object_value, "Mix")
+
+    def object_details(self):
+        return "\'{}\'.".format(self.object_name())
+
+    @staticmethod
+    def post_bean_json(a_name, a_porportion_list, a_code=None):
+        ret = {
+            "_id": str(uuid.uuid4()),
+            "name" : a_name,
+            "proportions" : a_porportion_list,
+            "_rev": str(uuid.uuid4()),
+            "_type":"sl::mix",
+            "_at":int(round(time.time() * 1000))
+        }
+        if a_code:
+            ret["code"] = a_code
+        return ret 
 
 class MaterialRdmTraits(RdmTraitsBase):
     def __init__(self, a_object_value):
