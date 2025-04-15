@@ -14,7 +14,6 @@ from imports import *
 for imp in ["args", "utils", "get_token", "rdm_traits", "rdm_list", "rdm_pagination_traits"]:
     exec(import_cmd(components_dir, imp))
 
-
 session = requests.Session()
 
 
@@ -22,26 +21,35 @@ def main():
     script_name = os.path.basename(os.path.realpath(__file__))
     
     # >> Argument handling  
-    args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_datalogger_output_file_name, arg_datalogger_output_folder])
+    args = handle_arguments(a_description=script_name, a_arg_list=[arg_log_level, arg_site_owner_uuid, arg_datalogger_output_file_name, arg_datalogger_output_folder])
     # << Argument handling
 
     # >> Server & logging configuration
-    url = "https://qa-consumption.topcon.com/transactions/le/{}/stakeholders/{}/consumers/{}".format('3c8b621c-b856-49ba-b6c2-8b3c92455b49','02d01904-81ca-44e0-856a-3c97602adbf3',"a2L1b000000hHTJEA2")
+    sitelink_legal_entity_qa = "3c8b621c-b856-49ba-b6c2-8b3c92455b49"
+    sitelink_legal_entity_prod = "3c8b621c-b856-49ba-b6c2-8b3c92455b49"
+
+    TRAPI_stakeholder_id_qa = "02d01904-81ca-44e0-856a-3c97602adbf3"
+    TRAPI_stakeholder_id_prod = "c692b473-370c-4c61-af5b-4352e285ae96"
+
+    environment = "qa-" if args.env == "qa" else ""
+    legal_entity = sitelink_legal_entity_qa if args.env == "qa" else sitelink_legal_entity_prod
+    stakeholder = TRAPI_stakeholder_id_qa if args.env == "qa" else TRAPI_stakeholder_id_prod
+    consumer = "a2L1b000000hHTJEA2" if args.env == "qa" else "blah2"    
+    
+    url = "https://{}consumption.topcon.com/transactions/le/{}/stakeholders/{}/consumers/{}".format(environment, legal_entity, stakeholder, args.site_owner_uuid)
+    
     logging.basicConfig(format=args.log_format, level=int(args.log_level))
     #logging.info("Running {0} for server={1} dc={2} site={3}".format(script_name, server, args.dc, args.site_id))
     # << Server & logging configuration
 
     # >> Authorization
-    headers = {
-        #'Authorization': "Bearer S39Ihx_zJ7IApc3ZDDmCFYj-KYXI9xHotpeR-iXv87-Wmh_m4oLbwWotm9c0jZILv3RG6WxgdfljqVAaBWk4iYPvf2EFHe4r_hNfoZfHw_xhGg6zCjw-7X7GfjFg1sJdLSV6z6vOYKlGfXd-k6HB-K7OaWx4kdsaAVUQi0wY2gKShB7LbsV5Oa2X6sPvHxGsEDu8dKng1WtX2PAKpsd4K0PAL9TtiNBXj_qj1BGdbF2eUeT9vAw6xMFaTHCNd",
-        'X-Topcon-Auth': "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiI5ODJiNDg0ZC02MzU2LTQ4MjgtODc5Yi01MDdjYzdjNjA1YjUiLCJzdWIiOiJ1cm46WC1Ub3Bjb24iLCJzY3AiOiIqIiwiYWN0Ijp7ImFjY291bnRpbmciOlsiKiJdfSwiZXhwIjoxNzEyMzA0MDAwfQ.RtpjhlBbCzjhicNZbLK3csPAkJs15O3jZWy3hqhWmm4nTQliIOOYCaQBWNMZTXpDLenyigHEAAjJUTIQ8d3dmdshkLjiZ991V61FSpznbNUEpKkXSe3x8CrNLE91FzQ43qbJR_DnijkORLYgBN_yQb0GXGV6H7PvX51ABmjYvMfeV4waCc6zTkEcJiHHcWcqVJEn-qCgoK1VS_ZVExCq3vmbKhCIj_czpGAnus5XC3aC72V3kSZKYPIaUwsU5SWpMexfPCgKux0PgqqG7tv5pfDy0vJ4xGyxwtYwOkQyEUoWVl-tj-HWzcws8nwMrpef9NnVQggiOPurjT7uMj4BQA",
-        #'X-Client-Id': "2e020d55e1b4f1868e1b1496d3c923d170f3dcd0ce1e55352c302273ca635fe7d84362442b46f8a567044bd5515510b738a7c608e1b1bedbc247cc475add093e"
-    }
+    # QA
+    headers = { 'X-Topcon-Auth': args.jwt }
+
     # << Authorization
     logging.info("url:{}".format(url))
     logging.info("headers:{}".format(json.dumps(headers,indent=4)))
     response = session.get(url, headers=headers)
-    #response.raise_for_status()
     rj = response.json()
 
     logging.info(json.dumps(rj, indent=4))
@@ -51,17 +59,13 @@ def main():
     report_file = open(report_file_name, "w")
     report_file.write("Date, Time, Group, Ledger, Item, Product ID, Machine UUID, Units, Price\n")
 
-    # headers = {
-    #     'X-Topcon-Auth': "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5MTM4NjI1NS00ZDNmLTQ2YzUtYTc3MS1jZWViMWEwOTdhZGUiLCJzdWIiOiJ1cm46WC1Ub3Bjb24iLCJzY3AiOiIqIiwiYWN0Ijp7IioiOlsiKiJdfSwiZXhwIjoxNzE0MjgyNDMzfQ.dEVaQEXbFHoNsNV7iyBvkmhjEEbtDJqriMCtXrgJYtwuWjGjFQzzJW-ARLNhTxVzC_T0YI6in8SOCY8pefx1smjI8rZZiyLRNIq-31Ha7J1N0YwBdyBEOLO07-0h003vBfw2aHP30zdXxOtnSZKgtXXLo2sr03p6LT7Td_jKD1OmO4Md9AtSFWPacWDn5dUgKsMHEp8o9i4m1A6XhsDYsSuqEM_yBNNBVYr-p1n4st2zErNQ2HIdjEJ0Lq36oDUy6Ce-Qbdu7Do0pV5l9_dwW_6Z_O6vP_X_LdkrY9mP5HRYjpIiFA7ePA4_5FKdmujyMCp8lrfRf8svN9zg1rEZCg"
-    # }
     for i, transaction in enumerate(rj["transactions"]):
 
-        transaction_url = "https://qa-consumption.topcon.com/transactions/{}.jsonl".format(transaction["transactionId"])
+        transaction_url = "https://{}consumption.topcon.com/transactions/{}.jsonl".format(environment, transaction["transactionId"])
 
         response = session.get(transaction_url, headers=headers)
         response.raise_for_status()
         rt = response.text
-
 
         for line in response.iter_lines():
 
