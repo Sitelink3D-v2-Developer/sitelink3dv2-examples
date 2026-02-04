@@ -9,6 +9,7 @@ import time
 import os
 import logging
 import requests
+import json
 
 session = requests.Session()
 
@@ -72,11 +73,12 @@ def compare_dict(a_expected, a_actual):
 def site_detail(a_server_config, a_headers, a_site_id): 
     list_detail_url = "{0}/siteowner/v1/sites/{1}".format(a_server_config.to_url(), a_site_id)
     logging.debug("Querying Site Owner for details of site {} from {}".format(a_site_id, list_detail_url))
-
+    logging.debug("headers:{}".format(json.dumps(a_headers,indent=4)))
     response = session.get(list_detail_url, headers=a_headers)
     response.raise_for_status()
     
     site_list_json = response.json()
+    logging.debug("site detail returned:{}".format(json.dumps(site_list_json,indent=4)))
     return site_list_json
 
 def get_site_name_summary(a_server_config, a_headers, a_site_id):

@@ -42,8 +42,16 @@ class DataloggerPayload(object):
                     return DataloggerPayloadOnBoardWeighingLoad(a_object_value, a_assets)
                 elif a_object_value["data"]["type"] == "obw_lift":
                     return DataloggerPayloadOnBoardWeighingLift(a_object_value, a_assets)
-                elif a_object_value["data"]["type"] == "close":
-                    return DataloggerPayloadCloseEvent(a_object_value, a_assets)               
+                elif a_object_value["data"]["type"] == "loaded":
+                    return DataloggerPayloadLoadedEvent(a_object_value, a_assets)               
+                elif a_object_value["data"]["type"] == "weighed":
+                    return DataloggerPayloadWeighedEvent(a_object_value, a_assets)   
+                elif a_object_value["data"]["type"] == "dumped":
+                    return DataloggerPayloadDumpedEvent(a_object_value, a_assets)   
+                elif a_object_value["data"]["type"] == "operator_selected":
+                    return DataloggerPayloadOperatorSelectedEvent(a_object_value, a_assets)   
+                elif a_object_value["data"]["type"] == "work_order_selected":
+                    return DataloggerPayloadWorkOrderSelectedEvent(a_object_value, a_assets)
             
         except TypeError as err:
             logging.debug("TypeError {}".format(err))
@@ -325,6 +333,117 @@ class DataloggerPayloadOnBoardWeighingLift(DataloggerPayloadBase):
         machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
         return "{}, machine '{}' lifted {} [units] for job {}"\
             .format(self.m_json["at"], machine_name, self.m_json["data"]["weight"], self.m_json["data"]["job_uuid"])
+
+# DataloggerPayloadLoadedEvent processes payloads of the form
+#
+# {
+#     "at": 1768183045801,
+#     "type": "sitelink::Event",
+#     "ttl": 0,
+#     "data": {
+#         "load_id": "5e84feeb-6972-4c8f-93d3-6837d710f309",
+#         "ac_uuid": "ddadd3b7-0698-4292-8bfc-2b6685108e2b",
+#         "ns": "topcon.weighing",
+#         "type": "loaded"
+# }
+class DataloggerPayloadLoadedEvent(DataloggerPayloadBase):
+    def __init__(self, a_json, a_assets):
+        DataloggerPayloadBase.__init__(self, a_json)
+        self.m_assets = a_assets
+
+    def format(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        return "{}, machine '{}' started loading load id: {}"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["load_id"])
+
+# DataloggerPayloadWeighedEvent processes payloads of the form
+#
+# {
+#     "at": 1768183045852,
+#     "type": "sitelink::Event",
+#     "ttl": 0,
+#     "data": {
+#         "load_id": "5e84feeb-6972-4c8f-93d3-6837d710f309",
+#         "quantity": 2416.65,
+#         "ac_uuid": "ddadd3b7-0698-4292-8bfc-2b6685108e2b",
+#         "ns": "topcon.weighing",
+#         "type": "weighed"
+# }
+class DataloggerPayloadWeighedEvent(DataloggerPayloadBase):
+    def __init__(self, a_json, a_assets):
+        DataloggerPayloadBase.__init__(self, a_json)
+        self.m_assets = a_assets
+
+    def format(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        return "{}, machine '{}' weighed {}[kg] for load id: {}"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["quantity"], self.m_json["data"]["load_id"])
+
+# DataloggerPayloadDumpedEvent processes payloads of the form
+#
+# {
+#     "at": 1768183045909,
+#     "type": "sitelink::Event",
+#     "ttl": 0,
+#     "data": {
+#         "load_id": "5e84feeb-6972-4c8f-93d3-6837d710f309",
+#         "ac_uuid": "ddadd3b7-0698-4292-8bfc-2b6685108e2b",
+#         "ns": "topcon.weighing",
+#         "type": "dumped"
+# }
+class DataloggerPayloadDumpedEvent(DataloggerPayloadBase):
+    def __init__(self, a_json, a_assets):
+        DataloggerPayloadBase.__init__(self, a_json)
+        self.m_assets = a_assets
+
+    def format(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        return "{}, machine '{}' dumped load id: {}"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["load_id"])
+
+# DataloggerPayloadOperatorSelectedEvent processes payloads of the form
+#
+# {
+#     "at": 1768182971548,
+#     "type": "sitelink::Event",
+#     "ttl": 0,
+#     "data": {
+#         "operator_id": null,
+#         "ac_uuid": "ddadd3b7-0698-4292-8bfc-2b6685108e2b",
+#         "ns": "topcon.weighing",
+#         "type": "operator_selected"
+# }
+class DataloggerPayloadOperatorSelectedEvent(DataloggerPayloadBase):
+    def __init__(self, a_json, a_assets):
+        DataloggerPayloadBase.__init__(self, a_json)
+        self.m_assets = a_assets
+
+    def format(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        return "{}, machine '{}' selected operator id: {}"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["operator_id"])
+
+# DataloggerPayloadWorkOrderSelectedEvent processes payloads of the form
+#
+# {
+#     "at": 1768182972437,
+#     "type": "sitelink::Event",
+#     "ttl": 0,
+#     "data": {
+#         "work_order_id": "5c6e99cd-a841-48be-b82c-6f185f21b8ef",
+#         "ac_uuid": "ddadd3b7-0698-4292-8bfc-2b6685108e2b",
+#         "ns": "topcon.weighing",
+#         "type": "work_order_selected"
+# }  
+class DataloggerPayloadWorkOrderSelectedEvent(DataloggerPayloadBase):
+    def __init__(self, a_json, a_assets):
+        DataloggerPayloadBase.__init__(self, a_json)
+        self.m_assets = a_assets
+
+    def format(self):
+        machine_name = get_machine_name_for_ac_uuid(self.m_assets, self.m_json["data"]["ac_uuid"])
+        return "{}, machine '{}' selected work order id: {}"\
+            .format(self.m_json["at"], machine_name, self.m_json["data"]["work_order_id"])
 
 # DataloggerPayloadOnBoardWeighingOpen processes payloads of the form
 #
