@@ -129,12 +129,24 @@ def GetPointOfInterestLocalSpace(a_point_of_interest_component, a_transform_comp
 # the types of RDM data that are provided to us in UUID form that we can then use to lookup names for
 state_name_lookup_list = ["operator", "delay", "id"] # id is task
 
-def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a_headers):
-    if not a_state_msg['data']['ac_uuid'] in a_state_dict:
-        a_state_dict[a_state_msg['data']['ac_uuid']] = {}
+def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_assets_dict, a_server, a_site_id, a_headers):
+    ac_uuid = a_state_msg['data']['ac_uuid']
+    
+    # Fetch and cache asset context if not already cached
+    if not ac_uuid in a_assets_dict:
+        logging.debug("Getting AC_UUID (Asset Context).")
+        resource_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server.to_url(), a_site_id, ac_uuid)
+        ac_uuid_response = session.get(resource_url, headers=a_headers)
+        ac_uuid_response.raise_for_status()
+        a_assets_dict[ac_uuid] = ac_uuid_response.json()
+    else:
+        logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
+    
+    if not ac_uuid in a_state_dict:
+        a_state_dict[ac_uuid] = {}
 
-    if not a_state_msg['data']['ns'] in a_state_dict[a_state_msg['data']['ac_uuid']]:
-        a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']] = {}
+    if not a_state_msg['data']['ns'] in a_state_dict[ac_uuid]:
+        a_state_dict[ac_uuid][a_state_msg['data']['ns']] = {}
 
     nested_state = {
         "state" : a_state_msg['data']['state'],
@@ -158,56 +170,109 @@ def UpdateStateForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a
 
         nested_state["name"] = object_name
 
-    a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']][a_state_msg['data']['state']] = nested_state
+    a_state_dict[ac_uuid][a_state_msg['data']['ns']][a_state_msg['data']['state']] = nested_state
     logging.info(json.dumps("STATE DICT:{}".format(a_state_dict,indent=4)))
 
-def UpdateTsmEventForAssetContext(a_state_msg, a_state_dict, a_server, a_site_id, a_headers):
-    if not a_state_msg['data']['ac_uuid'] in a_state_dict:
-        a_state_dict[a_state_msg['data']['ac_uuid']] = {}
+def UpdateTsmEventForAssetContext(a_state_msg, a_state_dict, a_assets_dict, a_server, a_site_id, a_headers):
+    ac_uuid = a_state_msg['data']['ac_uuid']
 
-    if not a_state_msg['data']['ns'] in a_state_dict[a_state_msg['data']['ac_uuid']]:
-        a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']] = {}
+    # Fetch and cache asset context if not already cached
+    if not ac_uuid in a_assets_dict:
+        logging.debug("Getting AC_UUID (Asset Context).")
+        resource_url = "{}/dba/v1/sites/{}/resources/{}".format(a_server.to_url(), a_site_id, ac_uuid)
+        ac_uuid_response = session.get(resource_url, headers=a_headers)
+        ac_uuid_response.raise_for_status()
+        a_assets_dict[ac_uuid] = ac_uuid_response.json()
+    else:
+        logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
 
-    # nested_state = {
-    #     "state" : a_state_msg['data']['state'],
-    #     "value" : a_state_msg['data']['value']
-    # }
+    if not ac_uuid in a_state_dict:
+        a_state_dict[ac_uuid] = {}
 
-    nested_state = {
-        "state" : "-",
-        "value" : "-"
-    }
-    logging.info("!!!!!!!!!!!! GOT A TSM EVENT: {}".format(json.dumps(a_state_msg,indent=4)))
-    if "work_order_id" in a_state_msg['data']:
-        nested_state["state"] = "Work Order"
-        nested_state["value"] = a_state_msg['data']['work_order_id']
-        logging.info("FOUND WORK ORDER STATE and nested state dict is {}:".format(json.dumps(nested_state,indent=4)))
+    if not a_state_msg['data']['ns'] in a_state_dict[ac_uuid]:
+        a_state_dict[ac_uuid][a_state_msg['data']['ns']] = {}
 
-    if "operator_id" in a_state_msg['data']:
-        nested_state["state"] = "Operator"
-        nested_state["value"] = a_state_msg['data']['operator_id']
-        logging.info("FOUND OPERATOR STATE and nested state dict is {}:".format(json.dumps(nested_state,indent=4)))
+    logging.info("!!!!!!!!!!!! GOT A TSM EVENT: {}".format(json.dumps(a_state_msg, indent=4)))
 
-    # For certain states that provide UUID values, we want to also fetch the name for readability
-    #if nested_state["state"] in state_name_lookup_list:
-    page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[nested_state["value"]], a_end=[nested_state["value"], None])
-    rj = query_rdm_by_domain_view(a_server_config=a_server, a_site_id=a_site_id, a_domain="site_manager", a_view="_head", a_headers=a_headers, a_params=page_traits.params())
-    if len(rj["items"]) > 0: # There should be only one entry as we specified a unique ID
-        object_name = rj["items"][0]["value"]["name"]
-        logging.info("HERE's THE RDM NAME QUERY {}:".format(json.dumps(rj["items"][0],indent=4)))
-        # if "operator" == nested_state["state"]:
-        #     object_name = rj["items"][0]["value"]["firstName"] + " " + rj["items"][0]["value"]["lastName"]
+    # Build a list of (field_key, state_label) pairs to extract from the event payload.
+    field_map = [
+        ("work_order_id", "Work Order"),
+        ("operator_id", "Operator"),
+        ("truck_id", "Truck"),
+        ("trailer_id", "Trailer"),
+        ("product_id", "Product"),
+        ("product_location_id", "Stockpile From"),
+        ("customer_id", "Customer"),
+        ("transporter_id", "Transporter"),
+        ("destination_id", "Destination"),
+    ]
 
-        # elif "delay" == nested_state["state"] or "id" == nested_state["state"]:
-        #     object_name = rj["items"][0]["value"]["name"]
+    for field_key, state_label in field_map:
+        if field_key in a_state_msg['data']:
+            value = a_state_msg['data'].get(field_key)
+            nested_state = {
+                "state": state_label,
+                "value": value if value is not None else "-",
+            }
 
-        # elif "sequence_name" == nested_state["state"] or "id" == nested_state["state"]:
-        #     object_name = rj["items"][0]["value"]["name"]
+            # Lookup human readable name for UUID values where available
+            if nested_state["value"] is not None and nested_state["value"] != "-":
+                try:
+                    page_traits = RdmViewPaginationTraits(a_page_size="500", a_start=[nested_state["value"]], a_end=[nested_state["value"], None])
+                    rj = query_rdm_by_domain_view(a_server_config=a_server, a_site_id=a_site_id, a_domain="site_manager", a_view="_head", a_headers=a_headers, a_params=page_traits.params())
+                    logging.info("HERE's THE NAME QUERY $$$$: {}".format(json.dumps(rj, indent=4)))
+                    if len(rj.get("items", [])) > 0:
+                        # Use specific formatting for operator if present, otherwise use the 'name' field
+                        if state_label == "Operator":
+                            object_name = rj["items"][0]["value"].get("firstName", "") + " " + rj["items"][0]["value"].get("lastName", "")
+                            object_name = object_name.strip() if object_name.strip() != "" else rj["items"][0]["value"].get("name", "Unknown")
+                        else:
+                            object_name = rj["items"][0]["value"].get("name", "Unknown")
+                        nested_state["name"] = object_name
+                        logging.info("RDM lookup for {}: {}".format(state_label, json.dumps(rj["items"][0], indent=4)))
 
-        nested_state["name"] = object_name
+                        # Capture instruction field for Work Order RDM objects
+                        if state_label == "Work Order":
+                            try:
+                                instruction_val = rj["items"][0]["value"].get("instruction")
+                                if instruction_val is not None:
+                                    nested_state["instruction"] = str(instruction_val)
+                            except Exception:
+                                pass
 
-    a_state_dict[a_state_msg['data']['ac_uuid']][a_state_msg['data']['ns']][nested_state["state"]] = nested_state
-    logging.info("STATE DICT:{}".format(json.dumps(a_state_dict,indent=4)))
+                        # Capture tare value for Truck/Trailer RDM objects so we can output preset tare
+                        if state_label in ("Truck", "Trailer"):
+                            try:
+                                tare_val = rj["items"][0]["value"].get("tare")
+                                if tare_val is not None:
+                                    nested_state["tare"] = str(tare_val)
+                            except Exception:
+                                pass
+
+                        # If this event contains a product_location object that references a product_id,
+                        # derive and populate a `Product` state so downstream code sees the product name.
+                        if state_label in ("Stockpile From", "Stockpile To"):
+                            try:
+                                prod_id = rj["items"][0]["value"].get("product_id")
+                                if prod_id:
+                                    page_traits2 = RdmViewPaginationTraits(a_page_size="500", a_start=[prod_id], a_end=[prod_id, None])
+                                    rj2 = query_rdm_by_domain_view(a_server_config=a_server, a_site_id=a_site_id, a_domain="site_manager", a_view="_head", a_headers=a_headers, a_params=page_traits2.params())
+                                    prod_name = "[unknown]"
+                                    if len(rj2.get("items", [])) > 0:
+                                        prod_name = rj2["items"][0]["value"].get("name", prod_name)
+                                    # store product state adjacent to the product_location entry
+                                    a_state_dict[ac_uuid][a_state_msg['data']['ns']]["Product"] = {"state": "Product", "value": prod_id, "name": prod_name}
+                                    logging.info("Derived Product from {}: {} ({})".format(state_label, prod_name, prod_id))
+                            except Exception as e:
+                                logging.debug("Product lookup failed for {} with value {}: {}".format(state_label, rj["items"][0]["value"].get("product_id"), e))
+                except Exception as e:
+                    logging.debug("RDM lookup failed for {} with value {}: {}".format(state_label, nested_state["value"], e))
+            else:
+                nested_state["name"] = "-"
+
+            a_state_dict[ac_uuid][a_state_msg['data']['ns']][nested_state["state"]] = nested_state
+
+    logging.info("STATE DICT:{}".format(json.dumps(a_state_dict, indent=4)))
 
 def UpdateResourceConfiguration(a_resource_config_uuid, a_resource_config_dict, a_server, a_site_id, a_headers):
 
@@ -479,14 +544,15 @@ def OutputLineObjects(a_file_ptr, a_machine_type, a_replicate, a_assets_dict, au
         a_file_ptr.write("\n{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(a_machine_type, device_id, machine_name_strip, utc_date_only, utc_time_only, position_quality, position_error_horz, error_horz_limitation, position_error_vert, error_vert_limitation, auto_grade_control, reverse, delay_strip, delay_id, operator_strip, operator_id, task_strip, task_id, surface_name_strip, sequence_name_strip, position_string))
         
 
-def OutputTsmLineObjects(a_file_ptr, a_weighed_msg, a_assets_dict, a_state_for_ac_uuid={}):
-    ac_uuid = a_weighed_msg["data"]["ac_uuid"]
+def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac_uuid={}):
+    ac_uuid = a_dumped_msg["data"]["ac_uuid"]
     machine_name = "-"
     device_id = "-"
     operator = "-"
     operator_id = "-"
     work_order = "-"
     work_order_id = "-"
+    instruction = "-"
     delay = "-"
     delay_id = "-"
     surface_name = "-"
@@ -505,11 +571,9 @@ def OutputTsmLineObjects(a_file_ptr, a_weighed_msg, a_assets_dict, a_state_for_a
     #     logging.debug("No Delay state found.")
 
     logging.info("****WRITING FROM WORK ORDER EVENT {}".format(json.dumps(a_state_for_ac_uuid,indent=4)))
-    try:
-        work_order = a_state_for_ac_uuid["topcon.weighing"]["Work Order"]["name"]
-        work_order_id = a_state_for_ac_uuid["topcon.weighing"]["Work Order"]["value"]
-    except KeyError:
-        logging.debug("No Task state found.")
+    work_order = a_state_for_ac_uuid.get("topcon.weighing", {}).get("Work Order", {}).get("name", "-")
+    work_order_id = a_state_for_ac_uuid.get("topcon.weighing", {}).get("Work Order", {}).get("value", "-")
+    instruction = a_state_for_ac_uuid.get("topcon.weighing", {}).get("Work Order", {}).get("instruction", "-")
 
     # try:
     #     surface_name = a_state["topcon.task"]["surface_name"]["value"]
@@ -530,21 +594,137 @@ def OutputTsmLineObjects(a_file_ptr, a_weighed_msg, a_assets_dict, a_state_for_a
     except KeyError:
         logging.debug("No machine or device information found.")
 
-    utc_time = datetime.datetime.fromtimestamp(a_weighed_msg["at"]/1000,tz=tz.UTC)
+    utc_time = datetime.datetime.fromtimestamp(a_dumped_msg["at"]/1000,tz=tz.UTC)
 
     # we now split this into separate date and time columns so users can better filter
     utc_time_split = str(utc_time).split(" ")
     utc_date_only = utc_time_split[0]
     utc_time_only = utc_time_split[1]
 
+    # Retrieve and format the cached load timestamp if available
+    load_date_only = "-"
+    load_time_only = "-"
+    try:
+        last_load_at = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_load_at")
+        if last_load_at is not None:
+            load_utc_time = datetime.datetime.fromtimestamp(last_load_at/1000, tz=tz.UTC)
+            load_time_split = str(load_utc_time).split(" ")
+            load_date_only = load_time_split[0]
+            load_time_only = load_time_split[1]
+    except Exception as e:
+        logging.debug("Error retrieving or formatting load timestamp: {}".format(e))
+    
+    # Retrieve and output the cached last position for this machine
+    load_location = "-"
+    try:
+        last_position = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_position")
+        if last_position is not None:
+            # Dump raw contents to learn format
+            load_location = json.dumps(last_position).replace(",", " ")
+    except Exception as e:
+        logging.debug("Error retrieving last load position: {}".format(e))
+
+    weighed_date_only = "-"
+    weighed_time_only = "-"
+    try:
+        last_weighed_at = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_weighed_at")
+        if last_weighed_at is not None:
+            weighed_utc_time = datetime.datetime.fromtimestamp(last_weighed_at/1000, tz=tz.UTC)
+            weighed_time_split = str(weighed_utc_time).split(" ")
+            weighed_date_only = weighed_time_split[0]
+            weighed_time_only = weighed_time_split[1]
+    except Exception as e:
+        logging.debug("Error retrieving or formatting weighed timestamp: {}".format(e))
+    
+    # Retrieve and output the cached last position for this machine
+    weighed_location = "-"
+    try:
+        weighed_location = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_weighed_position")
+        if weighed_location is not None:
+            # Dump raw contents to learn format
+            weighed_location = json.dumps(weighed_location).replace(",", " ")
+    except Exception as e:
+        logging.debug("Error retrieving last weighed position: {}".format(e))
+
+    weighed_quantity = "-"
+    try:
+        weighed_quantity = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_weighed_quantity")
+        if weighed_quantity is not None:
+            # Dump raw contents to learn format
+            weighed_quantity = str(weighed_quantity)
+    except Exception as e:
+        logging.debug("Error retrieving last weighed position: {}".format(e))
+
     machine_name_strip = machine_name.replace(",","_")
     delay_strip = delay.replace(",","_")
     operator_strip = operator.replace(",","_")
     work_order_strip = work_order.replace(",","_")
+    instruction_strip = instruction.replace(",","_") if instruction is not None else "-"
     surface_name_strip = surface_name.replace(",","_")
     sequence_name_strip = sequence_name.replace(",","_")
 
-    a_file_ptr.write("\n{}, {}, {}, {}, {}".format(machine_name_strip, utc_date_only, utc_time_only, a_weighed_msg["data"]["quantity"], work_order_strip))
+    # Prepare additional TSM state values if available
+    tw = a_state_for_ac_uuid.get("topcon.weighing", {}) if isinstance(a_state_for_ac_uuid, dict) else {}
+    product_name = tw.get("Product", {}).get("name", "-")
+    truck_name = tw.get("Truck", {}).get("name", "-")
+    truck_tare = tw.get("Truck", {}).get("tare") if tw.get("Truck") else None
+    trailer_name = tw.get("Trailer", {}).get("name") if tw.get("Trailer") else None
+    trailer_tare = tw.get("Trailer", {}).get("tare") if tw.get("Trailer") else None
+    customer_name = tw.get("Customer", {}).get("name", "-")
+    stockpile_from = tw.get("Stockpile From", {}).get("name", "-")
+    stockpile_to = tw.get("Stockpile To", {}).get("name", "-")
+    transporter_name = tw.get("Transporter", {}).get("name", "-")
+    destination_name = tw.get("Destination", {}).get("name", "-")
+    operator_name = tw.get("Operator", {}).get("name", "-")
+
+    # sanitize commas for CSV
+    product_strip = product_name.replace(",", "_") if product_name is not None else "-"
+    truck_strip = truck_name.replace(",", "_") if truck_name is not None else "-"
+    trailer_strip = trailer_name.replace(",", "_") if trailer_name is not None else "-"
+    customer_strip = customer_name.replace(",", "_") if customer_name is not None else "-"
+    stockpile_from_strip = stockpile_from.replace(",", "_") if stockpile_from is not None else "-"
+    stockpile_to_strip = stockpile_to.replace(",", "_") if stockpile_to is not None else "-"
+    transporter_strip = transporter_name.replace(",", "_") if transporter_name is not None else "-"
+    destination_strip = destination_name.replace(",", "_") if destination_name is not None else "-"
+    operator_strip = operator_name.replace(",", "_") if operator_name is not None else "-"
+
+    # Build CSV columns explicitly in header order to avoid misalignment.
+    work_order_id_strip = work_order_id.replace(",", "_") if work_order_id is not None else "-"
+    preset_tare_strip = str(truck_tare).replace(",", "_") if truck_tare is not None else "-"
+
+    base_columns = [
+        machine_name_strip,
+        work_order_id_strip,
+        work_order_strip,
+        weighed_quantity,
+        preset_tare_strip,
+        product_strip,
+        customer_strip,
+        truck_strip,
+        transporter_strip,
+        stockpile_from_strip,
+        stockpile_to_strip,
+        destination_strip,
+        operator_strip,
+        instruction_strip,
+        load_date_only,  # Load Date (UTC) - from cached loaded event
+        load_time_only,  # Load Time (UTC) - from cached loaded event
+        load_location,  # Load Location - from cached last replicate position
+        weighed_date_only,  # Lift Date (UTC) - from weighed event
+        weighed_time_only,  # Lift Time (UTC) - from weighed event
+        weighed_location,  # Lift Location - from cached last weighed position
+        utc_date_only,  # Dump Time
+        utc_time_only,  # Dump Location
+    ]
+
+    # Map the remaining named columns to their values (product, customer, truck, transporter, stockpile_from, stockpile_to, destination, operator moved into base_columns).
+    named_columns = [trailer_strip]
+
+    columns = base_columns + named_columns
+
+    logging.info("****Writing TSM event line with columns: {}".format(json.dumps(columns, indent=4)))
+
+    a_file_ptr.write("\n" + ", ".join(columns))
 
 
 def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_state_dict, a_resources_dir, a_report_file, a_header_list, a_geodetic_header_list, a_transform_list, a_geodetic_coordinate_manager, a_line_index, a_server, a_site_id, a_headers, a_output_verbosity="advanced", a_machine_description_filter=None):
@@ -562,6 +742,10 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
             a_assets_dict[ac_uuid] = ac_uuid_response.json()
         else:
             logging.debug("Already have Asset Context for AC_UUID {}".format(ac_uuid))
+        
+        # Initialize state for this ac_uuid if not already present
+        if ac_uuid not in a_state_dict:
+            a_state_dict[ac_uuid] = {}
 
         if a_machine_description_filter is not None:
             if a_machine_description_filter != resource_config_processor._json["description"]:
@@ -702,6 +886,9 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                     "e": transform_interface.local_position["easting"],
                     "n": transform_interface.local_position["northing"]
                 }
+                
+                # Cache the last position for this machine for Load Location in CSV output
+                a_state_dict[ac_uuid]["last_position"] = point
 
                 item_z = {
                     "title" : "local_position [z]",
@@ -771,8 +958,11 @@ def ProcessReplicate(a_decoded_json, a_resource_config_dict, a_assets_dict, a_st
                 obj = wgs84_coord_to_object_list_item(a_wgs_point=wgs_point)
                 geodetic_object_list.append(obj)
                 a_geodetic_coordinate_manager.add_geodetic_point(obj)
+                
+                # Cache the last WGS84 position for this machine
+                a_state_dict[ac_uuid]["last_position"] = wgs_point
 
-        OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_output_verbosity, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
+        #OutputLineObjects(a_report_file, resource_config_processor.description, a_decoded_json, a_assets_dict, aux_control_data_dict, object_list, a_header_list, a_output_verbosity, a_state_dict[ac_uuid] if ac_uuid in a_state_dict else {})
 
 def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_datalogger_start_ms, a_datalogger_end_ms, a_datalogger_output_file_name):
 
@@ -834,25 +1024,40 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
         decoded_json = json.loads(base64.b64decode(line).decode('UTF-8'))
 
         if decoded_json['type'] == "sitelink::State":
-            UpdateStateForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            UpdateStateForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_assets_dict=assets, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
             logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
 
         if decoded_json['type'] == "sitelink::Event" and decoded_json['data']["ns"] == "topcon.weighing":
             logging.info("FOUND WEIGHING EVENT. UPDATING STATE.")
-            UpdateTsmEventForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
+            UpdateTsmEventForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_assets_dict=assets, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
             logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
-            if decoded_json['data']["type"] == "weighed":
+            if decoded_json['data']["type"] == "dumped":
                 # this triggers writing a line output to csv
-                OutputTsmLineObjects(a_file_ptr=report_file_temp, a_weighed_msg=decoded_json, a_assets_dict=assets, a_state_for_ac_uuid=state[decoded_json['data']["ac_uuid"]])
+                OutputTsmLineObjects(a_file_ptr=report_file_temp, a_dumped_msg=decoded_json, a_assets_dict=assets, a_state_for_ac_uuid=state[decoded_json['data']["ac_uuid"]])
+            elif decoded_json['data']["type"] == "loaded":
+                # Cache the load timestamp for this asset context
+                ac_uuid = decoded_json['data']["ac_uuid"]
+                if ac_uuid in state and "topcon.weighing" in state[ac_uuid]:
+                    state[ac_uuid]["topcon.weighing"]["last_load_at"] = decoded_json["at"]
+                    state[ac_uuid]["topcon.weighing"]["last_load_position"] = state[ac_uuid]["last_position"]
+                    logging.info("Cached last_load_at timestamp: {}".format(decoded_json["at"]))
+            elif decoded_json['data']["type"] == "weighed":
+                # Cache the load timestamp for this asset context
+                ac_uuid = decoded_json['data']["ac_uuid"]
+                if ac_uuid in state and "topcon.weighing" in state[ac_uuid]:
+                    state[ac_uuid]["topcon.weighing"]["last_weighed_at"] = decoded_json["at"]
+                    state[ac_uuid]["topcon.weighing"]["last_weighed_quantity"] = decoded_json["data"]["quantity"]
+                    state[ac_uuid]["topcon.weighing"]["last_weighed_position"] = state[ac_uuid]["last_position"]
+                    logging.info("Cached last_weighed_at timestamp: {}".format(decoded_json["at"]))
 
             
 
-        # if decoded_json['type'] == "mfk::Replicate":
-        #     try:
-        #         ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers, a_output_verbosity=a_output_verbosity)
-        #     except (requests.exceptions.HTTPError, RuntimeError, Exception) as e: 
-        #         logging.warning("Could not process replicate {} with message '{}'".format(json.dumps(decoded_json, indent=4), e))
-        #         continue
+        if decoded_json['type'] == "mfk::Replicate":
+            try:
+                ProcessReplicate(a_decoded_json=decoded_json, a_resource_config_dict=resource_definitions, a_assets_dict=assets, a_state_dict=state, a_resources_dir=resources_dir, a_report_file=report_file_temp, a_header_list=header_list, a_geodetic_header_list=geodetic_header_list, a_transform_list=transform_list ,a_geodetic_coordinate_manager=geodetic_coordinate_manager, a_line_index=line_count, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers, a_output_verbosity="advanced")
+            except (requests.exceptions.HTTPError, RuntimeError, Exception) as e: 
+                logging.warning("Could not process replicate {} with message '{}'".format(json.dumps(decoded_json, indent=4), e))
+                continue
         line_count += 1
 
     logging.info("Writing report to {}".format(a_datalogger_output_file_name))
@@ -875,8 +1080,26 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
     fixed_header_list=[]
     
     first_column = True
-    fixed_header_list = ["Machine Type", "Machine Name", "Load Time (UTC)", "Weight (kg)", "Load Location", "Lift Time (UTC)", "Lift Location", "Dump Time (UTC)", "Dump Location", "Product", "Truck", "Customer", "Work Order", "Stockpile From", "Stockpile To", "Transporter", "Destination", "Operator"]
-        
+    # Build fixed headers and include Trailer only if seen in state during processing
+    fixed_header_list = ["Machine Name", "Work Order Number", "Work Order Name", "Weight (Net kg)", "Preset Tare (kg)", "Product", "Customer", "Truck", "Transporter", "Stockpile From", "Stockpile To", "Destination", "Operator", "Instruction", "Load Date (UTC)", "Load Time (UTC)", "Load Location", "Lift Date (UTC)", "Lift Time (UTC)", "Lift Location", "Dump Date (UTC)", "Dump Time (UTC)", "Dump Location"]
+
+    # If any AC_UUID observed a Trailer state with a non-empty value, include Trailer column at the end
+    try:
+        trailer_seen = False
+        for ac in state:
+            try:
+                t = state[ac]["topcon.weighing"].get("Trailer", {})
+                if t and t.get("value") not in (None, "-"):
+                    trailer_seen = True
+                    break
+            except KeyError:
+                continue
+        if trailer_seen:
+            # append Trailer column at the very end
+            fixed_header_list.append("Trailer")
+    except Exception:
+        pass
+
     column_count = len(fixed_header_list)
     line = ""
     for title in fixed_header_list:
@@ -902,17 +1125,18 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
                 first_line = False
                 continue
             geo_line = geodetic_file_temp.readline()
-            split_line_list = line.split(",")
+            split_line_list = [s for s in line.split(",") if s.strip() != ""]
 
-            line_column_count = len(split_line_list) -1 # minus one to cater for the trailing comma
-            logging.info
-            
-            pad_string = " "
+            # Count actual columns in the temp line (no artificial -1 adjustment).
+            line_column_count = len(split_line_list)
+
             line_diff = column_count - line_column_count
+            pad_string = ""
             while line_diff > 0:
-                pad_string += "-, "
+                pad_string += ", -"
                 line_diff -= 1
 
+            # Append pad_string and the geodetic columns (geo_line has a trailing comma removed).
             aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()[:-1]
             report_file.write(aggregate_line)
 
