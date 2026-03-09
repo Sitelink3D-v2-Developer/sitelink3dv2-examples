@@ -580,9 +580,6 @@ def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac
     # except KeyError:
     #     logging.debug("No Surface state found.")
 
-    # try:
-    #     sequence_name = a_state["topcon.task"]["sequence_name"]["value"]
-    # except KeyError:
     #     logging.debug("No Sequence state found.")
     try:
         for i, val in enumerate(a_assets_dict[ac_uuid]["signatures"]):
@@ -601,6 +598,7 @@ def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac
     utc_date_only = utc_time_split[0]
     utc_time_only = utc_time_split[1]
 
+
     # Retrieve and format the cached load timestamp if available
     load_date_only = "-"
     load_time_only = "-"
@@ -613,16 +611,24 @@ def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac
             load_time_only = load_time_split[1]
     except Exception as e:
         logging.debug("Error retrieving or formatting load timestamp: {}".format(e))
-    
-    # Retrieve and output the cached last position for this machine
+
+    # Retrieve and output the cached last load position for this machine
     load_location = "-"
     try:
-        last_position = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_position")
-        if last_position is not None:
-            # Dump raw contents to learn format
-            load_location = json.dumps(last_position).replace(",", " ")
+        last_load_position = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_load_position")
+        if last_load_position is not None:
+            load_location = json.dumps(last_load_position).replace(",", " ")
     except Exception as e:
         logging.debug("Error retrieving last load position: {}".format(e))
+
+    # Retrieve and output the cached last dump position for this machine
+    dump_location = "-"
+    try:
+        last_dump_position = a_state_for_ac_uuid.get("topcon.weighing", {}).get("last_dump_position")
+        if last_dump_position is not None:
+            dump_location = json.dumps(last_dump_position).replace(",", " ")
+    except Exception as e:
+        logging.debug("Error retrieving last dump position: {}".format(e))
 
     weighed_date_only = "-"
     weighed_time_only = "-"
@@ -668,7 +674,7 @@ def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac
     product_name = tw.get("Product", {}).get("name", "-")
     truck_name = tw.get("Truck", {}).get("name", "-")
     truck_tare = tw.get("Truck", {}).get("tare") if tw.get("Truck") else None
-    trailer_name = tw.get("Trailer", {}).get("name") if tw.get("Trailer") else None
+    trailer_name = tw.get("active_trailer_id", {}) if tw.get("active_trailer_id") else None
     trailer_tare = tw.get("Trailer", {}).get("tare") if tw.get("Trailer") else None
     customer_name = tw.get("Customer", {}).get("name", "-")
     stockpile_from = tw.get("Stockpile From", {}).get("name", "-")
@@ -709,12 +715,13 @@ def OutputTsmLineObjects(a_file_ptr, a_dumped_msg, a_assets_dict, a_state_for_ac
         instruction_strip,
         load_date_only,  # Load Date (UTC) - from cached loaded event
         load_time_only,  # Load Time (UTC) - from cached loaded event
-        load_location,  # Load Location - from cached last replicate position
+        load_location,  # Load Location - from cached last_load_position
         weighed_date_only,  # Lift Date (UTC) - from weighed event
         weighed_time_only,  # Lift Time (UTC) - from weighed event
         weighed_location,  # Lift Location - from cached last weighed position
-        utc_date_only,  # Dump Time
-        utc_time_only,  # Dump Location
+        utc_date_only,  # Dump Date (UTC)
+        utc_time_only,  # Dump Time (UTC)
+        dump_location,  # Dump Location - from cached last_dump_position
     ]
 
     # Map the remaining named columns to their values (product, customer, truck, transporter, stockpile_from, stockpile_to, destination, operator moved into base_columns).
@@ -1032,6 +1039,9 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
             UpdateTsmEventForAssetContext(a_state_msg=decoded_json, a_state_dict=state, a_assets_dict=assets, a_server=a_server, a_site_id=a_site_id, a_headers=a_headers)
             logging.debug("Found state. Current state: {}".format(json.dumps(state, indent=4)))
             if decoded_json['data']["type"] == "dumped":
+                ac_uuid = decoded_json['data']["ac_uuid"]
+                if ac_uuid in state and "topcon.weighing" in state[ac_uuid]:
+                    state[ac_uuid]["topcon.weighing"]["last_dump_position"] = state[ac_uuid]["last_position"]
                 # this triggers writing a line output to csv
                 OutputTsmLineObjects(a_file_ptr=report_file_temp, a_dumped_msg=decoded_json, a_assets_dict=assets, a_state_for_ac_uuid=state[decoded_json['data']["ac_uuid"]])
             elif decoded_json['data']["type"] == "loaded":
@@ -1049,7 +1059,13 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
                     state[ac_uuid]["topcon.weighing"]["last_weighed_quantity"] = decoded_json["data"]["quantity"]
                     state[ac_uuid]["topcon.weighing"]["last_weighed_position"] = state[ac_uuid]["last_position"]
                     logging.info("Cached last_weighed_at timestamp: {}".format(decoded_json["at"]))
-
+            elif decoded_json['data']["type"] == "truck_selected":
+                # Cache the load timestamp for this asset context
+                ac_uuid = decoded_json['data']["ac_uuid"]
+                if ac_uuid in state and "topcon.weighing" in state[ac_uuid]:
+                    state[ac_uuid]["topcon.weighing"]["active_trailer_id"] = decoded_json["data"]["trailer_id"] if  "trailer_id" in decoded_json["data"] else None
+                    logging.info("Cached active_trailer_id: {}".format(decoded_json["data"]["trailer_id"] if  "trailer_id" in decoded_json["data"] else None))
+            
             
 
         if decoded_json['type'] == "mfk::Replicate":
@@ -1110,40 +1126,20 @@ def ProcessTsmDataloggerToCsv(a_server, a_site_id, a_headers, a_target_dir, a_da
             line += ", {}".format(title)
     
     report_file.write(line)
-    for point_of_interest_name in header_list:
-        report_file.write(", {}".format(point_of_interest_name))
-        column_count += 1 # we use this to space out the geodetic columns later - each line has a variable number of columns from the temp file.
+    # Do not write dynamic point_of_interest or geodetic headers; only fixed headers are written
 
-    for object_name in geodetic_header_list:
-        report_file.write(", {}".format(object_name))
-
-    first_line = True # The first line of the temp file is blank so we skip this
-    geodetic_file_temp = open(geodetic_file_name_temp, "r")
+    # Write only the main report file temp contents, skipping geodetic columns
+    first_line = True
     with open(report_file_name_temp, 'r') as report_file_temp:
         for line in report_file_temp:
             if first_line:
                 first_line = False
                 continue
-            geo_line = geodetic_file_temp.readline()
-            split_line_list = [s for s in line.split(",") if s.strip() != ""]
-
-            # Count actual columns in the temp line (no artificial -1 adjustment).
-            line_column_count = len(split_line_list)
-
-            line_diff = column_count - line_column_count
-            pad_string = ""
-            while line_diff > 0:
-                pad_string += ", -"
-                line_diff -= 1
-
-            # Append pad_string and the geodetic columns (geo_line has a trailing comma removed).
-            aggregate_line = "\n" + line.strip() + pad_string + geo_line.strip()[:-1]
-            report_file.write(aggregate_line)
+            report_file.write("\n" + line.strip())
 
     report_file_temp.close()
-    geodetic_file_temp.close()
-    os.remove(report_file_name_temp)
-    os.remove(geodetic_file_name_temp)
+    # os.remove(report_file_name_temp)
+    # os.remove(geodetic_file_name_temp)
 
     end_time = time.time()
 
