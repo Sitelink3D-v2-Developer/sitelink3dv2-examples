@@ -406,7 +406,7 @@ def query_and_download_site_localization_file_history(a_server_config, a_site_id
             metadata_file.write(json.dumps(loc["value"], indent=4))
         download_file(a_server_config=a_server_config, a_site_id=a_site_id, a_file_uuid=loc["value"]["file"]["uuid"], a_headers=a_headers, a_target_dir=target_dir, a_target_name=loc["value"]["file"]["name"])
 
-        for other_file in loc["value"]["other_files"]:
+        for other_file in loc["value"].get("other_files", []):
             download_file(a_server_config=a_server_config, a_site_id=a_site_id, a_file_uuid=other_file["uuid"], a_headers=a_headers, a_target_dir=target_dir, a_target_name=other_file["name"])
 
     return ret["items"]
